@@ -1294,7 +1294,11 @@
   },
   "contractAccessAdmin": {
     "title": "Contract access",
-    "description": "The latest successful, test, and failed contract access attempts for the selected date range.",
+    "description": "Successful, test, and failed contract access attempts for the selected date range. Access logs are kept indefinitely.",
+    "page": "Page",
+    "entries": "entries",
+    "newer": "Newer entries",
+    "older": "Older entries",
     "accessTime": "Time",
     "source": "Source",
     "device": "Device",

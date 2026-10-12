@@ -211,16 +211,33 @@ export function calculatePublicVisitBreakdowns(events = []) {
   };
 }
 
-export async function loadRecentContractAccessData(filters = {}) {
+export async function loadRecentContractAccessData(filters = {}, page = 1) {
   return prisma.publicVisitEvent.findMany({
     where: {
       ...getVisitReportWhere(filters),
       eventType: { in: CONTRACT_ACCESS_EVENT_TYPES },
     },
     include: kitchenContractInclude,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip: (page - 1) * 100,
     take: 100,
   });
+}
+
+export async function loadContractAccessPageData(filters = {}, requestedPage = 1) {
+  const total = await prisma.publicVisitEvent.count({
+    where: {
+      ...getVisitReportWhere(filters),
+      eventType: { in: CONTRACT_ACCESS_EVENT_TYPES },
+    },
+  });
+  const totalPages = Math.max(1, Math.ceil(total / 100));
+  const parsedPage = Number(requestedPage);
+  const page = Number.isSafeInteger(parsedPage) && parsedPage > 0
+    ? Math.min(parsedPage, totalPages)
+    : 1;
+  const events = await loadRecentContractAccessData(filters, page);
+  return { events, page, total, totalPages };
 }
 
 async function purgeJunkServiceClaimVisitEvents() {

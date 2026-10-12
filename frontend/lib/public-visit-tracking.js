@@ -16,6 +16,13 @@ export const PUBLIC_VISIT_EVENT_TYPES = {
 export const SERVICE_PAGE_PATH = "/service";
 
 const PUBLIC_EVENT_TYPE_SET = new Set(Object.values(PUBLIC_VISIT_EVENT_TYPES));
+// Contract access history is permanent, including unsuccessful and test attempts.
+const PERMANENT_CONTRACT_EVENT_TYPES = [
+  PUBLIC_VISIT_EVENT_TYPES.CONTRACT_SUBMITTED,
+  PUBLIC_VISIT_EVENT_TYPES.CONTRACT_ACCEPTED,
+  PUBLIC_VISIT_EVENT_TYPES.CONTRACT_TEST_ACCEPTED,
+  PUBLIC_VISIT_EVENT_TYPES.CONTRACT_REJECTED,
+];
 const CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 const CLEANUP_TIMER_MS = 6 * 60 * 60 * 1000;
 const DEFAULT_RETENTION_DAYS = 90;
@@ -175,7 +182,12 @@ async function cleanupExpiredPublicVisitEvents(now) {
   const cutoff = new Date(now.getTime() - getRetentionDays() * 24 * 60 * 60 * 1000);
 
   try {
-    await prisma.publicVisitEvent.deleteMany({ where: { createdAt: { lt: cutoff } } });
+    await prisma.publicVisitEvent.deleteMany({
+      where: {
+        createdAt: { lt: cutoff },
+        eventType: { notIn: PERMANENT_CONTRACT_EVENT_TYPES },
+      },
+    });
   } catch (error) {
     lastCleanupAt = 0;
     console.warn("Public visit retention cleanup failed:", error?.message || error);

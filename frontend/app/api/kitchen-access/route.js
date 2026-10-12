@@ -6,7 +6,6 @@ import {
   PUBLIC_VISIT_EVENT_TYPES,
   safelyTrackPublicVisitEvent,
 } from "../../../lib/public-visit-tracking";
-import { enforceRateLimit, getRequestClientIp } from "../../../lib/rate-limit";
 import { assertContractAllowsRepurchase } from "../../../lib/contract-repurchase-restrictions";
 
 export async function POST(request) {
@@ -14,12 +13,6 @@ export async function POST(request) {
   let trackingContext = {};
 
   try {
-    const clientIp = getRequestClientIp(request);
-    enforceRateLimit(`kitchen-access:${clientIp}`, {
-      limit: 20,
-      windowMs: 15 * 60 * 1000,
-    });
-
     const body = await request.json();
     submittedContractNumber = body?.contractNumber || "";
     trackingContext = {

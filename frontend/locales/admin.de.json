@@ -1294,7 +1294,11 @@
   },
   "contractAccessAdmin": {
     "title": "Vertragszugriffe",
-    "description": "Die neuesten erfolgreichen, Test- und fehlgeschlagenen Vertragszugriffe im ausgewählten Zeitraum.",
+    "description": "Erfolgreiche, Test- und fehlgeschlagene Vertragszugriffe im ausgewählten Zeitraum. Zugriffsprotokolle werden dauerhaft aufbewahrt.",
+    "page": "Seite",
+    "entries": "Einträge",
+    "newer": "Neuere Einträge",
+    "older": "Ältere Einträge",
     "accessTime": "Zeitpunkt",
     "source": "Quelle",
     "device": "Gerät",

@@ -17,7 +17,7 @@ import {
 } from "../../../components/admin-i18n";
 import { requireSuperAdminPage } from "../../../lib/admin-role-guards";
 import {
-  loadRecentContractAccessData,
+  loadContractAccessPageData,
   normalizePublicVisitReportFilters,
 } from "../../../lib/public-visit-reports";
 
@@ -39,8 +39,15 @@ function AccessResultBadge({ eventType }) {
 
 export default async function AdminContractAccessPage({ searchParams = {} }) {
   const admin = await requireSuperAdminPage();
-  const filters = normalizePublicVisitReportFilters((await searchParams) || {});
-  const events = await loadRecentContractAccessData(filters);
+  const params = (await searchParams) || {};
+  const filters = normalizePublicVisitReportFilters(params);
+  const { events, page, total, totalPages } = await loadContractAccessPageData(filters, params.page);
+  function pageHref(targetPage) {
+    const query = new URLSearchParams({ page: String(targetPage) });
+    if (filters.dateFrom) query.set("dateFrom", filters.dateFrom);
+    if (filters.dateTo) query.set("dateTo", filters.dateTo);
+    return `/admin/contract-access?${query}`;
+  }
 
   return (
     <AdminShell adminEmail={admin.email}>
@@ -50,7 +57,7 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
           description={(
             <AdminText
               i18nKey="contractAccessAdmin.description"
-              fallback="The latest successful, test, and failed contract access attempts for the selected date range."
+              fallback="Successful, test, and failed contract access attempts for the selected date range. Access logs are kept indefinitely."
             />
           )}
         >
@@ -135,6 +142,22 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
               </tbody>
             </table>
           </div>
+          <nav style={filterActionsStyle} aria-label="Contract access pages">
+            <span>
+              <AdminText i18nKey="contractAccessAdmin.page" fallback="Page" /> {page} / {totalPages}
+              {" · "}{total} <AdminText i18nKey="contractAccessAdmin.entries" fallback="entries" />
+            </span>
+            {page > 1 ? (
+              <Link href={pageHref(page - 1)} scroll={false} style={filterClearLinkStyle}>
+                <AdminText i18nKey="contractAccessAdmin.newer" fallback="Newer entries" />
+              </Link>
+            ) : null}
+            {page < totalPages ? (
+              <Link href={pageHref(page + 1)} scroll={false} style={filterClearLinkStyle}>
+                <AdminText i18nKey="contractAccessAdmin.older" fallback="Older entries" />
+              </Link>
+            ) : null}
+          </nav>
         </AdminSection>
       </div>
     </AdminShell>
