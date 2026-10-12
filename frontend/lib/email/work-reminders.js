@@ -1,6 +1,7 @@
 import { attachWorkProcessing, lockWorkProcessing } from "../work-processing.js";
 import { filterAndSortWork, reminderDue, workDateKey, workAgeDays } from "../work-processing-rules.js";
-import { resolveInternalSmtpConfig, createSmtpTransport } from "./contract-smtp.js";
+import { resolveInternalSmtpConfig, resolveSmtpConfigForContract, createSmtpTransport } from "./contract-smtp.js";
+import { isLocalEmailEnvironment, LOCAL_EMAIL_RECIPIENT } from "./local-email-safety.js";
 
 export const REMINDER_FROM = "315primex.eu@gmail.com";
 export const REMINDER_TO = "140primex.eu@gmail.com";
@@ -10,7 +11,9 @@ function escapeHtml(value) {
 }
 
 export function resolveReminderConfig(env = process.env) {
-  const config = resolveInternalSmtpConfig(env);
+  const config = isLocalEmailEnvironment(env)
+    ? resolveSmtpConfigForContract("670", env)
+    : resolveInternalSmtpConfig(env);
   const fromAddress = String(config?.from || "").match(/<([^>]+)>/)?.[1] || config?.from;
   if (!config || config.user.toLowerCase() !== REMINDER_FROM || String(fromAddress).toLowerCase() !== REMINDER_FROM) {
     throw new Error(`Work reminders require SMTP_111_USER and SMTP_111_FROM to use ${REMINDER_FROM}, and SMTP_111_PASS.`);
@@ -63,6 +66,7 @@ export async function sendWorkReminders({ db, deliveryDb = db, now = new Date(),
   if (dryRun) return { dryRun: true, items: await listReminderCandidates(db, now) };
   if (env.WORK_REMINDERS_ENABLED !== "true") throw new Error("Work reminders are disabled outside the hosted reminder service.");
   const config = resolveReminderConfig(env);
+  const recipient = isLocalEmailEnvironment(env) ? LOCAL_EMAIL_RECIPIENT : REMINDER_TO;
   let batch;
   let accepted = false;
   try {
@@ -90,11 +94,11 @@ export async function sendWorkReminders({ db, deliveryDb = db, now = new Date(),
       let deadline;
       try {
         receipt = await Promise.race([
-          transporter.sendMail({ ...message, from: `"Fragmento" <${REMINDER_FROM}>`, to: REMINDER_TO }),
+          transporter.sendMail({ ...message, from: `"Fragmento" <${REMINDER_FROM}>`, to: recipient }),
           new Promise((_, reject) => { deadline = setTimeout(() => reject(Object.assign(new Error("Reminder SMTP deadline exceeded; delivery requires review."), { code: "ETIMEDOUT" })), 30000); }),
         ]);
       } finally { clearTimeout(deadline); transporter.close?.(); }
-      accepted = (receipt.accepted || []).some((address) => String(address).toLowerCase() === REMINDER_TO);
+      accepted = (receipt.accepted || []).some((address) => String(address).toLowerCase() === recipient);
       if (!accepted) {
         const error = new Error("SMTP did not accept the reminder recipient.");
         error.code = "EENVELOPE";

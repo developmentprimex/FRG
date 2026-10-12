@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 
 const BLOCKED_LOCAL_MAILBOX = "nachkauf@myarchitecto.de";
+export const LOCAL_EMAIL_RECIPIENT = "334primex.eu@gmail.com";
 
 export function isLocalEmailEnvironment(env = process.env) {
   if (String(env.LOCAL_EMAIL_SAFETY || "").trim().toLowerCase() === "true") return true;
@@ -37,6 +38,17 @@ export function createGuardedSmtpTransport(options, env = process.env) {
         sender: message.sender,
         envelopeFrom: message.envelope?.from,
       }, env);
+      if (isLocalEmailEnvironment(env)) {
+        if (message.raw) throw new Error("Raw email is disabled locally; use a structured message for safe recipient redirection.");
+        message = {
+          ...message,
+          to: LOCAL_EMAIL_RECIPIENT,
+          cc: undefined,
+          bcc: undefined,
+          replyTo: LOCAL_EMAIL_RECIPIENT,
+          envelope: { from: message.envelope?.from || message.from, to: [LOCAL_EMAIL_RECIPIENT] },
+        };
+      }
     } catch (error) {
       if (typeof callback === "function") return callback(error);
       return Promise.reject(error);

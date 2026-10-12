@@ -6,6 +6,7 @@ import sharp from "sharp";
 import { resolveServiceClaimEmailRecipient } from "../../../lib/service-claim-email-recipient";
 import { CLAIM_INTERNAL_PREFIXES, resolveSmtpConfigForContract, sendMailForContract } from "../../../lib/email/contract-smtp";
 import { observeClaimEmailSend } from "../../../lib/email/claim-email-tracking.js";
+import { sendClaimConfirmation } from "../../../lib/email/claim-confirmation.js";
 import { normalizeReferencePlanMarkerAppearance } from "../../../lib/reference-plan-marker-appearance";
 import { Prisma } from "@prisma/client";
 import { after, NextResponse } from "next/server";
@@ -1806,6 +1807,10 @@ export async function POST(request) {
           : Promise.resolve(true),
         sendComplaintEmail(payload, attachmentParts, referenceSnapshot).catch((error) => {
           console.warn("Service claim email delivery failed:", formatServiceClaimErrorMessage(error));
+          return false;
+        }),
+        sendClaimConfirmation(payload).catch((error) => {
+          console.warn("Service claim confirmation email failed:", formatServiceClaimErrorMessage(error));
           return false;
         }),
         postWebhook(payload),

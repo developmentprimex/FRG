@@ -3,6 +3,7 @@ import test from "node:test";
 import nodemailer from "nodemailer";
 import { assertLocalEmailSenderAllowed, createGuardedSmtpTransport, isLocalEmailEnvironment } from "../lib/email/local-email-safety.js";
 import { resolveSmtpConfigForContract, sendMailForContract } from "../lib/email/contract-smtp.js";
+import { resolveServiceClaimEmailRecipient } from "../lib/service-claim-email-recipient.js";
 
 const smtp={SMTP_HOST:"smtp.office365.com",SMTP_USER:"nachkauf@myarchitecto.de",SMTP_PASS:"production-pass",SMTP_FROM:"nachkauf@myarchitecto.de",SMTP_111_HOST:"smtp.gmail.com",SMTP_111_USER:"315primex.eu@gmail.com",SMTP_111_PASS:"local-pass"};
 const local={...smtp,LOCAL_EMAIL_SAFETY:"true",NODE_ENV:"production"};
@@ -56,4 +57,34 @@ test("guarded transport blocks forbidden messages before Nodemailer sends",async
   assert.equal(sent,0);
   await transport.sendMail({from:"315primex.eu@gmail.com",to:"recipient@example.com"});
   assert.equal(sent,1);
+});
+
+test("local transport redirects To, CC, BCC and SMTP envelope to 334 only", async t => {
+  const messages = [];
+  t.mock.method(nodemailer, "createTransport", () => ({ sendMail: async message => {
+    messages.push(message);
+    return { accepted: message.envelope.to };
+  } }));
+  const message = {
+    from: "315primex.eu@gmail.com", to: "kd@myarchitecto.de",
+    cc: "verwaltung@hbi-wohnen.de", bcc: "other@example.com",
+    replyTo: "kd@myarchitecto.de",
+    envelope: { from: "315primex.eu@gmail.com", to: ["kd@myarchitecto.de", "verwaltung@hbi-wohnen.de"] },
+  };
+  for (const env of [{ NODE_ENV: "development" }, { NODE_ENV: "test" }, local]) {
+    const transport = createGuardedSmtpTransport({ auth: { user: "315primex.eu@gmail.com" } }, env);
+    await transport.sendMail(message);
+    const sent = messages.at(-1);
+    assert.equal(sent.to, "334primex.eu@gmail.com");
+    assert.equal(sent.cc, undefined);
+    assert.equal(sent.bcc, undefined);
+    assert.equal(sent.replyTo, "334primex.eu@gmail.com");
+    assert.deepEqual(sent.envelope.to, ["334primex.eu@gmail.com"]);
+    assert.equal(resolveServiceClaimEmailRecipient("670103832", { ...env, SERVICE_REQUEST_OTHER_EMAIL: "kd@myarchitecto.de" }), "334primex.eu@gmail.com");
+    await assert.rejects(transport.sendMail({ ...message, raw: "To: kd@myarchitecto.de\r\n\r\nTest" }), /Raw email is disabled locally/);
+  }
+  const production = createGuardedSmtpTransport({ auth: { user: "315primex.eu@gmail.com" } }, { NODE_ENV: "production" });
+  await production.sendMail(message);
+  assert.strictEqual(messages.at(-1), message);
+  assert.equal(messages.length, 4);
 });

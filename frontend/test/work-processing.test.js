@@ -7,7 +7,7 @@ import { buildWorkReminder, resolveReminderConfig, sendWorkReminders } from "../
 const now = new Date("2026-10-12T07:00:00Z");
 const item = (id, date, extra = {}) => ({ id, workType: "ORDER", contractNumber: "670123", createdAt: new Date(date), status: "CONFIRMED", ...extra });
 const overdue = item("old", "2026-09-01T12:00:00Z");
-const env = { NODE_ENV: "test", WORK_REMINDERS_ENABLED: "true", SMTP_111_USER: "315primex.eu@gmail.com", SMTP_111_FROM: "315primex.eu@gmail.com", SMTP_111_PASS: "mock-secret" };
+const env = { NODE_ENV: "production", WORK_REMINDERS_ENABLED: "true", SMTP_111_USER: "315primex.eu@gmail.com", SMTP_111_FROM: "315primex.eu@gmail.com", SMTP_111_PASS: "mock-secret" };
 
 function memoryDb(initial = {}) {
   const state = { records: [], events: [], batches: [], orders: [overdue], claims: [], locked: true, ...initial };
@@ -140,6 +140,18 @@ test("successful digest goes to 140, records delivery and prevents same-day and 
   assert.equal((await sendWorkReminders({ db, now: new Date("2026-10-18T07:00:00Z"), env, dryRun: false, createTransport })).count, 0);
   assert.equal((await sendWorkReminders({ db, now: new Date("2026-10-19T07:00:00Z"), env, dryRun: false, createTransport })).count, 1);
   assert.equal(sends, 2);
+});
+
+test("local reminders go to 334 and record successful redirected delivery", async () => {
+  const { db, state } = memoryDb();
+  const local = { ...env, NODE_ENV: "development", SMTP_USER: "315primex.eu@gmail.com", SMTP_FROM: "315primex.eu@gmail.com", SMTP_PASS: "mock-local-secret" };
+  const result = await sendWorkReminders({ db, now, env: local, dryRun: false, createTransport: () => ({ sendMail: async mail => {
+    assert.equal(mail.to, "334primex.eu@gmail.com");
+    return { accepted: [mail.to], messageId: "local-receipt" };
+  } }) });
+  assert.equal(result.count, 1);
+  assert.equal(state.batches[0].status, "SENT");
+  assert.equal(state.records[0].lastReminderAt.getTime(), now.getTime());
 });
 
 test("done items are rechecked by the worker and concurrent workers do not send", async () => {
