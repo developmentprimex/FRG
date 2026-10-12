@@ -107,7 +107,7 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
 
                   return (
                     <tr key={event.id}>
-                      <td style={tdStyle}><AdminDateTime value={event.createdAt} /></td>
+                      <td style={tdStyle}><AdminDateTime value={event.createdAt} timeZone="Europe/Berlin" /></td>
                       <td style={tdStyle}><AdminCountryName code={event.countryCode} /></td>
                       <td style={tdStyle}>
                         <strong>
