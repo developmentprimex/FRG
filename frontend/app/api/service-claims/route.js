@@ -3,7 +3,7 @@ import http from "http";
 import path from "path";
 import https from "https";
 import sharp from "sharp";
-import { resolveServiceClaimEmailCc, resolveServiceClaimEmailRecipient } from "../../../lib/service-claim-email-recipient";
+import { resolveServiceClaimEmailRecipient } from "../../../lib/service-claim-email-recipient";
 import { CLAIM_INTERNAL_PREFIXES, resolveSmtpConfigForContract, sendMailForContract } from "../../../lib/email/contract-smtp";
 import { observeClaimEmailSend } from "../../../lib/email/claim-email-tracking.js";
 import { normalizeReferencePlanMarkerAppearance } from "../../../lib/reference-plan-marker-appearance";
@@ -353,18 +353,14 @@ async function postWebhook(payload) {
 }
 
 async function sendComplaintEmail(payload, attachmentParts = [], referenceSnapshot = null) {
-  const kitchenPlan = payload.contractType === "ARC"
-    ? await getServiceClaimKitchenPlan(payload.contractNumber)
-    : null;
-  const cc = resolveServiceClaimEmailCc(payload.contractType, kitchenPlan, payload.contractNumber);
   return observeClaimEmailSend({
     claimId: payload.id,
-    recipient: () => [resolveServiceClaimEmailRecipient(payload.contractNumber), cc].filter(Boolean).join(", "),
-    send: (captureReceipt) => sendComplaintEmailMessage(payload, attachmentParts, referenceSnapshot, captureReceipt, cc),
+    recipient: () => resolveServiceClaimEmailRecipient(payload.contractNumber),
+    send: (captureReceipt) => sendComplaintEmailMessage(payload, attachmentParts, referenceSnapshot, captureReceipt),
   });
 }
 
-async function sendComplaintEmailMessage(payload, attachmentParts = [], referenceSnapshot = null, captureReceipt = () => {}, cc = undefined) {
+async function sendComplaintEmailMessage(payload, attachmentParts = [], referenceSnapshot = null, captureReceipt = () => {}) {
   const recipient = resolveServiceClaimEmailRecipient(payload.contractNumber);
   const smtpConfig = resolveSmtpConfigForContract(payload.contractNumber, process.env, CLAIM_INTERNAL_PREFIXES);
 
@@ -399,7 +395,6 @@ async function sendComplaintEmailMessage(payload, attachmentParts = [], referenc
   // 111 and 222 contract claims are sent from SMTP_111_* (315primex), all others from SMTP_*.
   const { receipt } = await sendMailForContract(payload.contractNumber, {
     to: recipient,
-    cc,
     subject: formatServiceClaimEmailSubject(payload.contractNumber, payload.claimSequence),
     replyTo: payload.email || undefined,
     text: buildComplaintEmailText(emailPayload),
