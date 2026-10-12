@@ -71,6 +71,9 @@ export function createSmtpTransport(config, env = process.env) {
     host: config.host,
     port: config.port,
     secure: config.secure,
+    ...(config.connectionTimeout ? { connectionTimeout: config.connectionTimeout } : {}),
+    ...(config.greetingTimeout ? { greetingTimeout: config.greetingTimeout } : {}),
+    ...(config.socketTimeout ? { socketTimeout: config.socketTimeout } : {}),
     auth: { user: config.user, pass: config.pass },
   }, env);
 }

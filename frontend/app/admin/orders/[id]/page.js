@@ -1,3 +1,7 @@
+import { AdminOrderInformation } from "../../../../components/admin-order-information";
+import { prisma as processingDb } from "../../../../lib/prisma";
+import { attachWorkProcessing } from "../../../../lib/work-processing";
+import { AdminWorkPanel } from "../../../../components/admin-work-panel";
 import { OrderStatus } from "@prisma/client";
 import {
   ActionLink,
@@ -24,7 +28,6 @@ import {
 } from "../../../../components/admin-i18n";
 import { OrderActionButton, OrderActionFeedback } from "../../../../components/admin-order-action-buttons";
 import { CancellationRequestPanel } from "../../../../components/admin-order-cancellation-panel";
-import { AdminOrderAs400Form } from "../../../../components/admin-order-as400-form";
 import { OrderEmailReviewModal } from "../../../../components/order-email-review-modal";
 import { AdminOrderEmailDelivery } from "../../../../components/admin-order-email-delivery";
 import { attachOrderEmailDelivery } from "../../../../lib/email/order-email-store";
@@ -189,7 +192,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
   const admin = await requireAdminPage();
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
-  const [order] = await attachOrderEmailDelivery([await getOrderById(id)]);
+  const [order] = await attachWorkProcessing(processingDb, await attachOrderEmailDelivery([await getOrderById(id)]), "ORDER");
 
   if (!order) {
     return (
@@ -240,12 +243,6 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
             </div>
           }
         >
-          <AdminOrderAs400Form
-            orderId={order.id}
-            initialValue={order.as400Number || ""}
-            initialSaved={as400Saved}
-          />
-
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
           {paymentLink ? (
@@ -257,38 +254,9 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
             </div>
           ) : null}
 
+          <AdminWorkPanel item={order} compact />
           <form action={`/api/admin/orders/${order.id}`} method="post" style={actionPanelStyle}>
-            <div style={statusRowStyle}>
-              <div style={statusItemStyle}>
-                <span style={compactLabelStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></span>
-                <AdminStatusBadge status={order.status} />
-              </div>
-              <div style={statusItemStyle}>
-                <span style={compactLabelStyle}><AdminText i18nKey="reportsAdmin.payment" fallback="Payment" /></span>
-                <PaymentStatusBadge status={order.paymentStatus} />
-              </div>
-            </div>
-            <div style={actionSummaryStyle}>
-              <div style={actionMetricStyle}>
-                <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.total" fallback="Total" /></span>
-                <div style={{ display: "grid", gap: 2 }}>
-                  <span style={{ fontSize: 12, color: "var(--app-text-muted)" }}>
-                    <AdminText i18nKey="orderDetailAdmin.priceExclVat" fallback="Price" />: {formatCurrency(getPriceBreakdown(order.totalPrice).net)}
-                  </span>
-                  <span style={{ fontSize: 12, color: "var(--app-text-muted)" }}>
-                    <AdminText i18nKey="orderDetailAdmin.vatAmount" fallback="VAT (19%)" />: {formatCurrency(getPriceBreakdown(order.totalPrice).vat)}
-                  </span>
-                  <strong>{formatCurrency(order.totalPrice)}</strong>
-                </div>
-              </div>
-              <div style={actionMetricStyle}>
-                <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.contractNumber" fallback="Contract number" /></span>
-                <strong>{order.contractNumber || <AdminText i18nKey="orderDetailAdmin.notProvided" fallback="Not provided" />}</strong>
-              </div>
-            </div>
-            <p style={statusHintStyle}>
-              <AdminText i18nKey={getStatusHintKey(order.status)} fallback={getStatusHintFallback(order.status)} />
-            </p>
+            <strong><AdminText i18nKey="orderDetailAdmin.orderActions" fallback="Order actions" /></strong>
             <div style={actionButtonsStyle}>
               <OrderEmailReviewModal
                 to={order.email}
@@ -328,117 +296,14 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
                 </OrderActionButton>
               ) : null}
             </div>
-            <AdminOrderEmailDelivery delivery={order.confirmationEmailDelivery} />
+            <details style={{ borderTop: "1px solid var(--app-border)", paddingTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 700 }}><AdminText i18nKey="orderDetailAdmin.emailDelivery" fallback="Email delivery" /></summary>
+              <div style={{ marginTop: 12 }}><AdminOrderEmailDelivery delivery={order.confirmationEmailDelivery} /></div>
+            </details>
             <OrderActionFeedback />
           </form>
 
-          <div style={splitGridStyle}>
-            <article style={itemCardStyle}>
-              <div style={{ display: "grid", gap: 10 }}>
-                <strong style={{ fontSize: "1.1rem" }}><AdminText i18nKey="orderDetailAdmin.orderSummary" fallback="Order summary" /></strong>
-                <div style={subMetaStyle}>
-                  <span><AdminKitchenDisplayName slug={order.kitchen.slug} name={order.kitchen.name} /></span>
-                  <span><AdminDateTime value={order.createdAt} /></span>
-                  <span>
-                    <AdminPluralText
-                      count={displayItems.length}
-                      singularKey="ordersAdmin.itemCountSingular"
-                      pluralKey="ordersAdmin.itemCountPlural"
-                      singularFallback="{count} item"
-                      pluralFallback="{count} items"
-                    />
-                  </span>
-                  {order.contractOrderSequence ? (
-                    <span><ContractOrderLabel sequence={order.contractOrderSequence} /></span>
-                  ) : null}
-                </div>
-              </div>
-
-              <div style={detailGridStyle}>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.contractOrder" fallback="Contract order" /></span>
-                  <span><ContractOrderLabel sequence={order.contractOrderSequence} /></span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.contractAccess" fallback="Contract access" /></span>
-                  <span>
-                    {order.kitchenContract
-                      ? order.kitchenContract.isActive
-                        ? <AdminText i18nKey="orderDetailAdmin.linkedReusableActiveContract" fallback="Linked reusable active contract" />
-                        : <AdminText i18nKey="orderDetailAdmin.linkedReusableInactiveContract" fallback="Linked reusable inactive contract" />
-                      : <AdminText i18nKey="orderDetailAdmin.noLinkedContractRecord" fallback="No linked contract record" />}
-                  </span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.propertyOwner" fallback="Property owner" /></span>
-                  <span><OwnerSummary owner={order.kitchenContract?.owner} /></span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="contractsAdmin.project" fallback="Project" /></span>
-                  <span>
-                    {order.kitchenContract?.project
-                      ? order.kitchenContract.project.name
-                      : <AdminText i18nKey="orderDetailAdmin.noProjectSelected" fallback="No project selected" />}
-                  </span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="contractsAdmin.propertyObject" fallback="Object/building" /></span>
-                  <span>
-                    {order.kitchenContract?.project?.propertyObject?.name
-                      ? order.kitchenContract.project.propertyObject.name
-                      : <AdminText i18nKey="orderDetailAdmin.noObjectSelected" fallback="No object selected" />}
-                  </span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.payment" fallback="Payment" /></span>
-                  <span>
-                    {order.paymentMethod
-                      ? <PaymentMethodText value={order.paymentMethod} />
-                      : <AdminText i18nKey="orderDetailAdmin.notProvided" fallback="Not provided" />}
-                  </span>
-                  <div style={{ marginTop: 8 }}><PaymentStatusBadge status={order.paymentStatus} /></div>
-                  {order.stripeCheckoutSessionId ? (
-                    <span style={stripeMetaStyle}><AdminText i18nKey="orderDetailAdmin.stripeSession" fallback="Stripe session" />: {order.stripeCheckoutSessionId}</span>
-                  ) : null}
-                </div>
-              </div>
-            </article>
-
-            <article style={itemCardStyle}>
-              <strong style={{ fontSize: "1.1rem" }}><AdminText i18nKey="orderDetailAdmin.customer" fallback="Customer" /></strong>
-              <div style={detailGridStyle}>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="kitchenDetailAdmin.name" fallback="Name" /></span>
-                  <span>{order.firstName} {order.lastName}</span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="adminShellLogin.email" fallback="Email" /></span>
-                  <a href={`mailto:${order.email}`} style={inlineLinkStyle}>{order.email}</a>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="propertyOwnersAdmin.phone" fallback="Phone" /></span>
-                  <a href={`tel:${order.phone}`} style={inlineLinkStyle}>{order.phone}</a>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.address" fallback="Address" /></span>
-                  <span>
-                    {order.address1}
-                    {order.address2 ? `, ${order.address2}` : ""}
-                    {`, ${order.postalCode} ${order.city}`}
-                    {order.country ? `, ${order.country}` : ""}
-                  </span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.preferredDeliveryDate" fallback="Preferred delivery week" /></span>
-                  <span>{formatPreferredDeliveryDate(order.preferredDeliveryDate) || <AdminText i18nKey="orderDetailAdmin.notProvided" fallback="Not provided" />}</span>
-                </div>
-                <div>
-                  <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.notes" fallback="Notes" /></span>
-                  <span>{order.notes || <AdminText i18nKey="orderDetailAdmin.notProvided" fallback="Not provided" />}</span>
-                </div>
-              </div>
-            </article>
-          </div>
+          <AdminOrderInformation order={order} itemCount={displayItems.length} as400Saved={as400Saved} />
         </AdminSection>
 
         {cancellationRequests.length ? (

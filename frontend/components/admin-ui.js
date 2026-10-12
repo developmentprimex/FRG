@@ -121,7 +121,7 @@ export function TypeBadge({ label }) {
   return <span style={typePillStyle}>{label}</span>;
 }
 
-export const pageGridStyle = { display: "grid", gap: 24 };
+export const pageGridStyle = { display: "grid", gap: 24, minWidth: 0, gridTemplateColumns: "minmax(0, 1fr)" };
 export const splitGridStyle = {
   display: "grid",
   gap: 24,
@@ -141,6 +141,8 @@ export const denseGridStyle = {
 export const checkboxRowStyle = { display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" };
 export const actionRowStyle = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const tableWrapStyle = {
+  minWidth: 0,
+  maxWidth: "100%",
   overflowX: "auto",
   borderRadius: 18,
   border: "1px solid var(--app-border)",
@@ -262,6 +264,8 @@ export const codePillStyle = {
 };
 
 const panelStyle = {
+  minWidth: 0,
+  gridTemplateColumns: "minmax(0, 1fr)",
   borderRadius: 20,
   padding: 24,
   background: "var(--color-card)",

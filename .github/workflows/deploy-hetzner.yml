@@ -118,7 +118,41 @@ jobs:
             WantedBy=timers.target
             EOF
 
+            # Daily processing reminders use the authenticated internal sender.
+            # Optional dedicated credentials override the application .env files.
+            cat >/etc/systemd/system/fragmento-work-reminders.service <<'EOF'
+            [Unit]
+            Description=Fragmento overdue order and claim reminders
+            After=network-online.target postgresql.service
+            Wants=network-online.target
+
+            [Service]
+            Type=oneshot
+            User=deploy
+            WorkingDirectory=/var/www/fragmento/frontend
+            Environment=NODE_ENV=production
+            Environment=WORK_REMINDERS_ENABLED=true
+            EnvironmentFile=-/etc/fragmento-work-reminders.env
+            ExecStart=/usr/bin/npm run report:work-reminders -- --send
+            TimeoutStartSec=90
+            EOF
+
+            cat >/etc/systemd/system/fragmento-work-reminders.timer <<'EOF'
+            [Unit]
+            Description=Run Fragmento processing reminders at 09:00 Europe/Berlin
+
+            [Timer]
+            OnCalendar=*-*-* 09:00:00 Europe/Berlin
+            Persistent=true
+            AccuracySec=1min
+            Unit=fragmento-work-reminders.service
+
+            [Install]
+            WantedBy=timers.target
+            EOF
+
             systemctl daemon-reload
+            systemctl enable --now fragmento-work-reminders.timer
             systemctl enable --now fragmento-contract-access-report.timer
 
             systemctl restart fragmento.service

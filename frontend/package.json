@@ -40,7 +40,8 @@
     "export:other-kitchen-items": "node scripts/export-other-kitchen-items-deduped.js",
     "export:catalog": "node scripts/export-catalog.js",
     "catalog:json": "node scripts/export-catalog.js",
-    "catalog:import-burger": "node scripts/import-burger-cindy-price-list.js"
+    "catalog:import-burger": "node scripts/import-burger-cindy-price-list.js",
+    "report:work-reminders": "node scripts/send-work-reminders.cjs"
   },
   "dependencies": {
     "@prisma/client": "^6.6.0",

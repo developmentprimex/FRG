@@ -1,3 +1,6 @@
+import { attachWorkProcessing } from "../../../lib/work-processing";
+import { filterAndSortWork, summarizeWork, workUiItem, workRowStyle } from "../../../lib/work-processing-rules";
+import { WorkCell, WorkActions, WorkActionStack, WorkFilter, WorkSummary } from "../../../components/admin-work-processing";
 import Link from "next/link";
 import {
   AdminSection,
@@ -59,10 +62,14 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
 
-  const [allClaims, cityOptions] = await Promise.all([
+  const [rawClaims, cityOptions] = await Promise.all([
     queryServiceClaimsList(prisma, filters),
     listClaimCities(),
   ]);
+  const trackedClaims = await attachWorkProcessing(prisma, rawClaims, "CLAIM");
+  const processingFilter = normalizeParam(resolvedSearchParams.processing);
+  const processingCounts = summarizeWork(trackedClaims);
+  const allClaims = filterAndSortWork(trackedClaims, processingFilter);
   const pagination = paginateAdminItems(allClaims, resolvedSearchParams.page);
   const claims = await attachClaimEmailDelivery(pagination.items);
 
@@ -87,6 +94,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
+          <WorkSummary counts={processingCounts} />
           <form action={basePath} method="get" style={filterPanelStyle}>
             <div style={filterHeaderStyle}>
               <span style={filterEyebrowStyle}><AdminText i18nKey="contractsAdmin.filters" fallback="Filters" /></span>
@@ -98,6 +106,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               </span>
             </div>
             <div style={filterGridStyle}>
+              <WorkFilter value={processingFilter} />
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
                 <AdminTranslatedInput
@@ -138,6 +147,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                 <tr>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.customer" fallback="Customer" /></th>
+                  <th style={{ ...thStyle, width: 150 }}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.contact" fallback="Contact" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.serialNumber" fallback="Serial number" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.issue" fallback="Issue" /></th>
@@ -149,21 +159,23 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               <tbody>
                 {!claims.length ? (
                   <tr>
-                    <td style={tdStyle} colSpan={8}>
+                    <td style={tdStyle} colSpan={9}>
                       <AdminText i18nKey="claimsAdmin.noClaimsFound" fallback="No claims found." />
                     </td>
                   </tr>
                 ) : null}
                 {claims.map((claim) => (
-                  <tr key={claim.id} className="claims-table-row">
+                  <tr key={claim.id} className="claims-table-row" style={workRowStyle(claim)}>
                     <td style={tdStyle}>
                       <strong>{claim.contractNumber}</strong>
+
                       <div style={rowMetaStyle}><ClaimRequestTypeText requestType={claim.requestType} /></div>
                     </td>
                     <td style={tdStyle}>
                       <div style={customerNameStyle}>{formatClaimCustomerName(claim.fullName)}</div>
                       <div style={rowMetaStyle}>{truncate(claim.clientAddress || claim.landlordContact, 90)}</div>
                     </td>
+                    <td style={tdStyle}><WorkCell item={workUiItem(claim)} /></td>
                     <td style={tdStyle}><span style={mutedValueStyle}>{formatContact(claim) || <AdminText i18nKey="claimsAdmin.noContactProvided" fallback="No contact provided" />}</span></td>
                     <td style={tdStyle}>{claim.serialNumber}</td>
                     <td style={tdStyle}>
@@ -172,12 +184,14 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                     <td className="claims-table-date" style={tdStyle}><AdminDateTime value={claim.createdAt} /></td>
                     <td style={tdStyle}><AdminEmailDeliveryStatus delivery={claim.emailDelivery} /></td>
                     <td style={{ ...tdStyle, width: 220 }}>
-                      <div style={actionCellStyle}>
+                      <WorkActionStack>
                         <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
                           <AdminText i18nKey="ordersAdmin.openDetails" fallback="Open details" />
                         </Link>
+
+                        <WorkActions item={workUiItem(claim)} compact />
                         <DeleteClaimAction claimId={claim.id} returnPath={basePath} />
-                      </div>
+                      </WorkActionStack>
                     </td>
                   </tr>
                 ))}
@@ -188,7 +202,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           <div className="admin-claims-cards" style={{ display: "none", gap: 12 }}>
             {!claims.length ? <p style={{ margin: 0, color: "var(--app-text-muted)" }}><AdminText i18nKey="claimsAdmin.noClaimsFound" fallback="No claims found." /></p> : null}
             {claims.map((claim) => (
-              <article key={claim.id} style={itemCardStyle}>
+              <article key={claim.id} style={{ ...itemCardStyle, ...workRowStyle(claim) }}>
                 <div style={{ display: "grid", gap: 10 }}>
                   <div>
                     <strong>
@@ -202,6 +216,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                     <div style={customerNameStyle}>{formatClaimCustomerName(claim.fullName)}</div>
                     <div style={rowMetaStyle}><AdminText i18nKey="claimsAdmin.contractNumber" fallback="Contract" /> {claim.contractNumber}</div>
                   </div>
+                  <div style={{ borderBlock: "1px solid var(--app-border)", paddingBlock: 10 }}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /><WorkCell item={workUiItem(claim)} /></div>
                   <AdminClaimLocalizedText text={truncate(claim.problemDescription, 160)} style={issueClampStyle} />
                   <div style={{ display: "grid", gap: 6 }}>
                     <span style={rowMetaStyle}><AdminText i18nKey="orderEmailDelivery.column" fallback="Email status" /></span>
@@ -211,7 +226,9 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                     <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
                       <AdminText i18nKey="ordersAdmin.openDetails" fallback="Open details" />
                     </Link>
-                    <DeleteClaimAction claimId={claim.id} returnPath={basePath} compact />
+
+                        <WorkActions item={workUiItem(claim)} compact />
+                        <DeleteClaimAction claimId={claim.id} returnPath={basePath} compact />
                   </div>
                 </div>
               </article>
@@ -324,10 +341,10 @@ const rowMetaStyle = {
 };
 
 const detailsLinkStyle = {
-  border: "1px solid var(--color-primary)",
+  border: "1px solid var(--app-border)",
   borderRadius: 8,
-  background: "var(--color-primary)",
-  color: "var(--app-accent-contrast)",
+  background: "var(--app-surface)",
+  color: "var(--app-accent)",
   textDecoration: "none",
   fontWeight: 800,
   minHeight: 38,

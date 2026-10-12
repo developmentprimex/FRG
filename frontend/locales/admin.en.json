@@ -986,7 +986,6 @@
     "applianceSourceMANUAL": "Manual configuration",
     "applianceSourceKITCHEN_ITEM": "Kitchen item",
     "kitchenAppliancesHelp": "Included kitchen appliances. Contract details also include confirmed optional appliances and installed-brand overrides.",
-
     "contractNotFound": "Contract not found",
     "backToContracts": "Back to contract numbers",
     "contractTitle": "Contract {contractNumber}",
@@ -1420,7 +1419,11 @@
     "processing": "Processing...",
     "confirmingAndSendingEmail": "Confirming and sending email...",
     "resendingEmail": "Resending email...",
-    "retryingWebhook": "Retrying webhook..."
+    "retryingWebhook": "Retrying webhook...",
+    "orderDetails": "Order details",
+    "propertyDetails": "Property details",
+    "paymentMethod": "Payment method",
+    "emailDelivery": "Email delivery"
   },
   "claimsAdmin": {
     "claims": "Service requests",
@@ -1530,5 +1533,38 @@
     "approveNeedsMatch": "Match this request to an order before approving.",
     "approveConfirm": "Approve this withdrawal?\nThe order will be marked as cancelled.",
     "rejectConfirm": "Reject this withdrawal?\nThe order stays unchanged and the customer is notified."
+  },
+  "workProcessing": {
+    "processing": "Processing",
+    "green": "On track",
+    "orange": "Needs attention",
+    "red": "Overdue",
+    "done": "Done",
+    "cancelled": "Cancelled",
+    "days": "{count} days",
+    "OPEN": "Open",
+    "DONE": "Done",
+    "OVERDUE": "Overdue",
+    "reopen": "Reopen",
+    "markDone": "Mark as done",
+    "saving": "Saving…",
+    "all": "All",
+    "active": "Unfinished",
+    "lastReminder": "Last reminder",
+    "history": "Processing history",
+    "overdueOrders": "Overdue orders",
+    "overdueClaims": "Overdue claims",
+    "reminderHistory": "Reminder history",
+    "deliveryExplanation": "SENT means accepted by the mail server. UNKNOWN or interrupted SENDING attempts require delivery review before retrying, to prevent duplicate emails.",
+    "started": "Started",
+    "status": "Status",
+    "requests": "Requests",
+    "details": "Details",
+    "noReminders": "No reminders sent yet.",
+    "confirmDelivered": "Have you verified that this email was delivered to 140primex.eu@gmail.com? This prevents automatic retries.",
+    "confirmNotDelivered": "Have you verified that this email was not delivered? This allows it to be retried on the next scheduled run.",
+    "verifiedDelivered": "Verified delivered",
+    "verifiedNotDelivered": "Verified not delivered",
+    "doneAction": "Done"
   }
 }

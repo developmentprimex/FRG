@@ -1,3 +1,6 @@
+import { prisma as processingDb } from "../../../../lib/prisma";
+import { attachWorkProcessing } from "../../../../lib/work-processing";
+import { AdminWorkPanel } from "../../../../components/admin-work-panel";
 import {
   ActionLink,
   AdminSection,
@@ -144,7 +147,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
 
   const claims = await queryServiceClaimById(prisma, id);
 
-  const [claim] = await attachClaimEmailDelivery(claims);
+  const [claim] = await attachWorkProcessing(processingDb, await attachClaimEmailDelivery(claims), "CLAIM");
 
   if (!claim) {
     return (
@@ -216,6 +219,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
+          <AdminWorkPanel item={claim} />
           <form action={`/api/admin/claims/${claim.id}`} method="post" style={actionPanelStyle}>
             <div style={subMetaStyle}>
               <span>{formatClaimCustomerName(claim.fullName)}</span>

@@ -1,3 +1,4 @@
+import { AdminWorkOverview } from "../../components/admin-work-overview";
 ﻿import { getPriceBreakdown } from "../../lib/price-utils";
 import { AdminShell } from "../../components/admin-shell";
 import { AdminDashboardCharts } from "../../components/admin-dashboard-charts";
@@ -1489,6 +1490,7 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
 
   return (
     <AdminShell adminEmail={admin.email}>
+      <AdminWorkOverview />
       <AdminDashboardCharts
         showClaimsLink={showAdminClaimsInNav(admin.email)}
         kpis={kpis}

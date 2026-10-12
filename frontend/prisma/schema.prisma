@@ -59,6 +59,53 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+// Processing is independent of order/payment/email status. Absence means OPEN.
+model WorkProcessing {
+  id             String   @id @default(cuid())
+  workType       String
+  workId         String
+  status         String   @default("OPEN")
+  assignedTo     String?
+  completedAt    DateTime?
+  completedBy    String?
+  lastReminderAt DateTime?
+  version        Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([workType, workId])
+  @@index([status, lastReminderAt])
+}
+
+model WorkProcessingEvent {
+  id           String   @id @default(cuid())
+  workType     String
+  workId       String
+  actor        String
+  fromStatus   String
+  toStatus     String
+  fromAssignee String?
+  toAssignee   String?
+  createdAt    DateTime @default(now())
+
+  @@index([workType, workId, createdAt])
+}
+
+// Durable SMTP attempts are committed separately from processing updates.
+// UNKNOWN requires review: SMTP cannot guarantee exactly-once delivery.
+model WorkReminderBatch {
+  id         String   @id @default(cuid())
+  dateKey    String   @unique
+  status     String   @default("SENDING")
+  items      Json
+  startedAt  DateTime @default(now())
+  sentAt     DateTime?
+  error      String?  @db.Text
+  messageId  String?
+
+  @@index([status, startedAt])
+}
+
 model CatalogArticle {
   id                  String                       @id @default(cuid())
   articleNumber       String                       @unique

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AdminText } from "./admin-i18n";
 
-export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved = false }) {
+export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved = false, compact = false }) {
   const normalizedInitialValue = String(initialValue || "");
   const [value, setValue] = useState(normalizedInitialValue);
   const [showSaved, setShowSaved] = useState(Boolean(initialSaved));
@@ -31,12 +31,12 @@ export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved =
   }
 
   return (
-    <form action={`/api/admin/orders/${orderId}`} method="post" onSubmit={handleSubmit} style={as400HeaderFormStyle}>
+    <form action={`/api/admin/orders/${orderId}`} method="post" onSubmit={handleSubmit} style={compact ? { ...as400HeaderFormStyle, margin: 0, padding: 0, border: 0, background: "transparent", width: "100%" } : as400HeaderFormStyle}>
       <input type="hidden" name="_intent" value="update-as400" />
-      <label htmlFor="as400Number" style={as400InlineLabelStyle}>
+      {!compact ? <label htmlFor="as400Number" style={as400InlineLabelStyle}>
         <AdminText i18nKey="orderDetailAdmin.as400Number" fallback="AS 400" />
-      </label>
-      <div style={as400EditorStyle}>
+      </label> : null}
+      <div style={{ ...as400EditorStyle, ...(compact ? { flexWrap: "wrap", width: "100%" } : {}) }}>
         <input
           id="as400Number"
           name="as400Number"
@@ -48,7 +48,7 @@ export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved =
           onChange={handleChange}
           placeholder="123456"
           aria-label="AS 400"
-          style={as400InputStyle}
+          style={{ ...as400InputStyle, ...(compact ? { minWidth: 0, maxWidth: "100%", flex: "1 1 120px" } : {}) }}
         />
         <button
           type="submit"
