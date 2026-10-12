@@ -6,3 +6,12 @@ export function resolveServiceClaimEmailRecipient(contractNumber, env = process.
 
   return String(env[envKey] || "").trim();
 }
+
+export function resolveServiceClaimEmailCc(contractType, kitchenPlan, contractNumber) {
+  if (contractType !== "ARC" || kitchenPlan?.selectionMode !== "reference-pdf") return undefined;
+
+  const normalizedContractNumber = String(contractNumber || "").trim().replace(/\s+/g, "");
+  return normalizedContractNumber.startsWith("670")
+    ? "verwaltung@hbi-wohnen.de"
+    : "334primex.eu@gmail.com";
+}
