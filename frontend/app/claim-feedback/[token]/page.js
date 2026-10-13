@@ -6,8 +6,11 @@ import "./feedback.css";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Service bewerten | Fragmento", robots: { index: false, follow: false }, referrer: "no-referrer" };
 
-export default async function ClaimFeedbackPage({ params }) {
+export default async function ClaimFeedbackPage({ params, searchParams }) {
   const { token } = await params;
+  const { overall } = (await searchParams) || {};
+  const requestedRating = String(Array.isArray(overall) ? overall[0] || "" : overall || "");
+  const initialOverallRating = /^[1-5]$/.test(requestedRating) ? Number(requestedRating) : null;
   let state = "unavailable";
   if (/^[A-Za-z0-9_-]{43}$/.test(token || "")) {
     const invitation = await prisma.claimFeedbackInvitation.findUnique({ where: { tokenHash: hashClaimFeedbackToken(token) } });
@@ -17,5 +20,5 @@ export default async function ClaimFeedbackPage({ params }) {
       if (processing?.status === "DONE" && processing.version === invitation.completionVersion) state = "available";
     }
   }
-  return <ClaimFeedbackForm token={token} state={state} />;
+  return <ClaimFeedbackForm token={token} state={state} initialOverallRating={initialOverallRating} />;
 }

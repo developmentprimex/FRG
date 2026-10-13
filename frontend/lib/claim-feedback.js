@@ -45,12 +45,18 @@ function escapeHtml(value) {
 export function buildClaimFeedbackMessage({ recipientEmail, token, baseUrl }) {
   const link = `${baseUrl}/claim-feedback/${encodeURIComponent(token)}`;
   const safeLink = escapeHtml(link);
+  const ratings = ["Sehr schlecht", "Schlecht", "Okay", "Gut", "Sehr gut"];
+  const ratingLink = (rating) => `${link}?overall=${rating}`;
+  const ratingCells = ratings.map((label, index) => {
+    const rating = index + 1;
+    return `<td width="20%" valign="top" style="padding:3px"><a href="${escapeHtml(ratingLink(rating))}" style="display:block;min-height:54px;padding:10px 4px;border:1px solid #d9cec2;border-radius:8px;color:#302923;text-align:center;text-decoration:none;font-size:12px;line-height:1.3"><strong style="display:block;font-size:20px;line-height:1.2">${rating}</strong>${label}</a></td>`;
+  }).join("");
   return {
     from: `"Fragmento" <${CLAIM_FEEDBACK_SENDER}>`,
     to: recipientEmail,
     subject: "Wie zufrieden waren Sie mit unserem Service?",
-    text: `Guten Tag,\n\nIhre Reklamation wurde abgeschlossen. Bitte nehmen Sie sich etwa eine Minute Zeit, um unseren Service zu bewerten:\n\n${link}\n\nDer Link ist 30 Tage gültig. Vielen Dank für Ihr Feedback.\n\nMit freundlichen Grüßen\nIhr Kundenservice`,
-    html: `<div lang="de" style="font-family:Arial,sans-serif;line-height:1.6;color:#222"><p>Guten Tag,</p><p>Ihre Reklamation wurde abgeschlossen. Bitte nehmen Sie sich etwa eine Minute Zeit, um unseren Service zu bewerten.</p><p><a href="${safeLink}" style="display:inline-block;padding:12px 18px;background:#76543c;color:#fff;text-decoration:none;border-radius:8px">Service bewerten</a></p><p>Der Link ist 30 Tage gültig. Vielen Dank für Ihr Feedback.</p><p>Mit freundlichen Grüßen<br>Ihr Kundenservice</p></div>`,
+    text: `Guten Tag,\n\nIhre Reklamation wurde abgeschlossen. Wie war unser Service insgesamt? Wählen Sie eine Bewertung von 1 bis 5:\n\n${ratings.map((label, index) => `${index + 1} – ${label}: ${ratingLink(index + 1)}`).join("\n")}\n\nDanach beantworten Sie bitte noch drei kurze Fragen. Die Bewertung wird erst gespeichert, wenn Sie das Formular absenden.\n\nFormular direkt öffnen: ${link}\n\nDer Link ist 30 Tage gültig. Vielen Dank für Ihr Feedback.\n\nMit freundlichen Grüßen\nIhr Kundenservice`,
+    html: `<div lang="de" style="font-family:Arial,sans-serif;line-height:1.6;color:#302923"><p>Guten Tag,</p><p>Ihre Reklamation wurde abgeschlossen. Wie war unser Service insgesamt?</p><p style="font-weight:bold;margin-bottom:8px">Wählen Sie eine Bewertung:</p><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;table-layout:fixed"><tr>${ratingCells}</tr></table><p style="font-size:13px;color:#665b52">Danach beantworten Sie bitte noch drei kurze Fragen. Ihre Bewertung wird erst gespeichert, wenn Sie das Formular absenden.</p><p style="font-size:12px;color:#665b52">Falls die Auswahl nicht funktioniert, <a href="${safeLink}" style="color:#76543c;text-decoration:underline">öffnen Sie das Formular hier</a>.</p><p>Der Link ist 30 Tage gültig. Vielen Dank für Ihr Feedback.</p><p>Mit freundlichen Grüßen<br>Ihr Kundenservice</p></div>`,
   };
 }
 
