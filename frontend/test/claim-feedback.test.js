@@ -96,7 +96,9 @@ test("a legacy 670 invitation is cancelled before SMTP and cannot be retried", a
 
 test("survey sender is exactly 315 and the form enforces complete answers", () => {
   assert.equal(resolveClaimFeedbackSmtp(env).user, CLAIM_FEEDBACK_SENDER);
+  assert.equal(resolveClaimFeedbackSmtp({ NODE_ENV: "development", SMTP_USER: CLAIM_FEEDBACK_SENDER, SMTP_FROM: CLAIM_FEEDBACK_SENDER, SMTP_PASS: "test-secret" }).user, CLAIM_FEEDBACK_SENDER);
   assert.throws(() => resolveClaimFeedbackSmtp({ ...env, SMTP_111_USER: "other@example.com" }), /315primex/);
+  assert.throws(() => resolveClaimFeedbackSmtp({ NODE_ENV: "production", SMTP_USER: "other@example.com", SMTP_FROM: "other@example.com", SMTP_PASS: "test-secret" }), /315primex/);
   assert.throws(() => resolveClaimFeedbackSmtp({ ...env, SMTP_111_PASS: "" }), /315primex/);
   const mail = buildClaimFeedbackMessage({ recipientEmail: "customer@example.com", token: createClaimFeedbackToken(), baseUrl: "https://fragmento.de" });
   assert.match(mail.from, /315primex\.eu@gmail\.com/);
