@@ -178,7 +178,6 @@ export const EXAMPLE_DASHBOARD_MOCK_DATA = {
 };
 
 export function AdminDashboardCharts({
-  showClaimsLink = false,
   kpis,
   periodOptions,
   selectedPeriod,
@@ -187,8 +186,6 @@ export function AdminDashboardCharts({
   statusOptions,
   selectedStatus,
   dailyStatusData,
-  claimElementData,
-  claimCityData,
   topItemsByQuantity,
   topItemsByRevenue,
   itemTypeData,
@@ -223,7 +220,6 @@ export function AdminDashboardCharts({
   const mobileKpis = kpis.slice(0, 4);
   const mobileTabs = [
     { value: "overview", label: translate("dashboard.mobileTabOverview", "Overview") },
-    { value: "claims", label: translate("dashboard.mobileTabClaims", "Claims") },
     { value: "orders", label: translate("dashboard.mobileTabOrders", "Orders") },
     { value: "housing", label: translate("dashboard.mobileTabHousing", "Housing") },
     { value: "products", label: translate("dashboard.mobileTabProducts", "Products") },
@@ -372,31 +368,6 @@ export function AdminDashboardCharts({
             </>
           ) : null}
 
-          {mobileSection === "claims" ? (
-            <section className="mobile-chart-card mobile-chart-card--claims">
-              <ChartHeader
-                eyebrow={translate("dashboard.claimElementOverview", "Claims by item")}
-                title={translate("dashboard.claimsBySelectedElementAndCity", "Claims by selected item and city")}
-              />
-              <MobileClaimBars
-                title={translate("dashboard.selectedElements", "Selected items")}
-                data={claimElementData}
-                emptyLabel={translate("dashboard.noClaimElementDataForSelectedFilters", "No item-level claim data for the current filters.")}
-                translateElementLabels
-              />
-              <MobileClaimBars
-                title={translate("dashboard.submittedCities", "Submitted cities")}
-                data={claimCityData}
-                emptyLabel={translate("dashboard.noClaimCityDataForSelectedFilters", "No submitted city data for the current filters.")}
-              />
-              {showClaimsLink ? (
-                <Link className="mobile-panel-link" href="/admin/claims" prefetch={false}>
-                  {translate("dashboard.viewAllClaims", "View all claims")}
-                </Link>
-              ) : null}
-            </section>
-          ) : null}
-
           {mobileSection === "orders" ? (
             <>
               <MobileStatusBars data={dailyStatusData} />
@@ -413,40 +384,6 @@ export function AdminDashboardCharts({
               <MobileTopItems topItemsByQuantity={topItemsByQuantity} topItemsByRevenue={topItemsByRevenue} />
               <DistributionSection itemTypeData={itemTypeData} paymentData={paymentData} />
             </>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="chart-card chart-card--compact chart-card--claims desktop-dashboard-section">
-        <ChartHeader
-          eyebrow={translate("dashboard.claimElementOverview", "Claims by item")}
-          title={translate("dashboard.claimsBySelectedElementAndCity", "Claims by selected item and city")}
-          detail={translate("dashboard.claimsBySelectedElementAndCityDetail", "Ranked by selected kitchen items and the city submitted in the service request form.")}
-        />
-        <div className="claim-overview-grid">
-          <ClaimBreakdownChart
-            title={translate("dashboard.selectedElements", "Selected items")}
-            data={claimElementData}
-            emptyLabel={translate("dashboard.noClaimElementDataForSelectedFilters", "No item-level claim data for the current filters.")}
-            translateElementLabels
-            yAxisWidth={154}
-            maxRows={5}
-            compact
-          />
-          <ClaimBreakdownChart
-            title={translate("dashboard.submittedCities", "Submitted cities")}
-            data={claimCityData}
-            emptyLabel={translate("dashboard.noClaimCityDataForSelectedFilters", "No submitted city data for the current filters.")}
-            yAxisWidth={104}
-            maxRows={6}
-            compact
-          />
-          {showClaimsLink ? (
-            <div className="claim-action-row">
-              <Link className="claim-action-row__link" href="/admin/claims" prefetch={false}>
-                {translate("dashboard.viewAllClaims", "View all claims")}
-              </Link>
-            </div>
           ) : null}
         </div>
       </section>

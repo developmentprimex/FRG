@@ -21,6 +21,18 @@ export function workDateKey(value = new Date()) {
   return ["year", "month", "day"].map((key) => parts.find((part) => part.type === key).value).join("-");
 }
 
+export function workDayStart(dateKey) {
+  const midnightUtc = new Date(`${dateKey}T00:00:00.000Z`);
+  if (!Number.isFinite(midnightUtc.getTime())) throw new Error("Invalid work date.");
+  const zone = new Intl.DateTimeFormat("en-US", {
+    timeZone: WORK_TIME_ZONE, timeZoneName: "shortOffset", hour: "2-digit",
+  }).formatToParts(midnightUtc).find((part) => part.type === "timeZoneName")?.value;
+  const match = /^GMT([+-])(\d{1,2})(?::(\d{2}))?$/.exec(zone || "");
+  if (!match) throw new Error("Unsupported work time zone offset.");
+  const offsetMinutes = (Number(match[2]) * 60 + Number(match[3] || 0)) * (match[1] === "+" ? 1 : -1);
+  return new Date(midnightUtc.getTime() - offsetMinutes * 60000);
+}
+
 export function workAgeDays(createdAt, now = new Date()) {
   return Math.max(0, Math.round((Date.parse(workDateKey(now)) - Date.parse(workDateKey(createdAt))) / DAY_MS));
 }

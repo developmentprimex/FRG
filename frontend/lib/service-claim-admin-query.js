@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { workDayStart } from "./work-processing-rules.js";
 
 const OPTIONAL_SERVICE_CLAIM_COLUMNS = [
   "attachmentsJson",
@@ -180,6 +181,25 @@ export function buildServiceClaimListWhere(filters, {
     conditions.push(Prisma.sql`LOWER(COALESCE(${claim}."clientCity", '')) = LOWER(${filters.city})`);
   }
 
+  if (filters.kitchenId) {
+    conditions.push(Prisma.sql`kc."kitchenId" = ${filters.kitchenId}`);
+  }
+
+  if (filters.contractNumber) {
+    conditions.push(Prisma.sql`BTRIM(${claim}."contractNumber") = ${filters.contractNumber}`);
+  }
+
+  if (filters.contactKey) {
+    if (filters.contactKey.startsWith("email:")) {
+      conditions.push(Prisma.sql`LOWER(REGEXP_REPLACE(BTRIM(COALESCE(${claim}."email", '')), '[[:space:]]+', ' ', 'g')) = ${filters.contactKey.slice(6)}`);
+    } else if (filters.contactKey.startsWith("phone:")) {
+      conditions.push(Prisma.sql`NULLIF(BTRIM(COALESCE(${claim}."email", '')), '') IS NULL`);
+      conditions.push(Prisma.sql`REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(${claim}."phone", ''), '[^0-9]', '', 'g'), '^00', '') = ${filters.contactKey.slice(6)}`);
+    } else {
+      conditions.push(Prisma.sql`FALSE`);
+    }
+  }
+
   if (filters.claimType === "px") {
     conditions.push(Prisma.sql`REGEXP_REPLACE(COALESCE(${claim}."contractNumber", ''), '[[:space:]]+', '', 'g') LIKE '111%'`);
   } else if (filters.claimType === "live") {
@@ -187,11 +207,13 @@ export function buildServiceClaimListWhere(filters, {
   }
 
   if (filters.dateFrom) {
-    conditions.push(Prisma.sql`${claim}."createdAt" >= ${new Date(`${filters.dateFrom}T00:00:00.000Z`)}`);
+    conditions.push(Prisma.sql`${claim}."createdAt" >= ${workDayStart(filters.dateFrom)}`);
   }
 
   if (filters.dateTo) {
-    conditions.push(Prisma.sql`${claim}."createdAt" <= ${new Date(`${filters.dateTo}T23:59:59.999Z`)}`);
+    const nextDate = new Date(`${filters.dateTo}T12:00:00.000Z`);
+    nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+    conditions.push(Prisma.sql`${claim}."createdAt" < ${workDayStart(nextDate.toISOString().slice(0, 10))}`);
   }
 
   if (!conditions.length) {

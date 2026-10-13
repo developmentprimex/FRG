@@ -4,6 +4,7 @@ import { WorkCell, WorkActions, WorkActionStack, WorkFilter, WorkSummary } from 
 import Link from "next/link";
 import {
   AdminSection,
+  ActionLink,
   FlashMessage,
   inputStyle,
   itemCardStyle,
@@ -24,6 +25,7 @@ import { AdminClaimLocalizedText } from "../../../components/admin-claim-localiz
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminClaimsPage } from "../../../lib/admin-claims-access";
 import { prisma } from "../../../lib/prisma";
+import { listKitchensForAdmin } from "../../../lib/catalog";
 import { queryServiceClaimsList } from "../../../lib/service-claim-admin-query";
 import { paginateAdminItems } from "../../../lib/admin-pagination";
 
@@ -55,6 +57,9 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
   const filters = {
     q: normalizeParam(resolvedSearchParams.q).trim(),
     city: normalizeParam(resolvedSearchParams.city).trim(),
+    kitchenId: normalizeParam(resolvedSearchParams.kitchenId).trim(),
+    contactKey: normalizeParam(resolvedSearchParams.contactKey).trim(),
+    contractNumber: normalizeParam(resolvedSearchParams.contractNumber).trim(),
     claimType: pxOnly ? "px" : "live",
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
@@ -62,12 +67,21 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
 
-  const [rawClaims, cityOptions] = await Promise.all([
+  const [rawClaims, cityOptions, kitchens] = await Promise.all([
     queryServiceClaimsList(prisma, filters),
     listClaimCities(),
+    pxOnly ? Promise.resolve([]) : listKitchensForAdmin(),
   ]);
   const trackedClaims = await attachWorkProcessing(prisma, rawClaims, "CLAIM");
   const processingFilter = normalizeParam(resolvedSearchParams.processing);
+  const clearExactHref = `${basePath}?${new URLSearchParams({
+    ...(filters.q ? { q: filters.q } : {}),
+    ...(filters.city ? { city: filters.city } : {}),
+    ...(filters.kitchenId ? { kitchenId: filters.kitchenId } : {}),
+    ...(filters.dateFrom ? { dateFrom: filters.dateFrom } : {}),
+    ...(filters.dateTo ? { dateTo: filters.dateTo } : {}),
+    ...(processingFilter ? { processing: processingFilter } : {}),
+  }).toString()}`;
   const processingCounts = summarizeWork(trackedClaims);
   const allClaims = filterAndSortWork(trackedClaims, processingFilter);
   const pagination = paginateAdminItems(allClaims, resolvedSearchParams.page);
@@ -89,13 +103,21 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               pluralFallback="{count} claims match the current filters."
             />
           }
-          actions={pxOnly && allClaims.length ? <DeleteAllPxClaimsAction /> : null}
+          actions={pxOnly
+            ? (allClaims.length ? <DeleteAllPxClaimsAction /> : null)
+            : <ActionLink href="/admin/claims-overview"><AdminText i18nKey="claimOverview.title" fallback="Claims overview" /></ActionLink>}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
           <WorkSummary counts={processingCounts} />
           <form action={basePath} method="get" style={filterPanelStyle}>
+            {filters.contactKey ? <input type="hidden" name="contactKey" value={filters.contactKey} /> : null}
+            {filters.contractNumber ? <input type="hidden" name="contractNumber" value={filters.contractNumber} /> : null}
+            {filters.contactKey || filters.contractNumber ? <div style={rowMetaStyle}>
+              <AdminText i18nKey={filters.contactKey ? "claimOverview.contactScope" : "claimOverview.contractScope"} fallback={filters.contactKey ? "Showing claims for contact" : "Showing claims for contract"} />: <strong>{filters.contactKey ? filters.contactKey.slice(filters.contactKey.indexOf(":") + 1) : filters.contractNumber}</strong>{" "}
+              <Link href={clearExactHref}><AdminText i18nKey="claimOverview.clearExactFilter" fallback="Clear this filter" /></Link>
+            </div> : null}
             <div style={filterHeaderStyle}>
               <span style={filterEyebrowStyle}><AdminText i18nKey="contractsAdmin.filters" fallback="Filters" /></span>
               <span style={filterHintStyle}>
@@ -126,6 +148,13 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   ))}
                 </AdminSelect>
               </label>
+              {!pxOnly ? <label style={filterFieldStyle}>
+                <span><AdminText i18nKey="dashboard.kitchen" fallback="Kitchen" /></span>
+                <AdminSelect name="kitchenId" defaultValue={filters.kitchenId} style={filterInputStyle}>
+                  <option value=""><AdminText i18nKey="dashboard.allKitchens" fallback="All kitchens" /></option>
+                  {kitchens.map((kitchen) => <option key={kitchen.id} value={kitchen.id}>{kitchen.name}</option>)}
+                </AdminSelect>
+              </label> : null}
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
                 <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />

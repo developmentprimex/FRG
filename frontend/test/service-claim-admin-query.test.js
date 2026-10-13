@@ -191,3 +191,45 @@ test("queryServiceClaimsList excludes PX claims from the live claims page", asyn
 
   assert.match(queries[1], /REGEXP_REPLACE\(COALESCE\(sc\."contractNumber", ''\), '\[\[:space:\]\]\+', '', 'g'\) NOT LIKE '111%'/);
 });
+
+test("queryServiceClaimsList keeps kitchen and Berlin calendar dates from overview links", async () => {
+  resetServiceClaimQueryColumnSupportCache();
+  const queries = [];
+  const prisma = {
+    async $queryRaw(strings, ...values) {
+      const sql = renderSqlTemplate(strings, values);
+      queries.push(sql);
+      if (sql.includes(`FROM "information_schema"."columns"`)) return [];
+      return [];
+    },
+  };
+
+  await queryServiceClaimsList(prisma, {
+    claimType: "live", kitchenId: "kitchen-1", dateFrom: "2026-10-24", dateTo: "2026-10-25",
+  });
+
+  assert.match(queries[1], /kc\."kitchenId" = kitchen-1/);
+  assert.match(queries[1], /sc\."createdAt" >= 2026-10-23T22:00:00\.000Z/);
+  assert.match(queries[1], /sc\."createdAt" < 2026-10-25T23:00:00\.000Z/);
+});
+
+test("overview drilldowns filter exact contracts and normalized contacts", async () => {
+  resetServiceClaimQueryColumnSupportCache();
+  const queries = [];
+  const prisma = {
+    async $queryRaw(strings, ...values) {
+      const sql = renderSqlTemplate(strings, values);
+      queries.push(sql);
+      if (sql.includes(`FROM "information_schema"."columns"`)) return [];
+      return [];
+    },
+  };
+
+  await queryServiceClaimsList(prisma, { contractNumber: "670123", contactKey: "email:alex@example.com" });
+  await queryServiceClaimsList(prisma, { contactKey: "phone:49123456" });
+
+  assert.match(queries[1], /BTRIM\(sc\."contractNumber"\) = 670123/);
+  assert.match(queries[1], /LOWER\(REGEXP_REPLACE\(BTRIM\(COALESCE\(sc\."email", ''\)\), '\[\[:space:\]\]\+', ' ', 'g'\)\) = alex@example\.com/);
+  assert.match(queries[2], /NULLIF\(BTRIM\(COALESCE\(sc\."email", ''\)\), ''\) IS NULL/);
+  assert.match(queries[2], /REGEXP_REPLACE\(REGEXP_REPLACE\(COALESCE\(sc\."phone", ''\), '\[\^0-9\]', '', 'g'\), '\^00', ''\) = 49123456/);
+});

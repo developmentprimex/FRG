@@ -7,6 +7,7 @@ import { AdminI18nProvider, AdminLanguageSwitcher, AdminText, useAdminI18n } fro
 
 const navItems = [
   { href: "/admin", labelKey: "adminShellLogin.dashboard", fallback: "Dashboard", icon: GridIcon },
+  { href: "/admin/claims-overview", labelKey: "claimOverview.title", fallback: "Claims overview", icon: ClaimsIcon, requiresClaimsNav: true },
   { href: "/admin/kitchens", labelKey: "adminShellLogin.kitchens", fallback: "Kitchens", icon: KitchenIcon },
   { href: "/admin/contracts", labelKey: "adminShellLogin.contracts", fallback: "Contracts", icon: ContractsIcon },
   { href: "/admin/property-owners", labelKey: "adminShellLogin.owners", fallback: "Owners", icon: OwnersIcon },
