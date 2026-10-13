@@ -8,6 +8,7 @@ const { PrismaClient, KitchenStatus, ItemType } = require("@prisma/client");
 const { assertBurgerCindyArticleCode } = require("../lib/burger-cindy-article-codes.cjs");
 const CLAIMS_CHATBOT_KNOWLEDGE = require("../lib/claims-chatbot-knowledge.json");
 const SERVICE_CLAIM_TROUBLESHOOTING_DATA = require("../lib/service-claim-troubleshooting-data.json");
+const CONTRACT_CLIENT_ADDRESS_DEFAULTS = require("../lib/contract-client-address-defaults.cjs");
 
 const prisma = new PrismaClient();
 
@@ -4221,9 +4222,8 @@ async function pruneNonDefaultHousingCompanies() {
   };
 }
 
-async function ensureDefaultPropertyProject() {
+async function ensureDefaultPropertyProject(projectSeed = DEFAULT_PROPERTY_PROJECT) {
   const company = DEFAULT_HOUSING_COMPANY;
-  const projectSeed = DEFAULT_PROPERTY_PROJECT;
 
   const existingOwner = await prisma.housingCompany.findFirst({
     where: { name: company.name },
@@ -4313,6 +4313,34 @@ async function ensureDefaultPropertyProject() {
   });
 
   return project.id;
+}
+
+async function applyConfirmedContractAddresses(onlyKitchenSlug = "") {
+  for (const [contractNumber, address] of Object.entries(CONTRACT_CLIENT_ADDRESS_DEFAULTS)) {
+    const contract = await prisma.kitchenContract.findUnique({
+      where: { contractNumber },
+      select: { id: true, kitchen: { select: { slug: true } } },
+    });
+    if (!contract || (onlyKitchenSlug && contract.kitchen.slug !== onlyKitchenSlug)) continue;
+
+    const projectName = `${address.city} - ${address.address1}`;
+    const projectId = await ensureDefaultPropertyProject({
+      ...DEFAULT_PROPERTY_PROJECT,
+      objectName: projectName,
+      projectName,
+      projectCode: contractNumber,
+      projectDescription: `Confirmed supplier address for contract ${contractNumber}`,
+      country: address.country,
+      city: address.city,
+      postalCode: address.postalCode,
+      address1: address.address1,
+      address2: address.address2 || null,
+    });
+    await prisma.kitchenContract.update({
+      where: { id: contract.id },
+      data: { projectId, floor: address.floor || null, unitNumber: address.unitNumber || null },
+    });
+  }
 }
 
 async function linkImplementedKitchenContracts(projectId) {
@@ -5341,6 +5369,7 @@ async function main() {
       });
     }
 
+    await applyConfirmedContractAddresses(onlyKitchenSlug);
     console.log(`Seeded kitchen ${onlyKitchenSlug}.`);
     return;
   }
@@ -5413,6 +5442,7 @@ async function main() {
   }
 
   const linkedContractNumbers = await linkImplementedKitchenContracts(defaultProjectId);
+  await applyConfirmedContractAddresses();
   console.log(
     `Linked ${linkedContractNumbers.length} kitchen contract numbers to ${DEFAULT_PROPERTY_PROJECT.projectName}.`,
   );

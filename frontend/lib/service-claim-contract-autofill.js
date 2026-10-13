@@ -1,3 +1,5 @@
+import contractClientAddressDefaults from "./contract-client-address-defaults.cjs";
+
 export function splitPersonName(fullName) {
   const parts = String(fullName || "")
     .trim()
@@ -19,7 +21,11 @@ export function splitPersonName(fullName) {
 }
 
 export function buildServiceClaimAutofillFromContract(contract) {
-  const address = contract?.address || {};
+  const contractNumber = String(contract?.contractNumber || "").trim().replace(/\s+/g, "");
+  const clientAddressDefault = Object.hasOwn(contractClientAddressDefaults, contractNumber)
+    ? contractClientAddressDefaults[contractNumber]
+    : null;
+  const address = clientAddressDefault || contract?.address || {};
   const landlord = contract?.landlord || {};
   const registration = contract?.registration || {};
   const contact = splitPersonName(landlord.managerName);
@@ -34,6 +40,15 @@ export function buildServiceClaimAutofillFromContract(contract) {
   ].find((value) => String(value || "").trim());
 
   return {
+    ...(clientAddressDefault ? {
+      clientCountry: clientAddressDefault.country,
+      clientCity: clientAddressDefault.city,
+      clientPostalCode: clientAddressDefault.postalCode,
+      clientAddressLine1: clientAddressDefault.address1,
+      clientAddressLine2: clientAddressDefault.address2,
+      clientFloor: clientAddressDefault.floor,
+      clientUnitNumber: clientAddressDefault.unitNumber,
+    } : {}),
     givenName: String(customer.givenName || "").trim(),
     surname: String(customer.surname || "").trim(),
     phone: String(registration.phone || "").trim(),
