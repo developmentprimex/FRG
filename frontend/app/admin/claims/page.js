@@ -103,7 +103,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
             />
           }
           actions={pxOnly
-            ? (allClaims.length ? <DeleteAllPxClaimsAction /> : null)
+            ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><ActionLink href="/admin/px-claims/feedback"><AdminText i18nKey="claimFeedbackList.viewFeedback" fallback="View customer feedback" /></ActionLink>{allClaims.length ? <DeleteAllPxClaimsAction /> : null}</div>
             : <ActionLink href="/admin/claims-overview"><AdminText i18nKey="claimOverview.title" fallback="Claims overview" /></ActionLink>}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}

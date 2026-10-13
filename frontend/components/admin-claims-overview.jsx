@@ -143,13 +143,6 @@ export function AdminClaimsOverview({ analytics, filters, dateFrom, dateTo, kitc
           {!s.repeatContracts ? <p className="empty">{t("noRepeatContracts", "No repeated claims for a contract in this period.")}</p> : null}
         </article>
       </div>
-      <div className="section-heading"><h2>{t("feedbackTitle", "Customer feedback")}</h2><span>{t("feedbackNote", "Responses for claims submitted in the selected period")}</span></div>
-      <div className="metrics metrics-secondary">
-        <article className="metric"><span>{t("feedbackResponses", "Responses")}</span><strong>{analytics.feedback?.answered || 0}</strong><small>{t("feedbackInvited", "Invitations sent")}: {analytics.feedback?.invited || 0}</small></article>
-        <article className="metric"><span>{t("feedbackResponseRate", "Response rate")}</span><strong>{analytics.feedback?.responseRate || 0}%</strong><small>{t("feedbackRateNote", "Of sent invitations")}</small></article>
-        <article className="metric"><span>{t("feedbackOverall", "Overall satisfaction")}</span><strong>{analytics.feedback?.averageOverall == null ? "—" : `${analytics.feedback.averageOverall.toFixed(1)} / 5`}</strong><small>{t("feedbackSpeed", "Speed")}: {analytics.feedback?.averageSpeed == null ? "—" : `${analytics.feedback.averageSpeed.toFixed(1)} / 5`}</small></article>
-        <article className="metric"><span>{t("feedbackUnresolved", "Not fully resolved")}</span><strong>{analytics.feedback?.unresolved || 0}</strong><small>{t("feedbackUnresolvedNote", "Answered partly or no")}</small></article>
-      </div>
       <style jsx>{`
         .claims-overview { display: grid; gap: 14px; min-width: 0; color: var(--app-text); }
         .overview-header { display: grid; grid-template-columns: minmax(260px, 1fr) auto; gap: 20px; align-items: center; min-width: 0; padding: 20px 22px; border: 1px solid var(--app-border); border-radius: 18px; background: var(--app-surface); }

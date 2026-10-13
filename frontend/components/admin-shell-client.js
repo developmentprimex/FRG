@@ -19,6 +19,7 @@ const navItems = [
   { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimActivity", fallback: "Claim activity", icon: ClaimsIcon, requiresSuperAdmin: true },
   { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon, requiresPxAdmin: true },
   { href: "/admin/px-claims", labelKey: "adminShellLogin.pxClaims", fallback: "PX claims", icon: ClaimsIcon, requiresClaimsNav: true, requiresPxAdmin: true },
+  { href: "/admin/px-claims/feedback", labelKey: "claimFeedbackList.title", fallback: "Customer feedback", icon: ClaimsIcon, requiresClaimsNav: true, requiresPxAdmin: true },
   { href: "/admin/claims", labelKey: "adminShellLogin.claims", fallback: "Claims", icon: ClaimsIcon, requiresClaimsNav: true },
   { href: "/admin/catalog/articles", labelKey: "adminShellLogin.catalogArticles", fallback: "Catalog", icon: CatalogAuditIcon },
   { href: "/admin/catalog/imports", labelKey: "adminShellLogin.catalogImports", fallback: "Price Imports", icon: CatalogAuditIcon },
@@ -75,7 +76,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
     if (item.requiresPxAdmin && !canAccessPx({ role: adminRole })) return false;
     return true;
   });
-  const activeNavItem = visibleNavItems.find((item) => isActivePath(pathname, item.href)) ?? visibleNavItems[0];
+  const activeNavItem = [...visibleNavItems].sort((a, b) => b.href.length - a.href.length).find((item) => isActivePath(pathname, item.href)) ?? visibleNavItems[0];
 
   return (
     <div
@@ -207,7 +208,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
 
             <div style={mobileSidebarNavStyle}>
               {visibleNavItems.map((item) => {
-                const active = isActivePath(pathname, item.href);
+                const active = activeNavItem.href === item.href;
                 const Icon = item.icon;
                 const badgeCount = getNavBadgeCount(item, { openCancellationCount });
 
@@ -311,7 +312,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
             }}
           >
             {visibleNavItems.map((item) => {
-              const active = isActivePath(pathname, item.href);
+              const active = activeNavItem.href === item.href;
               const Icon = item.icon;
               const badgeCount = getNavBadgeCount(item, { openCancellationCount });
 
