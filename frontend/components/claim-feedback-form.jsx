@@ -43,16 +43,16 @@ const copy = {
   },
 };
 
-function RatingQuestion({ name, question, labels, initialRating = null }) {
+function RatingQuestion({ name, question, labels }) {
   return <fieldset className="question"><legend>{question}</legend><div className="choices rating-choices">
     {labels.map((label, index) => <label className="choice" key={label}>
-      <input type="radio" name={name} value={index + 1} defaultChecked={index + 1 === initialRating} required />
+      <input type="radio" name={name} value={index + 1} required />
       <span className="choice-number">{index + 1}</span><span>{label}</span>
     </label>)}
   </div></fieldset>;
 }
 
-export function ClaimFeedbackForm({ token, state, initialOverallRating = null }) {
+export function ClaimFeedbackForm({ token, state }) {
   const [language, setLanguage] = useState("de");
   const [status, setStatus] = useState(state);
   const [error, setError] = useState("");
@@ -83,12 +83,12 @@ export function ClaimFeedbackForm({ token, state, initialOverallRating = null })
         {status === "available" || status === "submitting" ? <>
           <span className="eyebrow">Fragmento Service</span><h1>{t.title}</h1><p className="intro">{t.intro}</p>
           <form onSubmit={submit}>
-            <RatingQuestion name="overall" question={t.overall} labels={t.overallRatings} initialRating={initialOverallRating} />
             <fieldset className="question"><legend>{t.resolved}</legend><div className="choices resolution-choices">
               {["YES", "PARTLY", "NO"].map((value, index) => <label className="choice" key={value}><input type="radio" name="resolved" value={value} required /><span>{t.resolution[index]}</span></label>)}
             </div></fieldset>
             <RatingQuestion name="speed" question={t.speed} labels={t.speedRatings} />
             <RatingQuestion name="communication" question={t.communication} labels={t.communicationRatings} />
+            <RatingQuestion name="overall" question={t.overall} labels={t.overallRatings} />
             <label className="comment-label" htmlFor="feedback-comment">{t.comment}<small>{t.optional}</small></label>
             <textarea id="feedback-comment" name="comment" maxLength={1000} rows={4} />
             {error ? <p className="error" role="alert">{error}</p> : null}

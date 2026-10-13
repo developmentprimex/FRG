@@ -103,12 +103,6 @@ test("survey sender is exactly 315 and the form enforces complete answers", () =
   const mail = buildClaimFeedbackMessage({ recipientEmail: "customer@example.com", token: createClaimFeedbackToken(), baseUrl: "https://fragmento.de" });
   assert.match(mail.from, /315primex\.eu@gmail\.com/);
   assert.match(mail.text, /https:\/\/fragmento.de\/claim-feedback\//);
-  for (let rating = 1; rating <= 5; rating++) {
-    assert.match(mail.html, new RegExp(`href="https://fragmento\\.de/claim-feedback/[A-Za-z0-9_-]+\\?overall=${rating}"`));
-    assert.match(mail.text, new RegExp(`\\?overall=${rating}`));
-  }
-  assert.doesNotMatch(mail.html, />Service bewerten<\/a>/);
-  assert.match(mail.html, /erst gespeichert, wenn Sie das Formular absenden/);
   assert.deepEqual(validateClaimFeedback(answers), answers);
   assert.throws(() => validateClaimFeedback({ ...answers, overallRating: 6 }), /rating/);
 });
