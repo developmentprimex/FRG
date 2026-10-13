@@ -55,7 +55,9 @@ export function buildServiceClaimAutofillFromContract(contract) {
     email: String(registration.email || "").trim(),
     registrationVerificationPostalCode: String(address.postalCode || "").trim(),
     registrationVerificationUnit: String(registrationVerificationUnit || "").trim(),
-    landlordCompanyName: String(landlord.companyName || "").trim(),
+    landlordCompanyName: contractNumber === "670104332"
+      ? ""
+      : String(landlord.companyName || "").trim(),
     landlordCompanyPhone: String(landlord.phone || "").trim(),
     landlordCompanyEmail: String(landlord.email || "").trim(),
     landlordContactGivenName: String(contact.givenName || "").trim(),

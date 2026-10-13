@@ -84,6 +84,17 @@ test(`${contractNumber} uses its confirmed supplier address instead of the share
 });
 }
 
+test("670104332 leaves landlord company name blank while retaining its client address", () => {
+  const autofill = buildServiceClaimAutofillFromContract({
+    contractNumber: "670104332",
+    landlord: { companyName: "ARGE N\u00f6rdliche Riedsiedlung" },
+  });
+  assert.equal(autofill.landlordCompanyName, "");
+  assert.equal(autofill.clientAddressLine1, "Theodor-Storm-Str. 7-9");
+  assert.equal(autofill.clientCity, "Hamburg");
+  assert.equal(autofill.clientPostalCode, "22149");
+});
+
 test("buildServiceClaimAutofillFromContract maps active registration customer fields", () => {
   const autofill = buildServiceClaimAutofillFromContract({
     registration: {
