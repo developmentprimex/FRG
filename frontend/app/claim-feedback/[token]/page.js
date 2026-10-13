@@ -1,6 +1,7 @@
 import { prisma } from "../../../lib/prisma";
 import { hashClaimFeedbackToken } from "../../../lib/claim-feedback";
 import { ClaimFeedbackForm } from "../../../components/claim-feedback-form";
+import "./feedback.css";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Service bewerten | Fragmento", robots: { index: false, follow: false }, referrer: "no-referrer" };
