@@ -16,7 +16,7 @@ test("splitPersonName splits a full name into given name and surname", () => {
   });
 });
 
-test("buildServiceClaimAutofillFromContract maps address and landlord fields", () => {
+test("buildServiceClaimAutofillFromContract leaves client address for manual entry and maps landlord fields", () => {
   const autofill = buildServiceClaimAutofillFromContract({
     floor: "2",
     unitNumber: "14",
@@ -35,10 +35,17 @@ test("buildServiceClaimAutofillFromContract maps address and landlord fields", (
     },
   });
 
-  assert.equal(autofill.clientCountry, "Germany");
-  assert.equal(autofill.clientAddressLine1, "Invalidenstrasse 10");
-  assert.equal(autofill.clientFloor, "2");
-  assert.equal(autofill.clientUnitNumber, "14");
+  for (const field of [
+    "clientCountry",
+    "clientAddressLine1",
+    "clientAddressLine2",
+    "clientPostalCode",
+    "clientCity",
+    "clientFloor",
+    "clientUnitNumber",
+  ]) {
+    assert.equal(Object.hasOwn(autofill, field), false, `${field} must be entered by the client`);
+  }
   assert.equal(autofill.registrationVerificationPostalCode, "10115");
   assert.equal(autofill.registrationVerificationUnit, "Invalidenstrasse 10");
   assert.equal(autofill.landlordCompanyName, "Anna Schmidt Housing GmbH");
