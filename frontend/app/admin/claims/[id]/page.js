@@ -1,6 +1,7 @@
 import { prisma as processingDb } from "../../../../lib/prisma";
 import { attachWorkProcessing } from "../../../../lib/work-processing";
 import { AdminWorkPanel } from "../../../../components/admin-work-panel";
+import { AdminClaimFeedback } from "../../../../components/admin-claim-feedback";
 import {
   ActionLink,
   AdminSection,
@@ -164,6 +165,8 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
     );
   }
 
+  const feedback = await prisma.claimFeedbackInvitation.findFirst({ where: { claimId: claim.id }, orderBy: { createdAt: "desc" } });
+
   const rawUploadedAttachments = parseClaimAttachments(claim.attachmentsJson);
   const parsedProblemAreas = parseClaimProblemAreas(claim.problemAreasJson);
   const customerGender = getClaimCustomerGender(claim.fullName);
@@ -220,6 +223,13 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
           <AdminWorkPanel item={claim} />
+          <AdminClaimFeedback feedback={feedback ? {
+            id: feedback.id, status: feedback.status, createdAt: feedback.createdAt.toISOString(), attemptedAt: feedback.attemptedAt?.toISOString() || null,
+            sentAt: feedback.sentAt?.toISOString() || null, submittedAt: feedback.submittedAt?.toISOString() || null,
+            resolved: feedback.resolved, speedRating: feedback.speedRating,
+            communicationRating: feedback.communicationRating, overallRating: feedback.overallRating,
+            comment: feedback.comment,
+          } : null} />
           <form action={`/api/admin/claims/${claim.id}`} method="post" style={actionPanelStyle}>
             <div style={subMetaStyle}>
               <span>{formatClaimCustomerName(claim.fullName)}</span>

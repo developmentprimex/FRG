@@ -1,5 +1,6 @@
 import { WORK_STATUSES, WORK_TYPES } from "./work-processing-rules.js";
 import { isTestContractNumber } from "./order-kind.js";
+import { createClaimFeedbackToken, feedbackExpiry, hashClaimFeedbackToken } from "./claim-feedback.js";
 
 // One shared lock coordinates completion and reminder delivery. It is held only
 // during a mutation or a bounded SMTP send, never during dashboard reads.
@@ -25,7 +26,7 @@ export async function findWorkItem(db, workType, workId) {
   const delegate = workType === "CLAIM" ? db.serviceClaim : workType === "TEST_ORDER" ? db.testOrder : db.order;
   const item = await delegate.findUnique({ where: { id: workId }, select: {
     id: true, createdAt: true, contractNumber: true,
-    ...(workType === "CLAIM" ? { fullName: true } : { status: true, orderNumber: true, firstName: true, lastName: true }),
+    ...(workType === "CLAIM" ? { fullName: true, email: true } : { status: true, orderNumber: true, firstName: true, lastName: true }),
   } });
   if (!item) throw new Error("Work item not found.");
   return { ...item, workType, test: workType === "TEST_ORDER" || isTestContractNumber(item.contractNumber) };
@@ -54,7 +55,23 @@ export async function updateWorkProcessing({ db, workType, workId, status, actor
     await tx.workProcessingEvent.create({ data: {
       workType, workId, actor, fromStatus: oldStatus, toStatus: status,
     } });
-    return record;
+    let feedbackInvitation = null;
+    if (workType === "CLAIM" && !item.test) {
+      if (status === "OPEN") {
+        await tx.claimFeedbackInvitation.updateMany({ where: { claimId: workId, status: { in: ["PENDING", "FAILED", "UNKNOWN", "SENT"] } }, data: { status: "CANCELLED" } });
+      } else {
+        const email = String(item.email || "").trim();
+        const deliverable = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        const token = deliverable ? createClaimFeedbackToken() : null;
+        const invitation = await tx.claimFeedbackInvitation.create({ data: {
+          claimId: workId, completionVersion: record.version, recipientEmail: deliverable ? email : null,
+          tokenHash: token ? hashClaimFeedbackToken(token) : null,
+          expiresAt: token ? feedbackExpiry(now) : null, status: token ? "PENDING" : "NO_EMAIL",
+        } });
+        if (token) feedbackInvitation = { id: invitation.id, token };
+      }
+    }
+    return feedbackInvitation ? { ...record, feedbackInvitation } : record;
   }, { maxWait: 10000, timeout: 45000 });
 }
 

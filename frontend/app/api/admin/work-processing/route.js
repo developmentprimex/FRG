@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { requireAdminApi } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
 import { updateWorkProcessing, reviewWorkReminder } from "../../../../lib/work-processing";
 import { WORK_TYPES } from "../../../../lib/work-processing-rules";
+import { dispatchClaimFeedbackInvitation, feedbackBaseUrl } from "../../../../lib/claim-feedback";
 
 export async function POST(request) {
   let admin;
@@ -31,7 +32,20 @@ export async function POST(request) {
       status: data.status,
       actor: admin.email, expectedVersion: data.expectedVersion,
     });
-    return NextResponse.json({ processing });
+    const { feedbackInvitation, ...publicProcessing } = processing || {};
+    if (feedbackInvitation) {
+      const requestUrl = request.url;
+      after(async () => {
+        try {
+          const result = await dispatchClaimFeedbackInvitation({
+            db: prisma, invitationId: feedbackInvitation.id, token: feedbackInvitation.token,
+            baseUrl: feedbackBaseUrl(requestUrl),
+          });
+          if (result !== "sent") console.warn("Claim feedback invitation:", result, feedbackInvitation.id);
+        } catch (error) { console.error("Claim feedback invitation failed:", error); }
+      });
+    }
+    return NextResponse.json({ processing: publicProcessing });
   } catch (error) {
     const message = error.message || "Unable to update processing.";
     const status = message.includes("another worker") ? 409 : message.includes("not found") ? 404 : 400;

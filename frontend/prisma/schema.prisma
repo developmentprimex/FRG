@@ -750,6 +750,31 @@ model ServiceClaim {
   @@index([createdAt])
 }
 
+model ClaimFeedbackInvitation {
+  id                String    @id @default(cuid())
+  claimId           String
+  completionVersion Int
+  recipientEmail    String?
+  tokenHash         String?   @unique
+  status            String    @default("PENDING")
+  expiresAt         DateTime?
+  attemptedAt       DateTime?
+  sentAt            DateTime?
+  submittedAt       DateTime?
+  overallRating     Int?
+  speedRating       Int?
+  communicationRating Int?
+  resolved          String?
+  comment           String?   @db.Text
+  error             String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([claimId, completionVersion])
+  @@index([claimId, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+}
+
 model PublicVisitEvent {
   id                  String           @id @default(cuid())
   eventType           String

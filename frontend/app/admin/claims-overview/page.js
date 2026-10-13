@@ -30,6 +30,24 @@ export default async function ClaimsOverviewPage({ searchParams = {} }) {
   const startDate = startKey ? workDayStart(startKey) : null;
   const { claims, history } = await loadClaimAnalyticsRows(prisma, { startDate, kitchenId });
   const analytics = buildClaimAnalytics(claims, { history, now, startDate, kitchenId });
+  const feedbackRows = claims.length ? await prisma.claimFeedbackInvitation.findMany({
+    where: { claimId: { in: claims.map((claim) => claim.id) } },
+    orderBy: { completionVersion: "desc" },
+    select: { claimId: true, status: true, overallRating: true, speedRating: true, resolved: true },
+  }) : [];
+  const latestByClaim = new Map();
+  for (const row of feedbackRows) if (!latestByClaim.has(row.claimId)) latestByClaim.set(row.claimId, row);
+  const latestFeedback = [...latestByClaim.values()];
+  const answered = latestFeedback.filter((row) => row.status === "ANSWERED");
+  const invited = latestFeedback.filter((row) => ["SENT", "ANSWERED"].includes(row.status));
+  analytics.feedback = {
+    invited: invited.length,
+    answered: answered.length,
+    responseRate: invited.length ? Math.round(answered.length / invited.length * 100) : 0,
+    averageOverall: answered.length ? answered.reduce((sum, row) => sum + row.overallRating, 0) / answered.length : null,
+    averageSpeed: answered.length ? answered.reduce((sum, row) => sum + row.speedRating, 0) / answered.length : null,
+    unresolved: answered.filter((row) => row.resolved !== "YES").length,
+  };
 
   return <AdminShell adminEmail={admin.email}>
     <AdminClaimsOverview
