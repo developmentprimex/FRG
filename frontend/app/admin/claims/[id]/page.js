@@ -20,6 +20,8 @@ import { AdminOrderEmailDelivery } from "../../../../components/admin-order-emai
 import { attachClaimEmailDelivery } from "../../../../lib/email/claim-email-store";
 import { getFormMessage } from "../../../../lib/admin-forms";
 import { requireAdminClaimsPage } from "../../../../lib/admin-claims-access";
+import { canAccessClaim } from "../../../../lib/admin-roles";
+import { redirect } from "next/navigation";
 import { renderClaimKitchenPreviewPng } from "../../../../lib/claim-kitchen-preview";
 import { prisma } from "../../../../lib/prisma";
 import { formatServiceClaimProblemArea, formatServiceClaimProblemAreaList, parseServiceClaimProblemAreas } from "../../../../lib/service-claim-problem-areas";
@@ -147,6 +149,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
 
   const claims = await queryServiceClaimById(prisma, id);
+  if (claims[0] && !canAccessClaim(admin, claims[0].contractNumber)) redirect("/admin");
 
   const [claim] = await attachWorkProcessing(processingDb, await attachClaimEmailDelivery(claims), "CLAIM");
 

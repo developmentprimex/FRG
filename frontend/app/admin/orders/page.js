@@ -1,7 +1,3 @@
-import { prisma } from "../../../lib/prisma";
-import { attachWorkProcessing } from "../../../lib/work-processing";
-import { filterAndSortWork, summarizeWork, workUiItem, workRowStyle } from "../../../lib/work-processing-rules";
-import { WorkCell, WorkActions, WorkActionStack, WorkFilter, WorkSummary } from "../../../components/admin-work-processing";
 import Link from "next/link";
 import {
   AdminSection,
@@ -84,7 +80,6 @@ function normalizeParam(value) {
 function getStatusHref(filters, status) {
   const params = new URLSearchParams();
   if (filters.q) params.set("q", filters.q);
-  if (filters.processing) params.set("processing", filters.processing);
   if (filters.kitchenId) params.set("kitchenId", filters.kitchenId);
   if (status) params.set("status", status);
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
@@ -183,16 +178,12 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
     status: normalizeParam(resolvedSearchParams.status).trim(),
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
-    processing: normalizeParam(resolvedSearchParams.processing).trim(),
   };
   const [rawOrders, kitchens] = await Promise.all([
     getOrdersForAdmin(filters),
     listKitchensForAdmin(),
   ]);
-  const trackedOrders = await attachWorkProcessing(prisma, rawOrders, "ORDER");
-  const processingFilter = normalizeParam(resolvedSearchParams.processing);
-  const processingCounts = summarizeWork(trackedOrders);
-  const allOrders = filterAndSortWork(trackedOrders, processingFilter);
+  const allOrders = rawOrders;
   const pagination = paginateAdminItems(allOrders, resolvedSearchParams.page);
   const orders = await attachOrderEmailDelivery(pagination.items);
   const successMessage = getFormMessage(resolvedSearchParams, "success");
@@ -225,7 +216,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-          <WorkSummary counts={processingCounts} />
           <div style={summaryGridStyle}>
             <div style={summaryCardStyle}>
               <span><AdminText i18nKey="dashboard.statusNew" fallback="New" /></span>
@@ -255,7 +245,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               <span style={filterHintStyle}><AdminText i18nKey="ordersAdmin.filterOrdersByCustomerContractAddressAndDate" fallback="Filter by customer, contract, address, kitchen, status, or date." /></span>
             </div>
             <div className="orders-filter-grid" style={filterGridStyle}>
-              <WorkFilter value={processingFilter} />
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
                 <AdminTranslatedInput
@@ -312,7 +301,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               <colgroup>
                 <col style={{ width: "10%" }} />
                 <col style={{ width: "12%" }} />
-                <col style={{ width: "10%" }} />
                 <col style={{ width: "7%" }} />
                 <col style={{ width: "7%" }} />
                 <col style={{ width: "8%" }} />
@@ -327,7 +315,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                 <tr>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.order" fallback="Order" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
-                  <th style={ordersThStyle}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.kitchen" fallback="Kitchen" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.items" fallback="Items" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></th>
@@ -342,14 +329,14 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               <tbody>
                 {!orders.length ? (
                   <tr>
-                    <td style={tdStyle} colSpan={12}><AdminText i18nKey="ordersAdmin.noOrdersFound" fallback="No orders found." /></td>
+                    <td style={tdStyle} colSpan={11}><AdminText i18nKey="ordersAdmin.noOrdersFound" fallback="No orders found." /></td>
                   </tr>
                 ) : null}
                 {orders.map((order) => {
                   const contractNumber = getOrderContractNumber(order);
                   const articleCodes = getArticleCodes(order.items);
                   return (
-                  <tr key={order.id} className="orders-table-row" style={{ ...orderRowStyle, ...workRowStyle(order) }}>
+                  <tr key={order.id} className="orders-table-row" style={orderRowStyle}>
                     <td style={ordersTdStyle}>
                       <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>
                         <strong>{order.orderNumber}</strong>
@@ -377,7 +364,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                       <div style={customerNameStyle}>{order.firstName} {order.lastName}</div>
                       <div style={customerEmailStyle}>{order.email}</div>
                     </td>
-                    <td style={ordersTdStyle}><WorkCell item={workUiItem(order)} /></td>
                     <td style={ordersTdStyle}><AdminKitchenDisplayName slug={order.kitchen.slug} name={order.kitchen.name} /></td>
                     <td style={ordersTdStyle}>
                       <span style={articleCountStyle} title={articleCodes.join(", ")}>
@@ -394,14 +380,13 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                     <td className="orders-table-date" style={ordersTdStyle}><AdminDateTime value={order.createdAt} /></td>
                     <td style={ordersTdStyle}><AdminEmailDeliveryStatus delivery={order.confirmationEmailDelivery} /></td>
                     <td style={ordersActionTdStyle}>
-                      <WorkActionStack>
+                      <div style={{ display: "grid", gap: 6 }}>
                         <Link href={`/admin/orders/${order.id}`} style={viewButtonStyle}>
                           <AdminText i18nKey="ordersAdmin.view" fallback="View" />
                         </Link>
 
-                        <WorkActions item={workUiItem(order)} compact />
                         <DeleteOrderAction orderId={order.id} />
-                      </WorkActionStack>
+                      </div>
                     </td>
                   </tr>
                   );
@@ -416,7 +401,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               const contractNumber = getOrderContractNumber(order);
               const articleCodes = getArticleCodes(order.items);
               return (
-              <article key={order.id} style={{ ...itemCardStyle, ...workRowStyle(order) }}>
+              <article key={order.id} style={itemCardStyle}>
                 <div style={{ display: "grid", gap: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ display: "grid", gap: 6 }}>
@@ -450,10 +435,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                       <strong style={totalStyle}>{formatCurrency(order.totalPrice)}</strong>
                     </div>
                   </div>
-                  <div style={{ borderBlock: "1px solid var(--app-border)", paddingBlock: 10 }}>
-                    <span style={mobileLabelStyle}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></span>
-                    <WorkCell item={workUiItem(order)} />
-                  </div>
                   <div style={mobileCardGridStyle}>
                     <div>
                       <span style={mobileLabelStyle}><AdminText i18nKey="orderEmailDelivery.column" fallback="Email status" /></span>
@@ -484,7 +465,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                         <AdminText i18nKey="ordersAdmin.viewOrder" fallback="View order" />
                       </Link>
 
-                        <WorkActions item={workUiItem(order)} compact />
                         <DeleteOrderAction orderId={order.id} compact />
                     </div>
                   </div>
@@ -815,7 +795,7 @@ const mobileMutedLineStyle = {
 const filterGridStyle = {
   display: "grid",
   gap: 10,
-  gridTemplateColumns: "repeat(5, minmax(0, 1fr)) max-content",
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr)) max-content",
   alignItems: "end",
 };
 

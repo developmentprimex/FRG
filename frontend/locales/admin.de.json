@@ -267,7 +267,8 @@
     "savePassword": "Passwort speichern",
     "roleDescription": {
       "SUPERADMIN": "Voller Zugriff, einschließlich Benutzerverwaltung.",
-      "ADMIN": "Standard-Admin-Zugriff auf das aktuelle Dashboard.",
+      "PX_ADMIN": "Voller Zugriff, einschließlich PX-Bestellungen, PX-Reklamationen und Benutzerverwaltung.",
+      "ADMIN": "Admin-Zugriff ohne PX-Bestellungen, PX-Reklamationen, Benutzer, Reklamationsaktivität oder Vertragszugriffe.",
       "USER": "Basis-Admin-Zugriff mit denselben Workflows vorerst."
     },
     "changeEmailOrPassword": "E-Mail oder Passwort ändern.",
@@ -294,7 +295,7 @@
   "usersAdmin": {
     "workspace": "Administration",
     "title": "Benutzerverwaltung",
-    "description": "Admin-Konten erstellen und Rollen zuweisen. Nur Superadmins können auf diese Seite zugreifen.",
+    "description": "Admin-Konten erstellen und Rollen zuweisen. Superadmins und PX-Admins können auf diese Seite zugreifen.",
     "createUser": "Benutzer erstellen",
     "createUserDescription": "Neues Admin-Konto mit E-Mail, Passwort und Rolle hinzufügen.",
     "createUserButton": "Benutzer erstellen",
@@ -313,7 +314,8 @@
     "roleGuideDescription": "Detaillierte Berechtigungen folgen später. Vorerst können alle Rollen die bestehenden Admin-Workflows nutzen.",
     "roleDescription": {
       "SUPERADMIN": "Voller Zugriff, einschließlich Benutzerverwaltung.",
-      "ADMIN": "Standard-Admin-Zugriff auf das aktuelle Dashboard.",
+      "PX_ADMIN": "Voller Zugriff, einschließlich PX-Bestellungen, PX-Reklamationen und Benutzerverwaltung.",
+      "ADMIN": "Admin-Zugriff ohne PX-Bestellungen, PX-Reklamationen, Benutzer, Reklamationsaktivität oder Vertragszugriffe.",
       "USER": "Basis-Admin-Zugriff mit denselben Workflows vorerst."
     },
     "allUsers": "Alle Benutzer",

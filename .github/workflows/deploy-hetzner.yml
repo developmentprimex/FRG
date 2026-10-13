@@ -122,7 +122,7 @@ jobs:
             # Optional dedicated credentials override the application .env files.
             cat >/etc/systemd/system/fragmento-work-reminders.service <<'EOF'
             [Unit]
-            Description=Fragmento overdue order and claim reminders
+            Description=Fragmento overdue claim reminders
             After=network-online.target postgresql.service
             Wants=network-online.target
 

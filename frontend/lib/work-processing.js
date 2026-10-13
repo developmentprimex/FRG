@@ -14,6 +14,7 @@ export async function lockWorkProcessing(tx, tryOnly = false) {
 }
 
 export async function attachWorkProcessing(db, items, workType) {
+  if (!WORK_TYPES.includes(workType)) throw new Error("Processing is only available for claims.");
   const ids = items.filter(Boolean).map((item) => item.id);
   if (!ids.length) return items;
   const records = await db.workProcessing.findMany({ where: { workType, workId: { in: ids } } });
@@ -23,13 +24,11 @@ export async function attachWorkProcessing(db, items, workType) {
 
 export async function findWorkItem(db, workType, workId) {
   if (!WORK_TYPES.includes(workType) || !workId) throw new Error("Invalid work item.");
-  const delegate = workType === "CLAIM" ? db.serviceClaim : workType === "TEST_ORDER" ? db.testOrder : db.order;
-  const item = await delegate.findUnique({ where: { id: workId }, select: {
-    id: true, createdAt: true, contractNumber: true,
-    ...(workType === "CLAIM" ? { fullName: true, email: true } : { status: true, orderNumber: true, firstName: true, lastName: true }),
+  const item = await db.serviceClaim.findUnique({ where: { id: workId }, select: {
+    id: true, createdAt: true, contractNumber: true, fullName: true, email: true,
   } });
   if (!item) throw new Error("Work item not found.");
-  return { ...item, workType, test: workType === "TEST_ORDER" || isTestContractNumber(item.contractNumber) };
+  return { ...item, workType, test: isTestContractNumber(item.contractNumber) };
 }
 
 export async function updateWorkProcessing({ db, workType, workId, status, actor, expectedVersion }) {
@@ -37,7 +36,6 @@ export async function updateWorkProcessing({ db, workType, workId, status, actor
   return db.$transaction(async (tx) => {
     await lockWorkProcessing(tx);
     const item = await findWorkItem(tx, workType, workId);
-    if (item.status === "CANCELLED") throw new Error("Cancelled orders do not require processing.");
     const key = { workType_workId: { workType, workId } };
     const previous = await tx.workProcessing.findUnique({ where: key });
     if (!Number.isInteger(expectedVersion) || expectedVersion !== (previous?.version || 0)) {
@@ -85,6 +83,7 @@ export async function reviewWorkReminder({ db, batchId, outcome, actor }) {
     if (batch.status !== "UNKNOWN" && !interrupted) throw new Error("This reminder cannot be reviewed or is still sending.");
     if (outcome === "DELIVERED") {
       for (const item of batch.items) {
+        if (item.workType !== "CLAIM") continue;
         const where = { workType_workId: { workType: item.workType, workId: item.id } };
         const record = await tx.workProcessing.findUnique({ where });
         if (!record?.lastReminderAt || new Date(record.lastReminderAt) < new Date(batch.startedAt)) {

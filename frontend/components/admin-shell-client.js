@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminI18nProvider, AdminLanguageSwitcher, AdminText, useAdminI18n } from "./admin-i18n";
+import { canAccessPx, hasFullAdminAccess } from "../lib/admin-roles";
 
 const navItems = [
   { href: "/admin", labelKey: "adminShellLogin.dashboard", fallback: "Dashboard", icon: GridIcon },
@@ -16,8 +17,8 @@ const navItems = [
   { href: "/admin/reports", labelKey: "adminShellLogin.reports", fallback: "Reports", icon: ReportsIcon },
   { href: "/admin/contract-access", labelKey: "adminShellLogin.contractAccess", fallback: "Contract access", icon: ContractsIcon, requiresSuperAdmin: true },
   { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimActivity", fallback: "Claim activity", icon: ClaimsIcon, requiresSuperAdmin: true },
-  { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon },
-  { href: "/admin/px-claims", labelKey: "adminShellLogin.pxClaims", fallback: "PX claims", icon: ClaimsIcon, requiresClaimsNav: true },
+  { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon, requiresPxAdmin: true },
+  { href: "/admin/px-claims", labelKey: "adminShellLogin.pxClaims", fallback: "PX claims", icon: ClaimsIcon, requiresClaimsNav: true, requiresPxAdmin: true },
   { href: "/admin/claims", labelKey: "adminShellLogin.claims", fallback: "Claims", icon: ClaimsIcon, requiresClaimsNav: true },
   { href: "/admin/catalog/articles", labelKey: "adminShellLogin.catalogArticles", fallback: "Catalog", icon: CatalogAuditIcon },
   { href: "/admin/catalog/imports", labelKey: "adminShellLogin.catalogImports", fallback: "Price Imports", icon: CatalogAuditIcon },
@@ -70,7 +71,8 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   const visibleNavItems = navItems.filter((item) => {
     if (item.requiresClaimsNav && !showClaimsNav) return false;
     if (item.requiresUsersNav && !showUsersNav) return false;
-    if (item.requiresSuperAdmin && adminRole !== "SUPERADMIN") return false;
+    if (item.requiresSuperAdmin && !hasFullAdminAccess({ role: adminRole })) return false;
+    if (item.requiresPxAdmin && !canAccessPx({ role: adminRole })) return false;
     return true;
   });
   const activeNavItem = visibleNavItems.find((item) => isActivePath(pathname, item.href)) ?? visibleNavItems[0];

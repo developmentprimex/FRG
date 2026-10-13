@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAdminApi } from "../../../../../../../lib/auth";
+import { requirePxAdminApi } from "../../../../../../../lib/admin-role-guards";
 import { getTestOrderById } from "../../../../../../../lib/catalog";
 import {
   generateOrderConfirmationPdf,
@@ -36,7 +36,8 @@ function pdfResponse(pdf, request) {
 }
 
 export async function GET(request, { params }) {
-  await requireAdminApi();
+  try { await requirePxAdminApi(); }
+  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
   const { id, type } = await params;
   const order = await getTestOrderById(id);
 

@@ -1,7 +1,3 @@
-import { prisma } from "../../../lib/prisma";
-import { attachWorkProcessing } from "../../../lib/work-processing";
-import { filterAndSortWork, summarizeWork, workUiItem, workRowStyle } from "../../../lib/work-processing-rules";
-import { WorkCell, WorkActions, WorkActionStack, WorkFilter, WorkSummary } from "../../../components/admin-work-processing";
 import Link from "next/link";
 import { AdminEmailDeliveryStatus } from "../../../components/admin-order-email-delivery";
 import { attachOrderEmailDelivery } from "../../../lib/email/order-email-store";
@@ -25,7 +21,7 @@ import {
 } from "../../../components/admin-i18n";
 import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-button";
 import { getFormMessage } from "../../../lib/admin-forms";
-import { requireAdminPage } from "../../../lib/auth";
+import { requirePxAdminPage } from "../../../lib/admin-role-guards";
 import { getTestOrdersForAdmin } from "../../../lib/catalog";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +66,7 @@ function DeleteAllPxOrdersAction() {
 }
 
 export default async function AdminPxOrdersPage({ searchParams = {} }) {
-  const admin = await requireAdminPage();
+  const admin = await requirePxAdminPage();
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {
     q: normalizeParam(resolvedSearchParams.q).trim(),
@@ -78,9 +74,7 @@ export default async function AdminPxOrdersPage({ searchParams = {} }) {
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
   };
-  const trackedOrders = await attachWorkProcessing(prisma, await getTestOrdersForAdmin(filters), "TEST_ORDER");
-  const processingFilter = normalizeParam(resolvedSearchParams.processing);
-  const orders = await attachOrderEmailDelivery(filterAndSortWork(trackedOrders, processingFilter), "test");
+  const orders = await attachOrderEmailDelivery(await getTestOrdersForAdmin(filters), "test");
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
 
@@ -103,9 +97,7 @@ export default async function AdminPxOrdersPage({ searchParams = {} }) {
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-          <WorkSummary counts={summarizeWork(trackedOrders)} />
           <form action="/admin/px-orders" method="get" style={filterPanelStyle}>
-            <WorkFilter value={processingFilter} />
             <AdminTranslatedInput
               name="q"
               defaultValue={filters.q}
@@ -136,7 +128,6 @@ export default async function AdminPxOrdersPage({ searchParams = {} }) {
                 <tr>
                   <th style={thStyle}><AdminText i18nKey="ordersAdmin.order" fallback="Order" /></th>
                   <th style={thStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
-                  <th style={{ ...thStyle, width: 150 }}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></th>
                   <th style={thStyle}><AdminText i18nKey="ordersAdmin.kitchen" fallback="Kitchen" /></th>
                   <th style={thStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></th>
                   <th style={thStyle}><AdminText i18nKey="reportsAdmin.payment" fallback="Payment" /></th>
@@ -149,13 +140,13 @@ export default async function AdminPxOrdersPage({ searchParams = {} }) {
               <tbody>
                 {!orders.length ? (
                   <tr>
-                    <td style={tdStyle} colSpan={10}>
+                    <td style={tdStyle} colSpan={9}>
                       <AdminText i18nKey="pxOrdersAdmin.noOrders" fallback="No PX orders found." />
                     </td>
                   </tr>
                 ) : null}
                 {orders.map((order) => (
-                  <tr key={order.id} style={workRowStyle(order)}>
+                  <tr key={order.id}>
                     <td style={tdStyle}>
                       <Link href={`/admin/px-orders/${order.id}`} style={orderLinkStyle}>{order.orderNumber}</Link>
                       <div style={metaStyle}>
@@ -166,7 +157,6 @@ export default async function AdminPxOrdersPage({ searchParams = {} }) {
                       <strong>{order.firstName} {order.lastName}</strong>
                       <div style={metaStyle}>{order.email}</div>
                     </td>
-                    <td style={tdStyle}><WorkCell item={workUiItem(order)} /></td>
                     <td style={tdStyle}><AdminKitchenDisplayName slug={order.kitchen.slug} name={order.kitchen.name} /></td>
                     <td style={tdStyle}><AdminStatusBadge status={order.status} /></td>
                     <td style={tdStyle}><PaymentStatusBadge status={order.paymentStatus} /></td>
@@ -175,10 +165,9 @@ export default async function AdminPxOrdersPage({ searchParams = {} }) {
                     <td style={tdStyle}><AdminEmailDeliveryStatus delivery={order.confirmationEmailDelivery} /></td>
                     <td style={tdStyle}>
 
-                      <WorkActionStack><Link href={`/admin/px-orders/${order.id}`} style={viewButtonStyle}>
+                      <Link href={`/admin/px-orders/${order.id}`} style={viewButtonStyle}>
                         <AdminText i18nKey="ordersAdmin.view" fallback="View" />
                       </Link>
-                      <WorkActions item={workUiItem(order)} compact /></WorkActionStack>
                     </td>
                   </tr>
                 ))}

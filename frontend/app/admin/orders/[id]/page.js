@@ -1,7 +1,4 @@
 import { AdminOrderInformation } from "../../../../components/admin-order-information";
-import { prisma as processingDb } from "../../../../lib/prisma";
-import { attachWorkProcessing } from "../../../../lib/work-processing";
-import { AdminWorkPanel } from "../../../../components/admin-work-panel";
 import { OrderStatus } from "@prisma/client";
 import {
   ActionLink,
@@ -192,7 +189,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
   const admin = await requireAdminPage();
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
-  const [order] = await attachWorkProcessing(processingDb, await attachOrderEmailDelivery([await getOrderById(id)]), "ORDER");
+  const [order] = await attachOrderEmailDelivery([await getOrderById(id)]);
 
   if (!order) {
     return (
@@ -254,7 +251,6 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
             </div>
           ) : null}
 
-          <AdminWorkPanel item={order} compact />
           <form action={`/api/admin/orders/${order.id}`} method="post" style={actionPanelStyle}>
             <strong><AdminText i18nKey="orderDetailAdmin.orderActions" fallback="Order actions" /></strong>
             <div style={actionButtonsStyle}>

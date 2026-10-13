@@ -1,7 +1,4 @@
 import { AdminOrderInformation } from "../../../../components/admin-order-information";
-import { prisma as processingDb } from "../../../../lib/prisma";
-import { attachWorkProcessing } from "../../../../lib/work-processing";
-import { AdminWorkPanel } from "../../../../components/admin-work-panel";
 import Link from "next/link";
 import { OrderStatus } from "@prisma/client";
 import {
@@ -32,7 +29,7 @@ import { AdminOrderEmailDelivery } from "../../../../components/admin-order-emai
 import { attachOrderEmailDelivery } from "../../../../lib/email/order-email-store";
 import { OrderEmailReviewModal } from "../../../../components/order-email-review-modal";
 import { getFormMessage } from "../../../../lib/admin-forms";
-import { requireAdminPage } from "../../../../lib/auth";
+import { requirePxAdminPage } from "../../../../lib/admin-role-guards";
 import { getTestOrderById } from "../../../../lib/catalog";
 import { getPriceBreakdown } from "../../../../lib/price-utils";
 import { buildOrderConfirmationAttachmentLabels, buildOrderConfirmationEmailDraft, buildOrderConfirmationEmailStaticHtml } from "../../../../lib/email/order-notifications";
@@ -81,10 +78,10 @@ function ItemTypeLabel({ type }) {
 }
 
 export default async function AdminPxOrderDetailPage({ params, searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requirePxAdminPage();
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
-  const [order] = await attachWorkProcessing(processingDb, await attachOrderEmailDelivery([await getTestOrderById(id)], "test"), "TEST_ORDER");
+  const [order] = await attachOrderEmailDelivery([await getTestOrderById(id)], "test");
 
   if (!order) {
     return (
@@ -153,7 +150,6 @@ export default async function AdminPxOrderDetailPage({ params, searchParams }) {
             </div>
           ) : null}
 
-          <AdminWorkPanel item={order} compact />
           <form action={`/api/admin/px-orders/${order.id}`} method="post" style={actionPanelStyle}>
             <strong><AdminText i18nKey="orderDetailAdmin.orderActions" fallback="Order actions" /></strong>
             <p style={hintStyle}>

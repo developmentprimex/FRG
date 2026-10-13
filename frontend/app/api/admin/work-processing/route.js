@@ -4,6 +4,7 @@ import { prisma } from "../../../../lib/prisma";
 import { updateWorkProcessing, reviewWorkReminder } from "../../../../lib/work-processing";
 import { WORK_TYPES } from "../../../../lib/work-processing-rules";
 import { dispatchClaimFeedbackInvitation, feedbackBaseUrl } from "../../../../lib/claim-feedback";
+import { canAccessClaim, canAccessPx } from "../../../../lib/admin-roles";
 
 export async function POST(request) {
   let admin;
@@ -21,12 +22,16 @@ export async function POST(request) {
     const data = await request.json();
     if (data.intent === "review-reminder") {
       if (typeof data.batchId !== "string" || data.batchId.length > 200) throw new Error("Invalid reminder review.");
+      const reminder = await prisma.workReminderBatch.findUnique({ where: { id: data.batchId } });
+      if (!canAccessPx(admin) && reminder?.items.some((item) => item.workType === "TEST_ORDER" || String(item.reference || "").replace(/\s+/g, "").startsWith("111"))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       const batch = await reviewWorkReminder({ db: prisma, batchId: data.batchId, outcome: data.outcome, actor: admin.email });
       return NextResponse.json({ status: batch.status });
     }
     if (!WORK_TYPES.includes(data.workType) || typeof data.workId !== "string" || data.workId.length > 200) {
       return NextResponse.json({ error: "Invalid work item." }, { status: 400 });
     }
+    const claim = await prisma.serviceClaim.findUnique({ where: { id: data.workId }, select: { contractNumber: true } });
+    if (claim && !canAccessClaim(admin, claim.contractNumber)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const processing = await updateWorkProcessing({
       db: prisma, workType: data.workType, workId: data.workId,
       status: data.status,

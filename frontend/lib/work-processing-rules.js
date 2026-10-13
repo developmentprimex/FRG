@@ -1,6 +1,6 @@
 export const WORK_TIME_ZONE = "Europe/Berlin";
 export const WORK_STATUSES = ["OPEN", "DONE"];
-export const WORK_TYPES = ["ORDER", "TEST_ORDER", "CLAIM"];
+export const WORK_TYPES = ["CLAIM"];
 const DAY_MS = 86400000;
 
 export function workUiItem(item) {
@@ -8,7 +8,7 @@ export function workUiItem(item) {
 }
 
 export function workRowStyle(item, now = new Date()) {
-  const colors = { green: "#39a76b", orange: "#e69a35", red: "#dc5965", done: "var(--app-border)", cancelled: "var(--app-border)" };
+  const colors = { green: "#39a76b", orange: "#e5cf37", red: "#dc5965", done: "var(--app-border)", cancelled: "var(--app-border)" };
   return { borderLeft: `4px solid ${colors[workState(item, now).tone]}` };
 }
 
@@ -46,7 +46,7 @@ export function workState(item, now = new Date()) {
 }
 
 export function reminderDue(item, now = new Date()) {
-  if (item.workType === "TEST_ORDER" || String(item.contractNumber || "").replace(/\s+/g, "").startsWith("111")) return false;
+  if (item.workType !== "CLAIM" || String(item.contractNumber || "").replace(/\s+/g, "").startsWith("111")) return false;
   if (!workState(item, now).overdue) return false;
   return !item.processing?.lastReminderAt || workAgeDays(item.processing.lastReminderAt, now) >= 7;
 }

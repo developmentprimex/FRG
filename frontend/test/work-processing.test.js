@@ -5,12 +5,12 @@ import { attachWorkProcessing, updateWorkProcessing, reviewWorkReminder } from "
 import { buildWorkReminder, resolveReminderConfig, sendWorkReminders } from "../lib/email/work-reminders.js";
 
 const now = new Date("2026-10-12T07:00:00Z");
-const item = (id, date, extra = {}) => ({ id, workType: "ORDER", contractNumber: "670123", createdAt: new Date(date), status: "CONFIRMED", ...extra });
+const item = (id, date, extra = {}) => ({ id, workType: "CLAIM", contractNumber: "670123", createdAt: new Date(date), fullName: "Test Customer", ...extra });
 const overdue = item("old", "2026-09-01T12:00:00Z");
 const env = { NODE_ENV: "production", WORK_REMINDERS_ENABLED: "true", SMTP_111_USER: "315primex.eu@gmail.com", SMTP_111_FROM: "315primex.eu@gmail.com", SMTP_111_PASS: "mock-secret" };
 
 function memoryDb(initial = {}) {
-  const state = { records: [], events: [], batches: [], orders: [overdue], claims: [], locked: true, ...initial };
+  const state = { records: [], events: [], batches: [], orders: [], claims: [overdue], locked: true, ...initial };
   const matches = (row, where) => row.workType === where.workType_workId.workType && row.workId === where.workType_workId.workId;
   const db = {
     $queryRaw: async () => [{ locked: state.locked }],
@@ -18,6 +18,10 @@ function memoryDb(initial = {}) {
     testOrder: { findUnique: async () => null },
     serviceClaim: { findMany: async () => state.claims, findUnique: async ({ where }) => state.claims.find((row) => row.id === where.id) || null },
     adminUser: { findFirst: async ({ where }) => where.email === "worker@example.com" ? { id: "worker" } : null },
+    claimFeedbackInvitation: {
+      create: async ({ data }) => ({ id: "feedback-fixture", ...data }),
+      updateMany: async () => ({ count: 0 }),
+    },
     workProcessing: {
       findMany: async ({ where }) => state.records.filter((row) => row.workType === where.workType && where.workId.in.includes(row.workId)),
       findUnique: async ({ where }) => state.records.find((row) => matches(row, where)) || null,
@@ -73,6 +77,7 @@ test("confirmation, payment, email retries and legacy unfinished work do not clo
 });
 
 test("test orders and normalized 111 contracts never generate reminders", () => {
+  assert.equal(reminderDue({ ...overdue, workType: "ORDER" }, now), false);
   assert.equal(reminderDue({ ...overdue, workType: "TEST_ORDER" }, now), false);
   assert.equal(reminderDue({ ...overdue, contractNumber: " 1 1 1 123" }, now), false);
   assert.equal(reminderDue({ ...overdue, contractNumber: "222123" }, now), true);
@@ -95,24 +100,26 @@ test("newest-first sorting, processing filters and counts cover done and cancell
 
 test("completion and reopening are audited with optimistic concurrency", async () => {
   const { db, state } = memoryDb();
-  let record = await updateWorkProcessing({ db, workType: "ORDER", workId: "old", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  let record = await updateWorkProcessing({ db, workType: "CLAIM", workId: "old", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
   assert.equal(record.completedBy, "admin@example.com"); assert.ok(record.completedAt); assert.equal(record.version, 1);
-  await assert.rejects(updateWorkProcessing({ db, workType: "ORDER", workId: "old", actor: "other@example.com", status: "OPEN", expectedVersion: 0 }), /another worker/);
-  record = await updateWorkProcessing({ db, workType: "ORDER", workId: "old", actor: "other@example.com", status: "OPEN", expectedVersion: 1 });
+  await assert.rejects(updateWorkProcessing({ db, workType: "CLAIM", workId: "old", actor: "other@example.com", status: "OPEN", expectedVersion: 0 }), /another worker/);
+  record = await updateWorkProcessing({ db, workType: "CLAIM", workId: "old", actor: "other@example.com", status: "OPEN", expectedVersion: 1 });
   assert.equal(record.completedAt, null); assert.equal(record.completedBy, null);
-  assert.equal(state.events.length, 2); assert.equal(state.orders[0].createdAt.getTime(), overdue.createdAt.getTime());
-  const [attached] = await attachWorkProcessing(db, [overdue], "ORDER");
+  assert.equal(state.events.length, 2); assert.equal(state.claims[0].createdAt.getTime(), overdue.createdAt.getTime());
+  const [attached] = await attachWorkProcessing(db, [overdue], "CLAIM");
   assert.equal(workState(attached, now).tone, "red");
 });
 
-test("invalid status, missing items and cancelled orders are rejected", async () => {
+test("invalid status, missing claims and order processing are rejected", async () => {
   const { db } = memoryDb();
-  const args = { db, workType: "ORDER", workId: "old", actor: "admin@example.com", status: "OPEN", expectedVersion: 0 };
+  const args = { db, workType: "CLAIM", workId: "old", actor: "admin@example.com", status: "OPEN", expectedVersion: 0 };
   await assert.rejects(updateWorkProcessing({ ...args, status: "HACK" }), /Invalid/);
   await assert.rejects(updateWorkProcessing({ ...args, status: "IN_PROGRESS" }), /Invalid/);
   await assert.rejects(updateWorkProcessing({ ...args, workId: "missing" }), /not found/);
-  const cancelled = memoryDb({ orders: [{ ...overdue, status: "CANCELLED" }] });
-  await assert.rejects(updateWorkProcessing({ ...args, db: cancelled.db, status: "DONE" }), /Cancelled/);
+  for (const workType of ["ORDER", "TEST_ORDER"]) {
+    await assert.rejects(updateWorkProcessing({ ...args, workType, status: "DONE" }), /Invalid work item/);
+    await assert.rejects(attachWorkProcessing(db, [overdue], workType), /only available for claims/);
+  }
 });
 
 test("dry run neither requires SMTP nor changes delivery/processing data", async () => {
@@ -155,7 +162,7 @@ test("local reminders go to 334 and record successful redirected delivery", asyn
 });
 
 test("done items are rechecked by the worker and concurrent workers do not send", async () => {
-  for (const initial of [{ records: [{ workType: "ORDER", workId: "old", status: "DONE" }] }, { locked: false }]) {
+  for (const initial of [{ records: [{ workType: "CLAIM", workId: "old", status: "DONE" }] }, { locked: false }]) {
     const { db } = memoryDb(initial);
     const result = await sendWorkReminders({ db, now, env, dryRun: false, createTransport: () => { throw new Error("No send allowed"); } });
     assert.equal(result.count, 0);
@@ -179,14 +186,16 @@ test("ambiguous SMTP timeout is UNKNOWN and blocks another-day automatic duplica
 });
 
 test("email escapes customer data and links to the right dashboard detail", () => {
-  const mail = buildWorkReminder([{ ...overdue, firstName: '<script>alert("x")</script>', lastName: "&", orderNumber: "FRG-1" }, { ...overdue, id: "claim 1", workType: "CLAIM", fullName: "Test" }], { now });
+  const mail = buildWorkReminder([{ ...overdue, fullName: '<script>alert("x")</script> &' }, { ...overdue, id: "claim 1", fullName: "Test" }], { now });
   assert.ok(!mail.html.includes("<script>")); assert.match(mail.html, /&lt;script&gt;/);
-  assert.match(mail.text, /\/admin\/orders\/old/); assert.match(mail.text, /\/admin\/claims\/claim%201/);
+  assert.match(mail.text, /\/admin\/claims\/old/); assert.match(mail.text, /\/admin\/claims\/claim%201/);
+  assert.ok(!mail.subject.includes("Bestellungen"));
+  assert.throws(() => buildWorkReminder([{ ...overdue, workType: "ORDER" }], { now }), /only available for claims/);
 });
 
 test("review records the administrator and resolves ambiguous attempts without resending", async () => {
   for (const outcome of ["DELIVERED", "NOT_DELIVERED"]) {
-    const { db, state } = memoryDb({ batches: [{ id: "uncertain", dateKey: "2026-10-11", status: "UNKNOWN", startedAt: now, error: "Timeout", items: [{ id: "old", workType: "ORDER" }] }] });
+    const { db, state } = memoryDb({ batches: [{ id: "uncertain", dateKey: "2026-10-11", status: "UNKNOWN", startedAt: now, error: "Timeout", items: [{ id: "old", workType: "CLAIM" }] }] });
     const result = await reviewWorkReminder({ db, batchId: "uncertain", outcome, actor: "reviewer@example.com" });
     assert.equal(result.status, outcome === "DELIVERED" ? "SENT" : "FAILED");
     assert.match(result.error, /reviewer@example.com/);
@@ -204,4 +213,12 @@ test("database failure after SMTP acceptance is UNKNOWN and never blindly retrie
   db.workProcessing.upsert = async () => { throw new Error("Database write failed after send"); };
   await assert.rejects(sendWorkReminders({ db, now, env, dryRun: false, createTransport: () => ({ sendMail: async () => ({ accepted: ["140primex.eu@gmail.com"] }) }) }), /Database write failed/);
   assert.equal(state.batches[0].status, "UNKNOWN");
+});
+
+test("reminder worker never queries orders, even when overdue orders exist", async () => {
+  const { db } = memoryDb({ orders: [{ ...overdue, workType: "ORDER" }], claims: [] });
+  db.order.findMany = async () => { throw new Error("Orders must not be queried"); };
+  const result = await sendWorkReminders({ db, now, env, dryRun: false, createTransport: () => { throw new Error("No email expected"); } });
+  assert.equal(result.count, 0);
+  assert.equal(result.skipped, "no-due-items");
 });

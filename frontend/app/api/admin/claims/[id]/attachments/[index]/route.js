@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
 import { requireAdminClaimsApi } from "../../../../../../../lib/admin-claims-access";
+import { canAccessClaim } from "../../../../../../../lib/admin-roles";
 import { findReferencePlanMarkersInSnapshot, renderReferencePlanMarkersPng } from "../../../../../../../lib/claim-kitchen-preview";
 import { getPublicContractClaimPlanAsset } from "../../../../../../../lib/contract-claim-plan-assets";
 import { prisma } from "../../../../../../../lib/prisma";
@@ -68,8 +69,9 @@ async function readReferencePlanPreview(contractNumber, previewImagePath) {
 }
 
 export async function GET(request, { params }) {
+  let admin;
   try {
-    await requireAdminClaimsApi();
+    admin = await requireAdminClaimsApi();
   } catch (error) {
     const status = error.status || 401;
     return NextResponse.json(
@@ -89,6 +91,7 @@ export async function GET(request, { params }) {
   if (!claim) {
     return NextResponse.json({ error: "Claim not found." }, { status: 404 });
   }
+  if (!canAccessClaim(admin, claim.contractNumber)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const attachments = parseAttachmentsJson(claim.attachmentsJson);
   if (index >= attachments.length) {

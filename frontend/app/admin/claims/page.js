@@ -24,6 +24,7 @@ import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-b
 import { AdminClaimLocalizedText } from "../../../components/admin-claim-localized-text";
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminClaimsPage } from "../../../lib/admin-claims-access";
+import { requirePxAdminPage } from "../../../lib/admin-role-guards";
 import { prisma } from "../../../lib/prisma";
 import { listKitchensForAdmin } from "../../../lib/catalog";
 import { queryServiceClaimsList } from "../../../lib/service-claim-admin-query";
@@ -51,7 +52,7 @@ function truncate(value, max = 140) {
 }
 
 export default async function AdminClaimsPage({ searchParams = {}, pxOnly = false }) {
-  const admin = await requireAdminClaimsPage();
+  const admin = await (pxOnly ? requirePxAdminPage() : requireAdminClaimsPage());
   const resolvedSearchParams = (await searchParams) || {};
   const basePath = pxOnly ? "/admin/px-claims" : "/admin/claims";
   const filters = {

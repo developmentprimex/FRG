@@ -26,12 +26,12 @@ export function buildWorkReminder(items, { now = new Date(), baseUrl = "https://
   const base = new URL(baseUrl);
   if (!["https:", "http:"].includes(base.protocol) || base.username || base.password) throw new Error("Invalid dashboard URL.");
   const rows = items.map((item) => {
-    const path = item.workType === "CLAIM" ? "claims" : "orders";
-    const link = new URL(`/admin/${path}/${encodeURIComponent(item.id)}`, base).href;
+    if (item.workType !== "CLAIM") throw new Error("Reminders are only available for claims.");
+    const link = new URL(`/admin/claims/${encodeURIComponent(item.id)}`, base).href;
     const label = item.orderNumber || `${item.contractNumber} / ${item.claimSequence || item.id}`;
     return { label, contract: item.contractNumber || "—", customer: item.fullName || `${item.firstName || ""} ${item.lastName || ""}`.trim(), days: workAgeDays(item.createdAt, now), status: "Offen", link };
   });
-  const subject = `[Fragmento] Erinnerung: ${items.length} offene Bestellungen/Reklamationen über 25 Tage`;
+  const subject = `[Fragmento] Erinnerung: ${items.length} offene Reklamationen über 25 Tage`;
   const explanation = "Diese Anfragen sind seit mehr als 25 Kalendertagen im Dashboard und noch nicht abgeschlossen. Bitte bearbeiten und anschließend als Done markieren.";
   const headings = ["Anfrage", "Vertrag", "Kunde", "Tage", "Bearbeitung", "Dashboard"];
   return {
@@ -45,14 +45,9 @@ export async function listReminderCandidates(db, now = new Date()) {
   // Broad UTC prefilter; the shared Berlin calendar rule makes the final decision,
   // including DST changes and dates just either side of midnight.
   const before = new Date(new Date(now).getTime() - 24 * 86400000);
-  const [orders, claims] = await Promise.all([
-    db.order.findMany({ where: { status: { not: "CANCELLED" }, createdAt: { lt: before } }, select: { id: true, orderNumber: true, contractNumber: true, firstName: true, lastName: true, status: true, createdAt: true } }),
-    db.serviceClaim.findMany({ where: { createdAt: { lt: before } }, select: { id: true, contractNumber: true, claimSequence: true, fullName: true, createdAt: true } }),
-  ]);
-  const [trackedOrders, trackedClaims] = await Promise.all([
-    attachWorkProcessing(db, orders, "ORDER"), attachWorkProcessing(db, claims, "CLAIM"),
-  ]);
-  return filterAndSortWork([...trackedOrders, ...trackedClaims].filter((item) => reminderDue(item, now)), "", now);
+  const claims = await db.serviceClaim.findMany({ where: { createdAt: { lt: before } }, select: { id: true, contractNumber: true, claimSequence: true, fullName: true, createdAt: true } });
+  const trackedClaims = await attachWorkProcessing(db, claims, "CLAIM");
+  return filterAndSortWork(trackedClaims.filter((item) => reminderDue(item, now)), "", now);
 }
 
 function definitelyNotDelivered(error) {

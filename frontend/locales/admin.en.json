@@ -267,7 +267,8 @@
     "savePassword": "Save password",
     "roleDescription": {
       "SUPERADMIN": "Full access, including user management.",
-      "ADMIN": "Standard admin access to the current dashboard.",
+      "PX_ADMIN": "Full access, including PX orders, PX claims and user management.",
+      "ADMIN": "Admin access without PX orders, PX claims, users, claim activity or contract access.",
       "USER": "Basic admin access with the same workflows for now."
     },
     "changeEmailOrPassword": "Change email or password.",
@@ -294,7 +295,7 @@
   "usersAdmin": {
     "workspace": "Administration",
     "title": "User management",
-    "description": "Create admin accounts and assign roles. Only superadmins can access this page.",
+    "description": "Create admin accounts and assign roles. Superadmins and PX admins can access this page.",
     "createUser": "Create user",
     "createUserDescription": "Add a new admin account with an email, password, and role.",
     "createUserButton": "Create user",
@@ -313,7 +314,8 @@
     "roleGuideDescription": "Detailed permissions will be added later. For now, all roles can use the existing admin workflows.",
     "roleDescription": {
       "SUPERADMIN": "Full access, including user management.",
-      "ADMIN": "Standard admin access to the current dashboard.",
+      "PX_ADMIN": "Full access, including PX orders, PX claims and user management.",
+      "ADMIN": "Admin access without PX orders, PX claims, users, claim activity or contract access.",
       "USER": "Basic admin access with the same workflows for now."
     },
     "allUsers": "All users",

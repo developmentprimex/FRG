@@ -91,7 +91,7 @@ export default async function AdminUsersPage({ searchParams }) {
           description={
             <AdminText
               i18nKey="usersAdmin.description"
-              fallback="Create admin accounts and assign roles. Only superadmins can access this page."
+              fallback="Create admin accounts and assign roles. Superadmins and PX admins can access this page."
             />
           }
         />
@@ -400,8 +400,10 @@ function roleDescriptionFallback(role) {
   switch (role) {
     case "SUPERADMIN":
       return "Full access, including user management.";
+    case "PX_ADMIN":
+      return "Full access, including PX orders, PX claims and user management.";
     case "ADMIN":
-      return "Standard admin access to the current dashboard.";
+      return "Admin access without PX orders, PX claims, users, claim activity or contract access.";
     case "USER":
       return "Basic admin access with the same workflows for now.";
     default:

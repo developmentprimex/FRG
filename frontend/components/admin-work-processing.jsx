@@ -7,7 +7,7 @@ import { workDateKey, workState } from "../lib/work-processing-rules";
 
 export const workTones = {
   green: { color: "#176534", background: "#ecfdf3", borderColor: "#a7dfbc" },
-  orange: { color: "#954100", background: "#fff4e5", borderColor: "#f3c482" },
+  orange: { color: "#665500", background: "#fff9c4", borderColor: "#e5cf37" },
   red: { color: "#a51b28", background: "#fff0f0", borderColor: "#f0a9af" },
   done: { color: "var(--app-text-muted)", background: "var(--app-surface)", borderColor: "var(--app-border)" },
   cancelled: { color: "var(--app-text-muted)", background: "var(--app-surface)", borderColor: "var(--app-border)" },
