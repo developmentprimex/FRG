@@ -59,7 +59,7 @@ test("buildServiceClaimAutofillFromContract leaves client address for manual ent
 });
 
 for (const contractNumber of ["670104332", "111104332"]) {
-test(`${contractNumber} uses its confirmed supplier address instead of the shared project address`, () => {
+test(`${contractNumber} leaves client address and landlord company name for user input`, () => {
   const autofill = buildServiceClaimAutofillFromContract({
     contractNumber,
     floor: "3",
@@ -71,29 +71,18 @@ test(`${contractNumber} uses its confirmed supplier address instead of the share
       address1: "Hermannstal 92-114",
       address2: "Shared project",
     },
+    landlord: { companyName: "ARGE" },
   });
-  assert.equal(autofill.clientCountry, "Germany");
-  assert.equal(autofill.clientCity, "Hamburg");
-  assert.equal(autofill.clientPostalCode, "22149");
-  assert.equal(autofill.clientAddressLine1, "Theodor-Storm-Str. 7-9");
-  assert.equal(autofill.clientAddressLine2, "");
-  assert.equal(autofill.clientFloor, "");
-  assert.equal(autofill.clientUnitNumber, "");
+  for (const field of [
+    "clientCountry", "clientCity", "clientPostalCode", "clientAddressLine1",
+    "clientAddressLine2", "clientFloor", "clientUnitNumber", "landlordCompanyName",
+  ]) {
+    assert.equal(Object.hasOwn(autofill, field), false, `${field} must remain user input`);
+  }
   assert.equal(autofill.registrationVerificationPostalCode, "22149");
   assert.equal(autofill.registrationVerificationUnit, "Theodor-Storm-Str. 7-9");
 });
 }
-
-test("670104332 leaves landlord company name blank while retaining its client address", () => {
-  const autofill = buildServiceClaimAutofillFromContract({
-    contractNumber: "670104332",
-    landlord: { companyName: "ARGE N\u00f6rdliche Riedsiedlung" },
-  });
-  assert.equal(autofill.landlordCompanyName, "");
-  assert.equal(autofill.clientAddressLine1, "Theodor-Storm-Str. 7-9");
-  assert.equal(autofill.clientCity, "Hamburg");
-  assert.equal(autofill.clientPostalCode, "22149");
-});
 
 test("buildServiceClaimAutofillFromContract maps active registration customer fields", () => {
   const autofill = buildServiceClaimAutofillFromContract({

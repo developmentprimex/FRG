@@ -40,24 +40,15 @@ export function buildServiceClaimAutofillFromContract(contract) {
   ].find((value) => String(value || "").trim());
 
   return {
-    ...(clientAddressDefault ? {
-      clientCountry: clientAddressDefault.country,
-      clientCity: clientAddressDefault.city,
-      clientPostalCode: clientAddressDefault.postalCode,
-      clientAddressLine1: clientAddressDefault.address1,
-      clientAddressLine2: clientAddressDefault.address2,
-      clientFloor: clientAddressDefault.floor,
-      clientUnitNumber: clientAddressDefault.unitNumber,
-    } : {}),
     givenName: String(customer.givenName || "").trim(),
     surname: String(customer.surname || "").trim(),
     phone: String(registration.phone || "").trim(),
     email: String(registration.email || "").trim(),
     registrationVerificationPostalCode: String(address.postalCode || "").trim(),
     registrationVerificationUnit: String(registrationVerificationUnit || "").trim(),
-    landlordCompanyName: contractNumber === "670104332"
-      ? ""
-      : String(landlord.companyName || "").trim(),
+    ...(!["670104332", "111104332"].includes(contractNumber) ? {
+      landlordCompanyName: String(landlord.companyName || "").trim(),
+    } : {}),
     landlordCompanyPhone: String(landlord.phone || "").trim(),
     landlordCompanyEmail: String(landlord.email || "").trim(),
     landlordContactGivenName: String(contact.givenName || "").trim(),
