@@ -5,6 +5,7 @@ import { requireAdminClaimsPage } from "../../../lib/admin-claims-access";
 import { listKitchensForAdmin } from "../../../lib/catalog";
 import { buildClaimAnalytics } from "../../../lib/claim-analytics";
 import { loadClaimAnalyticsRows } from "../../../lib/claim-analytics-query";
+import { isTestContractNumber } from "../../../lib/order-kind";
 import { prisma } from "../../../lib/prisma";
 import { workDateKey, workDayStart } from "../../../lib/work-processing-rules";
 
@@ -30,8 +31,9 @@ export default async function ClaimsOverviewPage({ searchParams = {} }) {
   const startDate = startKey ? workDayStart(startKey) : null;
   const { claims, history } = await loadClaimAnalyticsRows(prisma, { startDate, kitchenId });
   const analytics = buildClaimAnalytics(claims, { history, now, startDate, kitchenId });
-  const feedbackRows = claims.length ? await prisma.claimFeedbackInvitation.findMany({
-    where: { claimId: { in: claims.map((claim) => claim.id) } },
+  const feedbackClaimIds = claims.filter((claim) => isTestContractNumber(claim.contractNumber)).map((claim) => claim.id);
+  const feedbackRows = feedbackClaimIds.length ? await prisma.claimFeedbackInvitation.findMany({
+    where: { claimId: { in: feedbackClaimIds } },
     orderBy: { completionVersion: "desc" },
     select: { claimId: true, status: true, overallRating: true, speedRating: true, resolved: true },
   }) : [];

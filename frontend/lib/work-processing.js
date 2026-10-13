@@ -54,10 +54,10 @@ export async function updateWorkProcessing({ db, workType, workId, status, actor
       workType, workId, actor, fromStatus: oldStatus, toStatus: status,
     } });
     let feedbackInvitation = null;
-    if (workType === "CLAIM" && !item.test) {
+    if (workType === "CLAIM") {
       if (status === "OPEN") {
-        await tx.claimFeedbackInvitation.updateMany({ where: { claimId: workId, status: { in: ["PENDING", "FAILED", "UNKNOWN", "SENT"] } }, data: { status: "CANCELLED" } });
-      } else {
+        await tx.claimFeedbackInvitation.updateMany({ where: { claimId: workId, status: { in: ["PENDING", "SENDING", "FAILED", "UNKNOWN", "SENT"] } }, data: { status: "CANCELLED" } });
+      } else if (isTestContractNumber(item.contractNumber)) {
         const email = String(item.email || "").trim();
         const deliverable = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         const token = deliverable ? createClaimFeedbackToken() : null;

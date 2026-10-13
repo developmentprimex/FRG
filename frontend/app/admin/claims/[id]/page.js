@@ -3,6 +3,7 @@ import { prisma as processingDb } from "../../../../lib/prisma";
 import { attachWorkProcessing } from "../../../../lib/work-processing";
 import { AdminWorkPanel } from "../../../../components/admin-work-panel";
 import { AdminClaimFeedback } from "../../../../components/admin-claim-feedback";
+import { isTestContractNumber } from "../../../../lib/order-kind";
 import {
   ActionLink,
   AdminSection,
@@ -169,7 +170,9 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
     );
   }
 
-  const feedback = await prisma.claimFeedbackInvitation.findFirst({ where: { claimId: claim.id }, orderBy: { createdAt: "desc" } });
+  const feedback = isTestContractNumber(claim.contractNumber)
+    ? await prisma.claimFeedbackInvitation.findFirst({ where: { claimId: claim.id }, orderBy: { createdAt: "desc" } })
+    : null;
 
   const rawUploadedAttachments = parseClaimAttachments(claim.attachmentsJson);
   const parsedProblemAreas = parseClaimProblemAreas(claim.problemAreasJson);
