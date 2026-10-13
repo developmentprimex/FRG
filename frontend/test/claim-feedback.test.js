@@ -176,3 +176,17 @@ test("local delivery accepts the guarded recipient while retaining the 315 sende
   assert.equal(result, "sent");
   assert.equal(state.invitations[0].status, "SENT");
 });
+
+test("allowlisted local feedback reaches only the selected test customer address", async () => {
+  const { db, state } = memoryDb({ email: "01primex.eu@gmail.com" });
+  const done = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  const localEnv = { ...env, NODE_ENV: "development", LOCAL_CLAIM_FEEDBACK_RECIPIENT: "01primex.eu@gmail.com" };
+  const result = await dispatchClaimFeedbackInvitation({ db, invitationId: done.feedbackInvitation.id, token: done.feedbackInvitation.token,
+    baseUrl: "http://localhost:3000", env: localEnv, createTransport: (config) => {
+      assert.equal(config.localFeedbackRecipient, "01primex.eu@gmail.com");
+      return { sendMail: async () => ({ accepted: ["01primex.eu@gmail.com"] }) };
+    },
+  });
+  assert.equal(result, "sent");
+  assert.equal(state.invitations[0].status, "SENT");
+});

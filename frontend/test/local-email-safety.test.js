@@ -88,3 +88,25 @@ test("local transport redirects To, CC, BCC and SMTP envelope to 334 only", asyn
   assert.strictEqual(messages.at(-1), message);
   assert.equal(messages.length, 4);
 });
+
+test("only an allowlisted claim feedback email can reach the local test mailbox", async t => {
+  const messages = [];
+  t.mock.method(nodemailer, "createTransport", () => ({ sendMail: async message => {
+    messages.push(message);
+    return { accepted: message.envelope.to };
+  } }));
+  const env = { NODE_ENV: "development", LOCAL_CLAIM_FEEDBACK_RECIPIENT: "01primex.eu@gmail.com" };
+  const options = { auth: { user: "315primex.eu@gmail.com" } };
+  const feedback = createGuardedSmtpTransport(options, env, { localFeedbackRecipient: "01primex.eu@gmail.com" });
+  await feedback.sendMail({ from: '"Fragmento" <315primex.eu@gmail.com>', to: "01primex.eu@gmail.com", cc: "other@example.com" });
+  assert.equal(messages.at(-1).to, "01primex.eu@gmail.com");
+  assert.equal(messages.at(-1).cc, undefined);
+  assert.deepEqual(messages.at(-1).envelope.to, ["01primex.eu@gmail.com"]);
+  await feedback.sendMail({ from: '"Fragmento" <315primex.eu@gmail.com>', to: "other@example.com" });
+  assert.equal(messages.at(-1).to, "334primex.eu@gmail.com");
+  const ordinary = createGuardedSmtpTransport(options, env);
+  await ordinary.sendMail({ from: "315primex.eu@gmail.com", to: "01primex.eu@gmail.com" });
+  assert.equal(messages.at(-1).to, "334primex.eu@gmail.com");
+  await feedback.sendMail({ from: "other@example.com", to: "01primex.eu@gmail.com" });
+  assert.equal(messages.at(-1).to, "334primex.eu@gmail.com");
+});

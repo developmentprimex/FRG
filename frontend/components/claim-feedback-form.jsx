@@ -4,16 +4,18 @@ import { useState } from "react";
 
 const copy = {
   de: {
-    title: "Wie zufrieden waren Sie mit unserem Service?",
-    intro: "Ihre Rückmeldung hilft uns, unseren Kundenservice zu verbessern. Die Beantwortung dauert etwa eine Minute.",
-    resolved: "Wurde Ihr Anliegen vollständig gelöst?",
-    resolution: ["Ja", "Teilweise", "Nein"],
-    speed: "Wie zufrieden waren Sie mit der Bearbeitungszeit?",
-    communication: "Wie zufrieden waren Sie mit unserer Kommunikation?",
-    overall: "Wie zufrieden sind Sie insgesamt mit unserem Service?",
-    ratings: ["Sehr unzufrieden", "Unzufrieden", "Neutral", "Zufrieden", "Sehr zufrieden"],
-    comment: "Was können wir verbessern?",
-    optional: "Optionaler Kommentar",
+    title: "Wie war unser Service?",
+    intro: "Ihre Meinung hilft uns. Die Umfrage dauert etwa eine Minute.",
+    resolved: "Ist Ihr Problem gelöst?",
+    resolution: ["Ja", "Zum Teil", "Nein"],
+    speed: "Wie schnell haben wir Ihnen geholfen?",
+    speedRatings: ["Sehr langsam", "Langsam", "Okay", "Schnell", "Sehr schnell"],
+    communication: "War es einfach, mit uns zu sprechen?",
+    communicationRatings: ["Sehr schwer", "Schwer", "Okay", "Einfach", "Sehr einfach"],
+    overall: "Wie war unser Service insgesamt?",
+    overallRatings: ["Sehr schlecht", "Schlecht", "Okay", "Gut", "Sehr gut"],
+    comment: "Was können wir besser machen?",
+    optional: "Kommentar (freiwillig)",
     send: "Bewertung absenden", sending: "Wird gesendet…",
     thanks: "Vielen Dank für Ihre Rückmeldung!", thanksDetail: "Ihre Bewertung wurde gespeichert.",
     answered: "Vielen Dank. Sie haben diese Bewertung bereits abgegeben.",
@@ -21,15 +23,17 @@ const copy = {
     error: "Die Bewertung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
   },
   en: {
-    title: "How satisfied were you with our service?",
-    intro: "Your feedback helps us improve our customer service. This takes about one minute.",
-    resolved: "Was your issue fully resolved?",
+    title: "How was our service?",
+    intro: "Your opinion helps us improve. This takes about one minute.",
+    resolved: "Did we solve your problem?",
     resolution: ["Yes", "Partly", "No"],
-    speed: "How satisfied were you with the time taken to handle your claim?",
-    communication: "How satisfied were you with our communication?",
-    overall: "How satisfied are you overall with our service?",
-    ratings: ["Very dissatisfied", "Dissatisfied", "Neutral", "Satisfied", "Very satisfied"],
-    comment: "What could we improve?",
+    speed: "How quickly did we help you?",
+    speedRatings: ["Very slow", "Slow", "Okay", "Fast", "Very fast"],
+    communication: "Was it easy to talk to us?",
+    communicationRatings: ["Very hard", "Hard", "Okay", "Easy", "Very easy"],
+    overall: "Overall, how was our service?",
+    overallRatings: ["Very bad", "Bad", "Okay", "Good", "Very good"],
+    comment: "What can we do better?",
     optional: "Optional comment",
     send: "Send feedback", sending: "Sending…",
     thanks: "Thank you for your feedback!", thanksDetail: "Your response has been saved.",
@@ -82,9 +86,9 @@ export function ClaimFeedbackForm({ token, state }) {
             <fieldset className="question"><legend>{t.resolved}</legend><div className="choices resolution-choices">
               {["YES", "PARTLY", "NO"].map((value, index) => <label className="choice" key={value}><input type="radio" name="resolved" value={value} required /><span>{t.resolution[index]}</span></label>)}
             </div></fieldset>
-            <RatingQuestion name="speed" question={t.speed} labels={t.ratings} />
-            <RatingQuestion name="communication" question={t.communication} labels={t.ratings} />
-            <RatingQuestion name="overall" question={t.overall} labels={t.ratings} />
+            <RatingQuestion name="speed" question={t.speed} labels={t.speedRatings} />
+            <RatingQuestion name="communication" question={t.communication} labels={t.communicationRatings} />
+            <RatingQuestion name="overall" question={t.overall} labels={t.overallRatings} />
             <label className="comment-label" htmlFor="feedback-comment">{t.comment}<small>{t.optional}</small></label>
             <textarea id="feedback-comment" name="comment" maxLength={1000} rows={4} />
             {error ? <p className="error" role="alert">{error}</p> : null}

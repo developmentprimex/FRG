@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createSmtpTransport, resolveDefaultSmtpConfig, resolveInternalSmtpConfig } from "./email/contract-smtp.js";
-import { isLocalEmailEnvironment, LOCAL_EMAIL_RECIPIENT } from "./email/local-email-safety.js";
+import { isLocalEmailEnvironment, resolveLocalEmailRecipient } from "./email/local-email-safety.js";
 import { isTestContractNumber } from "./order-kind.js";
 import { lockWorkProcessing } from "./work-processing.js";
 
@@ -85,7 +85,7 @@ export async function dispatchClaimFeedbackInvitation({ db, deliveryDb = db, inv
     await deliveryDb.claimFeedbackInvitation.update({ where: { id: invitationId }, data: { status: "SENDING", attemptedAt: new Date(), error: null } });
     started = true;
     await tx.$queryRaw`SELECT 1 AS alive`;
-    const transport = createTransport(config, env);
+    const transport = createTransport({ ...config, localFeedbackRecipient: invitation.recipientEmail }, env);
     let receipt;
     let deadline;
     try {
@@ -94,7 +94,7 @@ export async function dispatchClaimFeedbackInvitation({ db, deliveryDb = db, inv
         new Promise((_, reject) => { deadline = setTimeout(() => reject(Object.assign(new Error("Feedback SMTP deadline exceeded."), { code: "ETIMEDOUT" })), 30000); }),
       ]);
     } finally { clearTimeout(deadline); transport.close?.(); }
-    const expectedRecipient = isLocalEmailEnvironment(env) ? LOCAL_EMAIL_RECIPIENT : invitation.recipientEmail;
+    const expectedRecipient = resolveLocalEmailRecipient({ to: invitation.recipientEmail, from: message.from, user: config.user, localFeedbackRecipient: invitation.recipientEmail }, env);
     accepted = (receipt?.accepted || []).some((address) => String(address).toLowerCase() === expectedRecipient.toLowerCase());
     if (!accepted) throw Object.assign(new Error("Feedback recipient was not accepted by SMTP."), { code: "EENVELOPE" });
     await tx.claimFeedbackInvitation.update({ where: { id: invitationId }, data: { status: "SENT", sentAt: new Date(), error: null } });
