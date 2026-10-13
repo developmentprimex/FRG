@@ -11,7 +11,7 @@ import { updateWorkProcessing } from "../lib/work-processing.js";
 const env = { NODE_ENV: "production", SMTP_111_USER: CLAIM_FEEDBACK_SENDER, SMTP_111_FROM: CLAIM_FEEDBACK_SENDER, SMTP_111_PASS: "test-secret" };
 const answers = { resolved: "PARTLY", speedRating: 3, communicationRating: 4, overallRating: 5, comment: "Please call before visiting." };
 
-function memoryDb({ email = "customer@example.com", contractNumber = "670123" } = {}) {
+function memoryDb({ email = "customer@example.com", contractNumber = "111123" } = {}) {
   const state = { processing: null, invitations: [], events: [] };
   let nextId = 1;
   const db = {
@@ -63,14 +63,35 @@ test("claim completion creates one invitation, reopening cancels it", async () =
   assert.equal(state.invitations[0].status, "CANCELLED");
 });
 
-test("missing address and test contracts never send a feedback invitation", async () => {
-  for (const options of [{ email: "" }, { contractNumber: "111123" }]) {
-    const { db, state } = memoryDb(options);
+test("only 111 contracts receive invitations; 670 processing continues without one", async () => {
+  const missing = memoryDb({ email: "" });
+  const missingResult = await updateWorkProcessing({ db: missing.db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  assert.equal(missingResult.feedbackInvitation, undefined);
+  assert.equal(missing.state.invitations[0].status, "NO_EMAIL");
+  for (const contractNumber of ["670123", "222123"]) {
+    const { db, state } = memoryDb({ contractNumber });
     const result = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+    assert.equal(result.status, "DONE");
     assert.equal(result.feedbackInvitation, undefined);
-    assert.equal(state.invitations.length, options.email === "" ? 1 : 0);
-    if (state.invitations.length) assert.equal(state.invitations[0].status, "NO_EMAIL");
+    assert.equal(state.invitations.length, 0);
+    assert.equal(state.events.length, 1);
   }
+});
+
+test("a legacy 670 invitation is cancelled before SMTP and cannot be retried", async () => {
+  const { db, state } = memoryDb({ contractNumber: "670123" });
+  await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  const token = createClaimFeedbackToken();
+  const invitation = await db.claimFeedbackInvitation.create({ data: {
+    claimId: "claim-1", completionVersion: 1, recipientEmail: "customer@example.com",
+    tokenHash: hashClaimFeedbackToken(token), expiresAt: feedbackExpiry(), status: "PENDING",
+  } });
+  assert.equal(await dispatchClaimFeedbackInvitation({ db, invitationId: invitation.id, token, baseUrl: "https://fragmento.de", env,
+    createTransport: () => { throw new Error("670 must never send survey email"); },
+  }), "cancelled");
+  assert.equal(state.invitations[0].status, "CANCELLED");
+  state.invitations[0].status = "FAILED";
+  await assert.rejects(prepareClaimFeedbackRetry({ db, invitationId: invitation.id }), /only available for 111/);
 });
 
 test("survey sender is exactly 315 and the form enforces complete answers", () => {
