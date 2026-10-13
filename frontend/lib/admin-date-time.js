@@ -1,9 +1,9 @@
-export function formatAdminDate(value, language = "en", timeZone = "UTC") {
+export function formatAdminDate(value, language = "en", timeZone = "UTC", numeric = false) {
   if (!value) return "-";
 
   const formatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-GB", {
-    day: "numeric",
-    month: "long",
+    day: numeric ? "2-digit" : "numeric",
+    month: numeric ? "2-digit" : "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
@@ -13,6 +13,10 @@ export function formatAdminDate(value, language = "en", timeZone = "UTC") {
     timeZone,
   });
   const parts = Object.fromEntries(formatter.formatToParts(new Date(value)).map((part) => [part.type, part.value]));
+
+  if (numeric) {
+    return `${parts.day}.${parts.month}.${parts.year} ${parts.hour}:${parts.minute}`;
+  }
 
   if (language === "de") {
     return `${parts.day}. ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute}`;

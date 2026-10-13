@@ -197,7 +197,7 @@ function getLocalizedKitchenDisplayName({ slug, name }, language = "en") {
   return displayName;
 }
 
-export function AdminDateTime({ value, timeZone = "UTC" }) {
+export function AdminDateTime({ value, timeZone = "UTC", numeric = false }) {
   const { language } = useAdminI18n();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -205,7 +205,7 @@ export function AdminDateTime({ value, timeZone = "UTC" }) {
     setIsMounted(true);
   }, []);
 
-  return <span suppressHydrationWarning>{isMounted ? formatAdminDate(value, language, timeZone) : ""}</span>;
+  return <span suppressHydrationWarning>{isMounted ? formatAdminDate(value, language, timeZone, numeric) : ""}</span>;
 }
 
 export function AdminCountryName({ code }) {

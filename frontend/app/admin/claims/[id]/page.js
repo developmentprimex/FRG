@@ -1,3 +1,4 @@
+import { formatServiceClaimReference } from "../../../../lib/service-claim-email-subject";
 import { prisma as processingDb } from "../../../../lib/prisma";
 import { attachWorkProcessing } from "../../../../lib/work-processing";
 import { AdminWorkPanel } from "../../../../components/admin-work-panel";
@@ -216,7 +217,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
         <AdminSection
-          title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: claim.contractNumber }} />}
+          title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber) }} />}
           description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted service request." />}
           actions={
             <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>

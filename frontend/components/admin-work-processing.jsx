@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
+import AdminSelect from "./admin-select";
 import { useRouter } from "next/navigation";
 import { AdminDateTime, AdminText, useAdminI18n } from "./admin-i18n";
 import { workDateKey, workState } from "../lib/work-processing-rules";
@@ -81,11 +83,20 @@ export function WorkCell({ item }) {
 
 export function WorkFilter({ value = "" }) {
   const { translate } = useAdminI18n();
-  return <label style={{ display: "grid", gap: 6, minWidth: 0, color: "var(--app-text-muted)", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+  const fieldRef = useRef(null);
+  const normalizedValue = value === "ACTIVE" ? "OPEN" : value;
+  const [selected, setSelected] = useState(normalizedValue);
+  useEffect(() => { setSelected(normalizedValue); }, [normalizedValue]);
+  function changeProcessing(event) {
+    // Commit the hidden input before submitting the surrounding GET form.
+    flushSync(() => setSelected(event.target.value));
+    fieldRef.current?.closest("form")?.requestSubmit();
+  }
+  return <label ref={fieldRef} style={{ display: "grid", gap: 6, minWidth: 0, color: "var(--app-text-muted)", fontSize: 12, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase" }}>
     <AdminText i18nKey="workProcessing.processing" fallback="Processing" />
-    <select key={value} name="processing" defaultValue={value === "ACTIVE" ? "OPEN" : value} onChange={(event) => event.currentTarget.form?.requestSubmit()} style={{ minHeight: 42, minWidth: 0, width: "100%", boxSizing: "border-box", fontSize: "0.92rem", fontWeight: 400, letterSpacing: "normal", textTransform: "none", padding: 9, border: "1px solid var(--app-border)", borderRadius: 8, background: "var(--app-surface)", color: "var(--app-text)" }}>
+    <AdminSelect name="processing" value={selected} onChange={changeProcessing} ariaLabelKey="workProcessing.processing" style={{ minHeight: 42, minWidth: 0, width: "100%", boxSizing: "border-box", fontSize: "0.92rem", fontWeight: 400, letterSpacing: "normal", textTransform: "none", padding: "9px 11px", border: "1px solid var(--app-border)", borderRadius: 8, background: "var(--app-surface)", color: "var(--app-text)" }}>
       {[["", "all", "All"], ["OPEN", "OPEN", "Open"], ["DONE", "DONE", "Done"], ["OVERDUE", "red", "Overdue"]].map(([key, label, fallback]) => <option key={key} value={key}>{translate(`workProcessing.${label}`, fallback)}</option>)}
-    </select>
+    </AdminSelect>
   </label>;
 }
 

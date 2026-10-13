@@ -1,4 +1,4 @@
-import { formatServiceClaimEmailSubject } from "../service-claim-email-subject.js";
+import { formatServiceClaimReference } from "../service-claim-email-subject.js";
 import { resolveServiceClaimEmailRecipient } from "../service-claim-email-recipient.js";
 import { CLAIM_INTERNAL_PREFIXES, resolveSmtpConfigForContract, sendMailForContract } from "./contract-smtp.js";
 
@@ -9,14 +9,13 @@ function escapeHtml(value) {
 }
 
 export function buildClaimConfirmationMessage(payload, env = process.env) {
-  const reference = formatServiceClaimEmailSubject(payload.contractNumber, payload.claimSequence)
-    .replace(/^Reklamation /, "");
+  const reference = formatServiceClaimReference(payload.contractNumber, payload.claimSequence, payload.ticketNumber);
   const paragraphs = [
     payload.fullName ? `Guten Tag ${payload.fullName},` : "Guten Tag,",
     "wir haben Ihre Reklamation erhalten.",
-    `Reklamationsnummer: ${reference}\nVertragsnummer: ${payload.contractNumber}`,
+    `Ticketnummer: ${reference}\nVertragsnummer: ${payload.contractNumber}`,
     "Wir prüfen Ihr Anliegen und melden uns bei Ihnen, sobald die nächsten Schritte feststehen oder weitere Informationen benötigt werden.",
-    "Bitte geben Sie bei Rückfragen Ihre Reklamationsnummer an. Eine erneute Einreichung ist nicht erforderlich.",
+    "Bitte geben Sie bei Rückfragen Ihre Ticketnummer an. Eine erneute Einreichung ist nicht erforderlich.",
     "Mit freundlichen Grüßen\nIhr Kundenservice",
   ];
   return {

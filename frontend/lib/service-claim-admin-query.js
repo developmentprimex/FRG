@@ -10,6 +10,8 @@ const OPTIONAL_SERVICE_CLAIM_COLUMNS = [
 
 const REQUIRED_CLAIM_COLUMNS = `
       sc."id",
+      sc."ticketNumber",
+      sc."claimSequence",
       sc."contractNumber",
       sc."fullName",
       sc."phone",
@@ -141,6 +143,8 @@ export function buildServiceClaimListWhere(filters, {
   if (filters.q) {
     const query = `%${filters.q}%`;
     const parts = [
+      Prisma.sql`${claim}."ticketNumber"::text = ${String(filters.q).trim().replace(/^#/, "")}`,
+      Prisma.sql`('#' || ${claim}."ticketNumber"::text || ' ' || ${claim}."contractNumber" || ' KD ' || CASE WHEN ${claim}."claimSequence" < 10 THEN '0' ELSE '' END || ${claim}."claimSequence"::text) ILIKE ${query}`,
       Prisma.sql`${claim}."contractNumber" ILIKE ${query}`,
       Prisma.sql`${claim}."fullName" ILIKE ${query}`,
       Prisma.sql`COALESCE(${claim}."phone", '') ILIKE ${query}`,

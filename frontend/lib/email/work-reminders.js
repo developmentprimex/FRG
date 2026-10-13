@@ -1,3 +1,4 @@
+import { formatServiceClaimReference } from "../service-claim-email-subject.js";
 import { attachWorkProcessing, lockWorkProcessing } from "../work-processing.js";
 import { filterAndSortWork, reminderDue, workDateKey, workAgeDays } from "../work-processing-rules.js";
 import { resolveInternalSmtpConfig, resolveSmtpConfigForContract, createSmtpTransport } from "./contract-smtp.js";
@@ -28,7 +29,7 @@ export function buildWorkReminder(items, { now = new Date(), baseUrl = "https://
   const rows = items.map((item) => {
     if (item.workType !== "CLAIM") throw new Error("Reminders are only available for claims.");
     const link = new URL(`/admin/claims/${encodeURIComponent(item.id)}`, base).href;
-    const label = item.orderNumber || `${item.contractNumber} / ${item.claimSequence || item.id}`;
+    const label = formatServiceClaimReference(item.contractNumber, item.claimSequence, item.ticketNumber);
     return { label, contract: item.contractNumber || "—", customer: item.fullName || `${item.firstName || ""} ${item.lastName || ""}`.trim(), days: workAgeDays(item.createdAt, now), status: "Offen", link };
   });
   const subject = `[Fragmento] Erinnerung: ${items.length} offene Reklamationen über 25 Tage`;
@@ -45,7 +46,7 @@ export async function listReminderCandidates(db, now = new Date()) {
   // Broad UTC prefilter; the shared Berlin calendar rule makes the final decision,
   // including DST changes and dates just either side of midnight.
   const before = new Date(new Date(now).getTime() - 24 * 86400000);
-  const claims = await db.serviceClaim.findMany({ where: { createdAt: { lt: before } }, select: { id: true, contractNumber: true, claimSequence: true, fullName: true, createdAt: true } });
+  const claims = await db.serviceClaim.findMany({ where: { createdAt: { lt: before } }, select: { id: true, contractNumber: true, claimSequence: true, ticketNumber: true, fullName: true, createdAt: true } });
   const trackedClaims = await attachWorkProcessing(db, claims, "CLAIM");
   return filterAndSortWork(trackedClaims.filter((item) => reminderDue(item, now)), "", now);
 }

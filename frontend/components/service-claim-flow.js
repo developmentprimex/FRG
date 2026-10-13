@@ -4710,7 +4710,7 @@ export default function ServiceClaimFlow({ initialLanguage = "de" }) {
         throw new Error(payloadResponse.error || copy.submitError);
       }
 
-      setSuccessMessage(payloadResponse.message || copy.submitSuccess);
+      setSuccessMessage([payloadResponse.message || copy.submitSuccess, payloadResponse.ticketReference].filter(Boolean).join(" "));
       setShowClaimRequiredErrors(false);
       setIsClaimRequiredAlertDismissed(false);
       setShowProblemAreaAttachmentErrors(false);

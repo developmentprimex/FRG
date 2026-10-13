@@ -35,6 +35,24 @@ function missingColumnError(columnName) {
   };
 }
 
+test("admin queries select both numbers and search the ticket or full reference", async () => {
+  for (const q of ["1020", "#1020", "#1020 670105809 KD 02"]) {
+    resetServiceClaimQueryColumnSupportCache();
+    let captured = "";
+    const db = { $queryRaw: async (strings, ...values) => {
+      const sql = renderSqlTemplate(strings, values);
+      if (sql.includes("information_schema")) return [];
+      captured = sql;
+      return [];
+    } };
+    await queryServiceClaimsList(db, { q });
+    assert.ok(captured.includes('sc."ticketNumber"'));
+    assert.ok(captured.includes('sc."claimSequence"'));
+    assert.ok(captured.includes(`ILIKE %${q}%`));
+    assert.ok(captured.includes(`::text = ${q.replace(/^#/, "")}`));
+  }
+});
+
 test("queryServiceClaimsList retries without missing optional contact columns", async () => {
   resetServiceClaimQueryColumnSupportCache();
   const queries = [];

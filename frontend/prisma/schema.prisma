@@ -720,6 +720,7 @@ model ServiceClaimEmailAttempt {
 }
 
 model ServiceClaim {
+  ticketNumber         Int      @unique @default(autoincrement())
   id                   String   @id
   contractNumber       String
   claimSequence        Int

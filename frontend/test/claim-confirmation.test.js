@@ -13,6 +13,13 @@ const payload = {
   fullName: "Anna <Müller>", email: " customer@example.com ",
 };
 
+test("customer acknowledgement includes the persisted ticket in subject and both bodies", () => {
+  const message = buildClaimConfirmationMessage({ ...payload, ticketNumber: 1020 }, env);
+  for (const value of [message.subject, message.text, message.html]) {
+    assert.ok(value.includes("#1020 670123456 KD 02"));
+  }
+});
+
 test("customer receives the agreed acknowledgement with a contract-specific reference and service Reply-To", async () => {
   const sent = [];
   assert.equal(await sendClaimConfirmation(payload, { env, send: async (...args) => sent.push(args) }), true);

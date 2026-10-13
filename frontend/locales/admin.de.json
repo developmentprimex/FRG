@@ -1577,6 +1577,7 @@
     "emailDelivery": "E-Mail-Versand"
   },
   "claimsAdmin": {
+    "openAction": "Öffnen",
     "claims": "Reklamationen",
     "claim": "Reklamation",
     "claimMatchesCurrentFilters": "{count} Reklamation entspricht den aktuellen Filtern.",
