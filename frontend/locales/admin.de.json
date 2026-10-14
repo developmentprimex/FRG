@@ -1473,7 +1473,7 @@
     "requestedClaimDoesNotExist": "Die angeforderte Reklamation existiert nicht.",
     "backToClaims": "Zurück zu den Reklamationen",
     "claimTitle": "Reklamation {claimNumber}",
-    "claimDetailDescription": "Details aus der eingereichten Reklamation.",
+    "claimDetailDescription": "Details zur eingereichten Reklamation.",
     "clientAddress": "Kundenadresse",
     "floor": "Etage",
     "unit": "Wohnungsnummer",

@@ -216,7 +216,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
         </div>}
         <AdminSection
           title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: claim.contractNumber }} />}
-          description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted service request." />}
+          description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted claim." />}
           actions={!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
