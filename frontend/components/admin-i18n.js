@@ -197,7 +197,7 @@ function getLocalizedKitchenDisplayName({ slug, name }, language = "en") {
   return displayName;
 }
 
-export function AdminDateTime({ value, timeZone = "UTC" }) {
+export function AdminDateTime({ value, timeZone = "UTC", stacked = false }) {
   const { language } = useAdminI18n();
   const [isMounted, setIsMounted] = useState(false);
 
@@ -205,7 +205,15 @@ export function AdminDateTime({ value, timeZone = "UTC" }) {
     setIsMounted(true);
   }, []);
 
-  return <span suppressHydrationWarning>{isMounted ? formatAdminDate(value, language, timeZone) : ""}</span>;
+  const formatted = isMounted ? formatAdminDate(value, language, timeZone) : "";
+  const separator = formatted.lastIndexOf(", ");
+  if (stacked && separator >= 0) {
+    return <span suppressHydrationWarning style={{ display: "grid", gap: 3, whiteSpace: "nowrap" }}>
+      <span style={{ fontSize: 13, fontWeight: 500 }}>{formatted.slice(0, separator)}</span>
+      <span style={{ justifySelf: "start", padding: "2px 6px", borderRadius: 4, background: "var(--app-surface-muted, #f3f0eb)", color: "var(--app-text)", fontSize: 13, fontWeight: 600, lineHeight: 1.3, fontVariantNumeric: "tabular-nums" }}>{formatted.slice(separator + 2)}</span>
+    </span>;
+  }
+  return <span suppressHydrationWarning>{formatted}</span>;
 }
 
 export function AdminCountryName({ code }) {

@@ -1,3 +1,4 @@
+import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import {
   ActionLink,
   AdminSection,
@@ -139,6 +140,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
   const admin = await requireAdminClaimsPage();
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
+  const reportsReturnHref = getReportsReturnHref(resolvedSearchParams.returnTo);
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
 
@@ -150,11 +152,14 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
     return (
       <AdminShell adminEmail={admin.email}>
         <div style={pageGridStyle}>
+        {reportsReturnHref && <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <ActionLink href={reportsReturnHref}><AdminText i18nKey="reportsAdmin.backToReports" fallback="← Back to reports" /></ActionLink>
+        </div>}
           <AdminSection
             title={<AdminText i18nKey="claimsAdmin.claimNotFound" fallback="Claim not found" />}
             description={<AdminText i18nKey="claimsAdmin.requestedClaimDoesNotExist" fallback="The requested claim does not exist." />}
           >
-            <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>
+            {!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}
           </AdminSection>
         </div>
       </AdminShell>
@@ -206,12 +211,13 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
+        {reportsReturnHref && <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <ActionLink href={reportsReturnHref}><AdminText i18nKey="reportsAdmin.backToReports" fallback="← Back to reports" /></ActionLink>
+        </div>}
         <AdminSection
           title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: claim.contractNumber }} />}
           description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted service request." />}
-          actions={
-            <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>
-          }
+          actions={!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}

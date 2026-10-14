@@ -1,3 +1,4 @@
+import { calculateOrderReportSummary } from "../../../lib/admin-order-reports";
 import Link from "next/link";
 import {
   AdminSection,
@@ -88,24 +89,6 @@ function getStatusHref(filters, status) {
   return query ? `/admin/orders?${query}` : "/admin/orders";
 }
 
-function getOrderSummary(orders) {
-  const initial = {
-    NEW: 0,
-    EMAILED: 0,
-    CONFIRMED: 0,
-    CANCELLED: 0,
-    revenue: 0,
-  };
-
-  return orders.reduce((summary, order) => {
-    if (Object.prototype.hasOwnProperty.call(summary, order.status)) {
-      summary[order.status] += 1;
-    }
-    summary.revenue += Number(order.totalPrice || 0);
-    return summary;
-  }, initial);
-}
-
 function ItemCount({ count }) {
   return (
     <AdminPluralText
@@ -187,7 +170,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
   const orders = await attachOrderEmailDelivery(pagination.items);
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
-  const summary = getOrderSummary(allOrders);
+  const summary = calculateOrderReportSummary(allOrders);
   const statusFilters = [
     { status: "", key: "ordersAdmin.all", fallback: "All" },
     { status: "NEW", key: "dashboard.statusNew", fallback: "New" },
@@ -215,27 +198,18 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-          <div style={summaryGridStyle}>
-            <div style={summaryCardStyle}>
-              <span><AdminText i18nKey="dashboard.statusNew" fallback="New" /></span>
-              <strong>{summary.NEW}</strong>
-            </div>
-            <div style={summaryCardStyle}>
-              <span><AdminText i18nKey="dashboard.statusEmailed" fallback="Emailed" /></span>
-              <strong>{summary.EMAILED}</strong>
-            </div>
-            <div style={summaryCardStyle}>
-              <span><AdminText i18nKey="dashboard.statusConfirmed" fallback="Confirmed" /></span>
-              <strong>{summary.CONFIRMED}</strong>
-            </div>
-            <div style={summaryCardStyle}>
-              <span><AdminText i18nKey="dashboard.statusCancelled" fallback="Cancelled" /></span>
-              <strong>{summary.CANCELLED}</strong>
-            </div>
-            <div style={summaryCardStyle}>
-              <span><AdminText i18nKey="dashboard.totalRevenue" fallback="Total revenue" /></span>
-              <strong>{formatCurrency(summary.revenue)}</strong>
-            </div>
+          <div style={summaryPanelStyle}>
+            <dl style={summaryGridStyle}>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.totalOrders" fallback="Total orders" /></dt><dd style={summaryValueStyle}>{summary.totalOrders}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="dashboard.statusNew" fallback="New" /></dt><dd style={summaryValueStyle}>{summary.statusCounts.NEW}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="dashboard.statusEmailed" fallback="Emailed" /></dt><dd style={summaryValueStyle}>{summary.statusCounts.EMAILED}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="dashboard.statusConfirmed" fallback="Confirmed" /></dt><dd style={summaryValueStyle}>{summary.statusCounts.CONFIRMED}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="dashboard.statusCancelled" fallback="Cancelled" /></dt><dd style={summaryValueStyle}>{summary.statusCounts.CANCELLED}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.netWithoutVat" fallback="Net without VAT" /></dt><dd style={summaryValueStyle}>{formatCurrency(summary.confirmedNet)}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.vatTotal" fallback="VAT total (19%)" /></dt><dd style={summaryValueStyle}>{formatCurrency(summary.confirmedVat)}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.totalWithVat" fallback="Total with VAT" /></dt><dd style={{ ...summaryValueStyle, fontWeight: 700 }}>{formatCurrency(summary.confirmedGross)}</dd></div>
+            </dl>
+            <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--app-text-muted)" }}><AdminText i18nKey="reportsAdmin.amountsConfirmedOnly" fallback="Amounts for confirmed orders only" /></p>
           </div>
 
           <form action="/admin/orders" method="get" style={filterPanelStyle}>
@@ -339,12 +313,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                       <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>
                         <strong>{order.orderNumber}</strong>
                       </Link>
-                      {contractNumber ? (
-                        <div style={contractMetaStyle}>
-                          <AdminText i18nKey="orderDetailAdmin.contractNumber" fallback="Contract number" />{" "}
-                          <span style={{ fontWeight: 800 }}>{contractNumber}</span>
-                        </div>
-                      ) : null}
                       {order.contractOrderSequence ? (
                         <div style={contractSequenceStyle}>
                           <AdminText
@@ -405,12 +373,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                       <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>
                         <strong style={{ fontSize: "1.05rem" }}>{order.orderNumber}</strong>
                       </Link>
-                      {contractNumber ? (
-                        <span style={contractMetaStyle}>
-                          <AdminText i18nKey="orderDetailAdmin.contractNumber" fallback="Contract number" />{" "}
-                          <span style={{ fontWeight: 800 }}>{contractNumber}</span>
-                        </span>
-                      ) : null}
                       {order.contractOrderSequence ? (
                         <span style={contractSequenceStyle}>
                           <AdminText
@@ -528,7 +490,9 @@ const ordersTableStyle = {
 
 const ordersThStyle = {
   ...thStyle,
-  padding: "14px 12px",
+  padding: "8px 12px",
+  lineHeight: 1.3,
+  whiteSpace: "nowrap",
   fontSize: 11,
   letterSpacing: "0.11em",
 };
@@ -614,14 +578,6 @@ const contractSequenceStyle = {
   letterSpacing: 0,
 };
 
-const contractMetaStyle = {
-  marginTop: 6,
-  color: "var(--app-text-muted)",
-  fontSize: 12,
-  fontWeight: 700,
-  letterSpacing: "0.04em",
-};
-
 const deleteFormStyle = {
   margin: 0,
 };
@@ -697,25 +653,28 @@ const totalStyle = {
   color: "var(--app-text)",
 };
 
-const summaryGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))",
-  gap: 10,
+const summaryPanelStyle = {
+  padding: "12px 0",
 };
 
-const summaryCardStyle = {
+const summaryGridStyle = {
   display: "grid",
-  gap: 7,
-  borderRadius: 10,
-  border: "1px solid var(--app-border)",
-  background: "linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,247,241,0.72))",
-  padding: "13px 14px",
-  boxShadow: "var(--app-shadow-soft)",
+  gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+  gap: "12px 16px",
+  margin: 0,
+};
+
+const summaryLabelStyle = {
   color: "var(--app-text-muted)",
   fontSize: 12,
-  fontWeight: 800,
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
+  marginBottom: 4,
+};
+
+const summaryValueStyle = {
+  margin: 0,
+  fontSize: 18,
+  fontWeight: 600,
+  lineHeight: 1.2,
 };
 
 const statusFilterRowStyle = {

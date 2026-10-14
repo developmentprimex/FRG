@@ -1,3 +1,4 @@
+import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import { AdminOrderSummaryTable } from "../../../../components/admin-order-summary-table";
 import { OrderStatus } from "@prisma/client";
 import {
@@ -156,14 +157,18 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
   const admin = await requireAdminPage();
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
+  const reportsReturnHref = getReportsReturnHref(resolvedSearchParams.returnTo);
   const [order] = await attachOrderEmailDelivery([await getOrderById(id)]);
 
   if (!order) {
     return (
       <AdminShell adminEmail={admin.email}>
         <div style={pageGridStyle}>
+        {reportsReturnHref && <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <ActionLink href={reportsReturnHref}><AdminText i18nKey="reportsAdmin.backToReports" fallback="← Back to reports" /></ActionLink>
+        </div>}
           <AdminSection title={<AdminText i18nKey="orderDetailAdmin.orderNotFound" fallback="Order not found" />} description={<AdminText i18nKey="orderDetailAdmin.requestedOrderDoesNotExist" fallback="The requested order does not exist." />}>
-            <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>
+            {!reportsReturnHref && <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>}
           </AdminSection>
         </div>
       </AdminShell>
@@ -190,11 +195,14 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
+        {reportsReturnHref && <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <ActionLink href={reportsReturnHref}><AdminText i18nKey="reportsAdmin.backToReports" fallback="← Back to reports" /></ActionLink>
+        </div>}
         <AdminSection
           title={<AdminText i18nKey="orderDetailAdmin.orderTitle" fallback="Order {orderNumber}" values={{ orderNumber: order.orderNumber }} />}
           actions={
             <div style={actionRowStyle}>
-              <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>
+              {!reportsReturnHref && <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>}
               <ActionLink href={`/kitchens/${order.kitchen.slug}`}><AdminText i18nKey="orderDetailAdmin.viewKitchen" fallback="View kitchen" /></ActionLink>
             </div>
           }

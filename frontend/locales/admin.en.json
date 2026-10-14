@@ -986,7 +986,6 @@
     "applianceSourceMANUAL": "Manual configuration",
     "applianceSourceKITCHEN_ITEM": "Kitchen item",
     "kitchenAppliancesHelp": "Included kitchen appliances. Contract details also include confirmed optional appliances and installed-brand overrides.",
-
     "contractNotFound": "Contract not found",
     "backToContracts": "Back to contract numbers",
     "contractTitle": "Contract {contractNumber}",
@@ -1229,7 +1228,7 @@
   },
   "reportsAdmin": {
     "reports": "Reports",
-    "description": "Order reports with confirmed totals, VAT, open order counts, and Excel export.",
+    "description": "Orders and claims in one table, with filters and Excel export.",
     "exportExcel": "Export Excel",
     "totalOrders": "Total orders",
     "matchingCurrentFilters": "Matching current filters",
@@ -1290,7 +1289,23 @@
     "accessAccepted": "Accepted",
     "accessTest": "Test",
     "accessRejected": "Rejected",
-    "noContractAccess": "No contract access events found."
+    "noContractAccess": "No contract access events found.",
+    "type": "Type",
+    "allTypes": "Orders and claims",
+    "activityRows": "Orders and claims",
+    "reference": "Reference",
+    "details": "Details",
+    "totalClaims": "Total claims",
+    "totalRecords": "Total records",
+    "noRecords": "No orders or claims found.",
+    "received": "Received",
+    "claimReceived": "Received (claim)",
+    "orderType": "Order",
+    "claimType": "Claim",
+    "viewDetails": "View details",
+    "backToReports": "← Back to reports",
+    "amountsConfirmedOnly": "Amounts for confirmed orders only",
+    "rowNumber": "No."
   },
   "contractAccessAdmin": {
     "title": "Contract access",

@@ -110,7 +110,7 @@ export async function loadOrderReportData(filters = {}) {
     where: getOrderReportWhere(normalizedFilters),
     include: {
       kitchenContract: true,
-      items: true,
+      items: { include: { kitchenItem: { select: { isLocked: true } } } },
     },
     orderBy: { createdAt: "desc" },
   });

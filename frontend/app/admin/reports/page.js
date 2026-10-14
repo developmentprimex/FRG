@@ -1,3 +1,5 @@
+import { AdminClaimLocalizedText } from "../../../components/admin-claim-localized-text";
+import { REPORT_TIME_ZONE } from "../../../lib/admin-date-time";
 import Link from "next/link";
 import {
   AdminSection,
@@ -17,13 +19,12 @@ import {
 } from "../../../components/admin-i18n";
 import AdminSelect from "../../../components/admin-select";
 import {
-  ORDER_REPORT_STATUSES,
-  buildOrderReportQuery,
-  loadOrderReportData,
-  normalizeOrderReportFilters,
-} from "../../../lib/admin-order-reports";
+  ACTIVITY_REPORT_STATUSES,
+  buildActivityReportQuery,
+  loadActivityReportData,
+  normalizeActivityReportFilters,
+} from "../../../lib/admin-activity-reports";
 import { requireAdminPage } from "../../../lib/auth";
-import { getPriceBreakdown } from "../../../lib/price-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -36,79 +37,30 @@ function formatCurrency(value) {
 }
 
 function getExportHref(filters) {
-  const query = buildOrderReportQuery(filters);
+  const query = buildActivityReportQuery(filters);
   return query
     ? `/api/admin/reports/orders/export?${query}`
     : "/api/admin/reports/orders/export";
 }
 
-function KpiCard({ label, value, detail, tone = "default" }) {
-  const palette = tone === "success"
-    ? { border: "rgba(42, 145, 85, 0.22)", background: "rgba(42, 145, 85, 0.1)", color: "#1f6f43" }
-    : tone === "warning"
-      ? { border: "rgba(207, 145, 36, 0.24)", background: "rgba(207, 145, 36, 0.1)", color: "#8a5a13" }
-      : tone === "danger"
-        ? { border: "rgba(217, 92, 92, 0.24)", background: "rgba(217, 92, 92, 0.1)", color: "var(--app-danger-text)" }
-        : { border: "var(--app-border)", background: "rgba(255,255,255,0.84)", color: "var(--app-text)" };
-
-  return (
-    <div style={{ ...kpiCardStyle, borderColor: palette.border, background: palette.background }}>
-      <span style={kpiLabelStyle}>{label}</span>
-      <strong style={{ ...kpiValueStyle, color: palette.color }}>{value}</strong>
-      {detail ? <span style={kpiDetailStyle}>{detail}</span> : null}
-    </div>
-  );
-}
-
-function OrderCountCard({ total, done, notDone }) {
-  return (
-    <div className="admin-reports-order-count-card" style={orderCountCardStyle}>
-      <div style={orderCountItemStyle}>
-        <span style={kpiLabelStyle}><AdminText i18nKey="reportsAdmin.totalOrders" fallback="Total orders" /></span>
-        <strong style={kpiValueStyle}>{total}</strong>
-      </div>
-      <div style={orderCountItemStyle}>
-        <span style={kpiLabelStyle}><AdminText i18nKey="reportsAdmin.doneOrders" fallback="Done orders" /></span>
-        <strong style={{ ...kpiValueStyle, color: "#1f6f43" }}>{done}</strong>
-      </div>
-      <div style={orderCountItemStyle}>
-        <span style={kpiLabelStyle}><AdminText i18nKey="reportsAdmin.notDone" fallback="Not done" /></span>
-        <strong style={{ ...kpiValueStyle, color: "#8a5a13" }}>{notDone}</strong>
-      </div>
-    </div>
-  );
-}
-
-function PaymentStatusBadge({ status }) {
-  const value = String(status || "UNPAID").toUpperCase();
-  const style = value === "PAID"
-    ? paymentPaidStyle
-    : value === "PENDING"
-      ? paymentPendingStyle
-      : value === "FAILED" || value === "CANCELLED"
-        ? paymentFailedStyle
-        : paymentUnpaidStyle;
-
-  return (
-    <span style={style}>
-      <AdminText i18nKey={`reportsAdmin.paymentStatus.${value.toLowerCase()}`} fallback={value} />
-    </span>
-  );
-}
-
 export default async function AdminReportsPage({ searchParams = {} }) {
   const admin = await requireAdminPage();
   const resolvedSearchParams = (await searchParams) || {};
-  const filters = normalizeOrderReportFilters(resolvedSearchParams);
-  const { orders, summary } = await loadOrderReportData(filters);
+  const filters = normalizeActivityReportFilters(resolvedSearchParams);
+  const { rows, summary } = await loadActivityReportData(filters);
   const exportHref = getExportHref(filters);
+  const claimsOnly = filters.type === "CLAIM";
+  const showIssue = filters.type !== "ORDER";
+  const columnCount = 6 + (claimsOnly ? 0 : 2) + (showIssue ? 1 : 0);
+  const reportQuery = buildActivityReportQuery(filters);
+  const returnToReports = "/admin/reports" + (reportQuery ? "?" + reportQuery : "");
 
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
         <AdminSection
           title={<AdminText i18nKey="reportsAdmin.reports" fallback="Reports" />}
-          description={<AdminText i18nKey="reportsAdmin.description" fallback="Order reports with confirmed totals, VAT, open order counts, and Excel export." />}
+          description={<AdminText i18nKey="reportsAdmin.description" fallback="Orders and claims in one table, with filters and Excel export." />}
           actions={(
             <Link href={exportHref} prefetch={false} style={exportButtonStyle}>
               <AdminText i18nKey="reportsAdmin.exportExcel" fallback="Export Excel" />
@@ -125,11 +77,19 @@ export default async function AdminReportsPage({ searchParams = {} }) {
               <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
             </label>
             <label style={filterFieldStyle}>
+              <span><AdminText i18nKey="reportsAdmin.type" fallback="Type" /></span>
+              <AdminSelect name="type" defaultValue={filters.type} style={filterInputStyle}>
+                <option value=""><AdminText i18nKey="reportsAdmin.allTypes" fallback="Orders and claims" /></option>
+                <option value="ORDER"><AdminText i18nKey="ordersAdmin.order" fallback="Order" /></option>
+                <option value="CLAIM"><AdminText i18nKey="reportsAdmin.claimType" fallback="Claim" /></option>
+              </AdminSelect>
+            </label>
+            <label style={filterFieldStyle}>
               <span><AdminText i18nKey="dashboard.status" fallback="Status" /></span>
               <AdminSelect name="status" defaultValue={filters.status} style={filterInputStyle}>
                 <option value=""><AdminText i18nKey="dashboard.allStatuses" fallback="All statuses" /></option>
-                {ORDER_REPORT_STATUSES.map((status) => (
-                  <option key={status} value={status}>{status}</option>
+                {ACTIVITY_REPORT_STATUSES.map((status) => (
+                  <option key={status} value={status}><AdminText i18nKey={status === "RECEIVED" ? "reportsAdmin.claimReceived" : `status.${status.toLowerCase()}`} fallback={status === "RECEIVED" ? "Received (claim)" : status} /></option>
                 ))}
               </AdminSelect>
             </label>
@@ -143,88 +103,66 @@ export default async function AdminReportsPage({ searchParams = {} }) {
             </div>
           </form>
 
-          <div className="admin-reports-kpi-grid" style={kpiGridStyle}>
-            <OrderCountCard
-              total={summary.totalOrders}
-              done={summary.doneOrders}
-              notDone={summary.notDoneUnpaidOrders}
-            />
-            <KpiCard
-              label={<AdminText i18nKey="reportsAdmin.netWithoutVat" fallback="Net without VAT" />}
-              value={formatCurrency(summary.confirmedNet)}
-            />
-            <KpiCard
-              label={<AdminText i18nKey="reportsAdmin.vatTotal" fallback="VAT total (19%)" />}
-              value={formatCurrency(summary.confirmedVat)}
-            />
-            <KpiCard
-              tone="success"
-              label={<AdminText i18nKey="reportsAdmin.totalWithVat" fallback="Total with VAT" />}
-              value={formatCurrency(summary.confirmedGross)}
-            />
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 12, color: "var(--app-text-muted)", fontSize: 14 }}>
+            <span><AdminText i18nKey="reportsAdmin.totalRecords" fallback="Total records" />: <strong>{summary.totalRecords}</strong></span>
+            <span><AdminText i18nKey="reportsAdmin.totalClaims" fallback="Total claims" />: <strong>{summary.totalClaims}</strong></span>
           </div>
-
-          <style>{`
-            @media (max-width: 1180px) {
-              .admin-reports-kpi-grid {
-                grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
-              }
-
-              .admin-reports-order-count-card {
-                grid-column: 1 / -1;
-              }
-            }
-
-            @media (max-width: 640px) {
-              .admin-reports-order-count-card {
-                grid-template-columns: 1fr !important;
-              }
-            }
-          `}</style>
+          {filters.type === "ORDER" && <div style={orderSummaryStyle}>
+            <dl style={orderSummaryGridStyle}>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.totalOrders" fallback="Total orders" /></dt><dd style={summaryValueStyle}>{summary.totalOrders}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.doneOrders" fallback="Done orders" /></dt><dd style={summaryValueStyle}>{summary.doneOrders}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.notDone" fallback="Not done" /></dt><dd style={summaryValueStyle}>{summary.notDoneUnpaidOrders}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.netWithoutVat" fallback="Net without VAT" /></dt><dd style={summaryValueStyle}>{formatCurrency(summary.confirmedNet)}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.vatTotal" fallback="VAT total (19%)" /></dt><dd style={summaryValueStyle}>{formatCurrency(summary.confirmedVat)}</dd></div>
+              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.totalWithVat" fallback="Total with VAT" /></dt><dd style={{ ...summaryValueStyle, fontWeight: 700 }}>{formatCurrency(summary.confirmedGross)}</dd></div>
+            </dl>
+            <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--app-text-muted)" }}><AdminText i18nKey="reportsAdmin.amountsConfirmedOnly" fallback="Amounts for confirmed orders only" /></p>
+          </div>}
         </AdminSection>
 
         <AdminSection
-          title={<AdminText i18nKey="reportsAdmin.orderRows" fallback="Order rows" />}
+          title={<AdminText i18nKey="reportsAdmin.activityRows" fallback="Orders and claims" />}
         >
           <div className="admin-reports-table" style={tableWrapStyle}>
-            <table style={tableStyle}>
+            <table style={{ ...tableStyle, tableLayout: "auto", minWidth: 1000 }}>
               <thead>
                 <tr>
-                  <th style={thStyle}><AdminText i18nKey="ordersAdmin.order" fallback="Order" /></th>
-                  <th style={thStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
-                  <th style={thStyle}><AdminText i18nKey="reportsAdmin.orderDate" fallback="Order date" /></th>
-                  <th style={thStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></th>
-                  <th style={thStyle}><AdminText i18nKey="reportsAdmin.payment" fallback="Payment" /></th>
-                  <th style={thStyle}><AdminText i18nKey="ordersAdmin.items" fallback="Items" /></th>
-                  <th style={thStyle}><AdminText i18nKey="reportsAdmin.netWithoutVat" fallback="Net without VAT" /></th>
-                  <th style={thStyle}><AdminText i18nKey="reportsAdmin.totalWithVat" fallback="Total with VAT" /></th>
+                  <th scope="col" style={{ ...reportThStyle, width: 48, textAlign: "center" }}><AdminText i18nKey="reportsAdmin.rowNumber" fallback="Nr." /></th>
+                  <th style={reportThStyle}><AdminText i18nKey="reportsAdmin.type" fallback="Type" /></th>
+                  <th style={reportThStyle}><AdminText i18nKey="reportsAdmin.reference" fallback="Reference" /></th>
+                  <th style={reportThStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
+                  <th style={reportThStyle}><AdminText i18nKey="claimsAdmin.createdAt" fallback="Created" /></th>
+                  {!claimsOnly && <th style={reportThStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></th>}
+                  {showIssue && <th style={reportThStyle}><AdminText i18nKey="claimsAdmin.issue" fallback="Issue" /></th>}
+                  {!claimsOnly && <th style={{ ...reportThStyle, textAlign: "right" }}><AdminText i18nKey="reportsAdmin.totalWithVat" fallback="Total with VAT" /></th>}
+                  <th style={reportThStyle}><AdminText i18nKey="ordersAdmin.action" fallback="Action" /></th>
                 </tr>
               </thead>
               <tbody>
-                {!orders.length ? (
-                  <tr>
-                    <td style={tdStyle} colSpan={8}><AdminText i18nKey="ordersAdmin.noOrdersFound" fallback="No orders found." /></td>
-                  </tr>
-                ) : null}
-                {orders.map((order) => {
-                  const breakdown = getPriceBreakdown(order.totalPrice);
-                  return (
-                    <tr key={order.id}>
-                      <td style={tdStyle}>
-                        <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>{order.orderNumber}</Link>
-                      </td>
-                      <td style={tdStyle}>
-                        <strong>{order.firstName} {order.lastName}</strong>
-                        <span style={mutedLineStyle}>{order.email}</span>
-                      </td>
-                      <td style={tdStyle}><AdminDateTime value={order.createdAt} /></td>
-                      <td style={tdStyle}><AdminStatusBadge status={order.status} /></td>
-                      <td style={tdStyle}><PaymentStatusBadge status={order.paymentStatus} /></td>
-                      <td style={tdStyle}>{order.items.reduce((count, item) => count + Number(item.quantity || 0), 0)}</td>
-                      <td style={tdStyle}>{formatCurrency(breakdown.net)}</td>
-                      <td style={tdStyle}><strong>{formatCurrency(breakdown.total)}</strong></td>
-                    </tr>
-                  );
+                {!rows.length && <tr><td style={reportTdStyle} colSpan={columnCount}><AdminText i18nKey="reportsAdmin.noRecords" fallback="No orders or claims found." /></td></tr>}
+                {rows.map((row, index) => {
+                  const detailHref = row.href + "?returnTo=" + encodeURIComponent(returnToReports);
+                  const reference = row.type === "ORDER" ? row.reference : row.contractNumber || row.reference;
+                  return <tr key={row.type + ":" + row.id}>
+                    <td style={{ ...reportTdStyle, textAlign: "center", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{index + 1}</td>
+                    <td style={reportTdStyle}>
+                      <span style={{ ...reportTypeBadgeStyle, ...(row.type === "ORDER" ? reportOrderBadgeStyle : reportClaimBadgeStyle) }}>
+                        <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
+                        {row.type === "ORDER" ? <AdminText i18nKey="reportsAdmin.orderType" fallback="Order" /> : <AdminText i18nKey="reportsAdmin.claimType" fallback="Claim" />}
+                      </span>
+                    </td>
+                    <td style={reportTdStyle}><Link href={detailHref} style={orderLinkStyle}>{reference}</Link></td>
+                    <td style={reportTdStyle}><span title={row.customer} style={{ display: "block", maxWidth: 240, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}>{row.customer || "—"}</span></td>
+                    <td style={reportTdStyle}><AdminDateTime value={row.createdAt} timeZone={REPORT_TIME_ZONE} stacked /></td>
+                    {!claimsOnly && <td style={reportTdStyle}>{row.type === "ORDER" ? <AdminStatusBadge status={row.status} /> : "—"}</td>}
+                    {showIssue && <td style={{ ...reportTdStyle, whiteSpace: "normal", minWidth: 200, maxWidth: 300 }} title={row.type === "CLAIM" ? row.issue : undefined}>
+                      {row.type === "CLAIM"
+                        ? <AdminClaimLocalizedText text={row.issue || "—"} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.5, fontSize: 13 }} />
+                        : "—"}
+                    </td>}
+                    {!claimsOnly && <td style={{ ...reportTdStyle, textAlign: "right", fontWeight: 700 }}>{row.gross === null ? "—" : formatCurrency(row.gross)}</td>}
+                    <td style={reportTdStyle}><Link href={detailHref} style={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 600, fontSize: 13 }}><AdminText i18nKey="reportsAdmin.viewDetails" fallback="View details" /> →</Link></td>
+                  </tr>;
                 })}
               </tbody>
             </table>
@@ -308,56 +246,30 @@ const exportButtonStyle = {
   alignItems: "center",
 };
 
-const kpiGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(360px, 1.35fr) repeat(3, minmax(190px, 1fr))",
-  gap: 12,
+const orderSummaryStyle = {
+  marginTop: 12,
+  paddingTop: 12,
+  borderTop: "1px solid var(--app-border)",
 };
 
-const orderCountCardStyle = {
+const orderSummaryGridStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-  gap: 12,
-  borderRadius: 8,
-  border: "1px solid var(--app-border)",
-  background: "rgba(255,255,255,0.84)",
-  padding: "16px 17px",
-  boxShadow: "var(--app-shadow-soft)",
+  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+  gap: "12px 20px",
+  margin: 0,
 };
 
-const orderCountItemStyle = {
-  display: "grid",
-  gap: 8,
-  minWidth: 0,
-};
-
-const kpiCardStyle = {
-  display: "grid",
-  gap: 8,
-  borderRadius: 8,
-  border: "1px solid var(--app-border)",
-  padding: "16px 17px",
-  boxShadow: "var(--app-shadow-soft)",
-};
-
-const kpiLabelStyle = {
+const summaryLabelStyle = {
   color: "var(--app-text-muted)",
   fontSize: 12,
-  fontWeight: 900,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
+  marginBottom: 4,
 };
 
-const kpiValueStyle = {
-  fontSize: "clamp(1.45rem, 2.4vw, 2.1rem)",
-  lineHeight: 1,
-  letterSpacing: 0,
-};
-
-const kpiDetailStyle = {
-  color: "var(--app-text-muted)",
-  fontSize: 13,
-  fontWeight: 700,
+const summaryValueStyle = {
+  margin: 0,
+  fontSize: 18,
+  fontWeight: 600,
+  lineHeight: 1.2,
 };
 
 const orderLinkStyle = {
@@ -366,50 +278,31 @@ const orderLinkStyle = {
   fontWeight: 900,
 };
 
-const mutedLineStyle = {
-  display: "block",
-  color: "var(--app-text-muted)",
-  fontSize: 13,
-  marginTop: 5,
-};
+const reportThStyle = { ...thStyle, padding: "11px 14px", whiteSpace: "nowrap" };
+const reportTdStyle = { ...tdStyle, padding: "10px 14px", verticalAlign: "middle", whiteSpace: "nowrap", fontSize: 14 };
 
-const paymentBaseStyle = {
+const reportTypeBadgeStyle = {
   display: "inline-flex",
-  width: "fit-content",
+  alignItems: "center",
+  gap: 7,
+  minWidth: 78,
+  padding: "5px 10px",
+  border: "1px solid",
   borderRadius: 999,
-  padding: "7px 10px",
-  border: "1px solid transparent",
   fontSize: 12,
-  fontWeight: 900,
-  textTransform: "uppercase",
-  letterSpacing: 0,
+  fontWeight: 700,
+  lineHeight: 1.4,
   whiteSpace: "nowrap",
 };
 
-const paymentPaidStyle = {
-  ...paymentBaseStyle,
-  color: "#1f6f43",
-  background: "rgba(42, 145, 85, 0.12)",
-  borderColor: "rgba(42, 145, 85, 0.22)",
+const reportOrderBadgeStyle = {
+  color: "#24568a",
+  background: "#edf4fc",
+  borderColor: "#c4d8ee",
 };
 
-const paymentPendingStyle = {
-  ...paymentBaseStyle,
-  color: "#8a5a13",
-  background: "rgba(207, 145, 36, 0.12)",
-  borderColor: "rgba(207, 145, 36, 0.22)",
-};
-
-const paymentFailedStyle = {
-  ...paymentBaseStyle,
-  color: "var(--app-danger-text)",
-  background: "rgba(217, 92, 92, 0.12)",
-  borderColor: "rgba(217, 92, 92, 0.22)",
-};
-
-const paymentUnpaidStyle = {
-  ...paymentBaseStyle,
-  color: "var(--app-text-muted)",
-  background: "rgba(115, 80, 55, 0.07)",
-  borderColor: "rgba(115, 80, 55, 0.12)",
+const reportClaimBadgeStyle = {
+  color: "#925019",
+  background: "#fff3e6",
+  borderColor: "#efd2af",
 };
