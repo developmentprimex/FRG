@@ -65,11 +65,9 @@ export function AdminOrderItems({ order }) {
       .order-selection thead th:nth-child(n+3), .order-selection tbody td:nth-child(n+3) { text-align:right; }
       .order-selection thead th { background:#eee5da; color:#594431; padding-top:13px; padding-bottom:13px; }
       .order-selection tbody tr:nth-child(odd):not(.order-selection-group) { background:#faf7f3; }
-      .order-selection tbody tr:not(.order-selection-group):hover { background:#f1e9df; }
       .order-selection-group th { background:#f1e8dc; color:#64482f; font-size:13px; border-left:4px solid #ac8761; }
       .order-selection tbody[data-group="included"] .order-selection-group th { background:#e7f0e9; color:#315b40; border-left-color:#73977c; }
       .order-selection tbody[data-group="included"] tr:nth-child(odd):not(.order-selection-group) { background:#f5f9f5; }
-      .order-selection tbody[data-group="included"] tr:not(.order-selection-group):hover { background:#eaf2eb; }
       .order-selection tbody[data-group="unknown"] .order-selection-group th { background:#fff3dc; color:#73521b; border-left-color:#bf963f; }
       .order-selection-total { font-size:16px; background:#ede2d4; color:#503924; font-weight:700; border-top:2px solid #b89b7b; }
       .order-selection-total td { padding:13px 12px !important; }
