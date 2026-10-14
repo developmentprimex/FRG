@@ -15,7 +15,7 @@ import {
   isLShapedClaimKitchen,
 } from "./service-claim-kitchen-hotspots.js";
 
-export const REFERENCE_PLAN_EMAIL_DISPLAY_WIDTH = 480;
+export { REFERENCE_PLAN_EMAIL_DISPLAY_WIDTH } from "./email/claim-notification-layout.js";
 export const REFERENCE_PLAN_EMAIL_PIXEL_RATIO = 2;
 const REFERENCE_PLAN_MARKER_MAX_DIAMETER = 30 / 850;
 

@@ -1,3 +1,4 @@
+import { ClaimEmailReview } from "../../../../components/claim-email-review";
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import {
   ActionLink,
@@ -217,7 +218,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
         <AdminSection
           title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: claim.contractNumber }} />}
           description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted claim." />}
-          actions={!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}
+          actions={<><ClaimEmailReview claimId={claim.id} />{!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}</>}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}

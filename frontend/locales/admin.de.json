@@ -1567,5 +1567,21 @@
     "typeCOMPONENT": "Komponente",
     "typeACCESSORY": "Zubehör",
     "typeSERVICE": "Dienstleistung"
+  },
+  "claimEmailReview": {
+    "review": "E-Mail ansehen",
+    "close": "Schließen",
+    "notification": "Reklamationsmeldung",
+    "confirmation": "Kundenbestätigung",
+    "previewNote": "Vorschau aus gespeicherten Angaben mit der aktuellen E-Mail-Vorlage.",
+    "loading": "E-Mail wird geladen…",
+    "loadError": "Die E-Mail-Vorschau konnte nicht geladen werden.",
+    "from": "Von",
+    "to": "An",
+    "cc": "CC",
+    "replyTo": "Antwort an",
+    "subject": "Betreff",
+    "emailContent": "E-Mail-Inhalt",
+    "attachments": "Anhänge"
   }
 }

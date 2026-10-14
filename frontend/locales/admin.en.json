@@ -1567,5 +1567,21 @@
     "typeCOMPONENT": "Component",
     "typeACCESSORY": "Accessory",
     "typeSERVICE": "Service"
+  },
+  "claimEmailReview": {
+    "review": "Review email",
+    "close": "Close",
+    "notification": "Claim notification",
+    "confirmation": "Customer confirmation",
+    "previewNote": "Preview rebuilt from saved details using the current email template.",
+    "loading": "Loading email…",
+    "loadError": "Unable to load the email preview.",
+    "from": "From",
+    "to": "To",
+    "cc": "CC",
+    "replyTo": "Reply-To",
+    "subject": "Subject",
+    "emailContent": "Email content",
+    "attachments": "Attachments"
   }
 }
