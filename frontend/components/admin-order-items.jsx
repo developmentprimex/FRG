@@ -11,30 +11,32 @@ const labels = {
 
 export function AdminOrderItems({ order }) {
   const summary = buildAdminOrderItems(order);
+  const tableHeader = <thead><tr>
+    <th><AdminText i18nKey="orderDetailAdmin.item" fallback="Item" /></th>
+    <th><AdminText i18nKey="orderItemsAdmin.codes" fallback="Article number / item code" /></th>
+    <th><AdminText i18nKey="orderDetailAdmin.quantity" fallback="Quantity" /></th>
+    <th><AdminText i18nKey="orderItemsAdmin.unitPrice" fallback="Charge per unit" /></th>
+    <th><AdminText i18nKey="orderDetailAdmin.lineTotal" fallback="Line total" /></th>
+  </tr></thead>;
+  const renderGroup = (group, items, showHeading = true) => <tbody key={group} data-group={group}>
+    {showHeading && <tr className="order-selection-group"><th colSpan={5} scope="rowgroup"><AdminText i18nKey={`orderItemsAdmin.${group}`} fallback={labels[group]} /> ({items.length})</th></tr>}
+    {group === "unknown" && <tr><td colSpan={5}><AdminText i18nKey="orderItemsAdmin.unknownNote" fallback="Default inclusion cannot be determined for these items. Their saved prices are shown." /></td></tr>}
+    {items.map(item => <tr key={item.id}>
+      <td><AdminLocalizedName name={item.nameSnapshot || item.code} nameDe={item.nameDeSnapshot || ""} as="strong" />
+        {item.kitchenItem?.blendeCode && <small><AdminText i18nKey="orderItemsAdmin.currentBlende" fallback="Blende (current configuration)" />: {item.kitchenItem.blendeCode}</small>}
+      </td>
+      <td><strong>{item.articleNumber || "-"}</strong><small>{item.code}</small></td>
+      <td>{item.quantity}</td>
+      <td>{currency(item.unitPrice)}</td>
+      <td><strong>{currency(item.lineTotal)}</strong></td>
+    </tr>)}
+  </tbody>;
   return <div className="order-selection">
     {!summary.matchesTotal && <p role="status" className="order-selection-warning"><AdminText i18nKey="orderItemsAdmin.mismatch" fallback="The displayed items do not match the recorded order total. The kitchen configuration may have changed; verify the original confirmation before using this breakdown." /></p>}
     <div className="order-selection-table">
       <table>
-        <thead><tr>
-          <th><AdminText i18nKey="orderDetailAdmin.item" fallback="Item" /></th>
-          <th><AdminText i18nKey="orderItemsAdmin.codes" fallback="Article number / item code" /></th>
-          <th><AdminText i18nKey="orderDetailAdmin.quantity" fallback="Quantity" /></th>
-          <th><AdminText i18nKey="orderItemsAdmin.unitPrice" fallback="Charge per unit" /></th>
-          <th><AdminText i18nKey="orderDetailAdmin.lineTotal" fallback="Line total" /></th>
-        </tr></thead>
-        {Object.entries(summary.groups).map(([group, items]) => items.length > 0 && <tbody key={group} data-group={group}>
-          <tr className="order-selection-group"><th colSpan={5} scope="rowgroup"><AdminText i18nKey={`orderItemsAdmin.${group}`} fallback={labels[group]} /> ({items.length})</th></tr>
-          {group === "unknown" && <tr><td colSpan={5}><AdminText i18nKey="orderItemsAdmin.unknownNote" fallback="Default inclusion cannot be determined for these items. Their saved prices are shown." /></td></tr>}
-          {items.map(item => <tr key={item.id}>
-            <td><AdminLocalizedName name={item.nameSnapshot || item.code} nameDe={item.nameDeSnapshot || ""} as="strong" />
-              {item.kitchenItem?.blendeCode && <small><AdminText i18nKey="orderItemsAdmin.currentBlende" fallback="Blende (current configuration)" />: {item.kitchenItem.blendeCode}</small>}
-            </td>
-            <td><strong>{item.articleNumber || "-"}</strong><small>{item.code}</small></td>
-            <td>{item.quantity}</td>
-            <td>{currency(item.unitPrice)}</td>
-            <td><strong>{currency(item.lineTotal)}</strong></td>
-          </tr>)}
-        </tbody>)}
+        {tableHeader}
+        {Object.entries(summary.groups).map(([group, items]) => group !== "included" && items.length > 0 && renderGroup(group, items))}
         <tfoot>
           {!summary.matchesTotal && <tr><td colSpan={4}><AdminText i18nKey="orderItemsAdmin.itemsTotal" fallback="Displayed item total" /></td><td>{currency(summary.itemsTotal)}</td></tr>}
           <tr><td colSpan={4}><AdminText i18nKey="orderDetailAdmin.priceExclVat" fallback="Price" /></td><td>{currency(getPriceBreakdown(summary.orderTotal).net)}</td></tr>
@@ -43,6 +45,15 @@ export function AdminOrderItems({ order }) {
         </tfoot>
       </table>
     </div>
+    {summary.groups.included.length > 0 && <details className="order-selection-included">
+      <summary><AdminText i18nKey="orderItemsAdmin.included" fallback={labels.included} /> ({summary.groups.included.length})</summary>
+      <div className="order-selection-table">
+        <table>
+          {tableHeader}
+          {renderGroup("included", summary.groups.included, false)}
+        </table>
+      </div>
+    </details>}
     <details className="order-selection-note"><summary><AdminText i18nKey="orderItemsAdmin.priceDetails" fallback="Price and configuration details" /></summary>
       <p><AdminText i18nKey="orderItemsAdmin.historyNote" fallback="Article numbers, names, quantities and saved prices come from this order. Default inclusion and the program use the current kitchen configuration because they were not saved with the order." /></p>
       {summary.groups.included.filter(item => item.savedUnitPrice !== 0).map(item => <p key={item.id}>{item.articleNumber || item.code}: <AdminText i18nKey="orderItemsAdmin.savedPrice" fallback="Saved reference price, not charged" /> {currency(item.savedUnitPrice)}</p>)}
@@ -66,11 +77,16 @@ export function AdminOrderItems({ order }) {
       .order-selection thead th { background:#eee5da; color:#594431; padding-top:13px; padding-bottom:13px; }
       .order-selection tbody tr:nth-child(odd):not(.order-selection-group) { background:#faf7f3; }
       .order-selection-group th { background:#f1e8dc; color:#64482f; font-size:13px; border-left:4px solid #ac8761; }
-      .order-selection tbody[data-group="included"] .order-selection-group th { background:#e7f0e9; color:#315b40; border-left-color:#73977c; }
-      .order-selection tbody[data-group="included"] tr:nth-child(odd):not(.order-selection-group) { background:#f5f9f5; }
+      .order-selection tbody[data-group="included"] tr { background:var(--app-card, #fff); }
+      .order-selection tbody[data-group="included"] tr:nth-child(even) { background:#fafafa; }
       .order-selection tbody[data-group="unknown"] .order-selection-group th { background:#fff3dc; color:#73521b; border-left-color:#bf963f; }
       .order-selection-total { font-size:16px; background:#ede2d4; color:#503924; font-weight:700; border-top:2px solid #b89b7b; }
       .order-selection-total td { padding:13px 12px !important; }
+      .order-selection-included { border:1px solid var(--app-border); border-radius:14px; overflow:hidden; }
+      .order-selection-included > summary { padding:12px 14px; background:#f7f7f6; color:var(--app-text-muted); font-size:13px; font-weight:500; }
+      .order-selection-included thead th { background:#f2f2f1; color:var(--app-text-muted); }
+      .order-selection-included[open] > summary { border-bottom:1px solid var(--app-border); }
+      .order-selection-included .order-selection-table { margin-top:0; border:0; border-radius:0; }
       .order-selection summary { cursor:pointer; }
     `}</style>
   </div>;
