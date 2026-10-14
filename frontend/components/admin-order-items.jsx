@@ -22,7 +22,7 @@ export function AdminOrderItems({ order }) {
           <th><AdminText i18nKey="orderItemsAdmin.unitPrice" fallback="Charge per unit" /></th>
           <th><AdminText i18nKey="orderDetailAdmin.lineTotal" fallback="Line total" /></th>
         </tr></thead>
-        {Object.entries(summary.groups).map(([group, items]) => items.length > 0 && <tbody key={group}>
+        {Object.entries(summary.groups).map(([group, items]) => items.length > 0 && <tbody key={group} data-group={group}>
           <tr className="order-selection-group"><th colSpan={5} scope="rowgroup"><AdminText i18nKey={`orderItemsAdmin.${group}`} fallback={labels[group]} /> ({items.length})</th></tr>
           {group === "unknown" && <tr><td colSpan={5}><AdminText i18nKey="orderItemsAdmin.unknownNote" fallback="Default inclusion cannot be determined for these items. Their saved prices are shown." /></td></tr>}
           {items.map(item => <tr key={item.id}>
@@ -63,8 +63,15 @@ export function AdminOrderItems({ order }) {
       .order-selection td small { display:block; margin-top:6px; color:var(--app-text-muted); font-size:12px; line-height:1.5; }
       .order-selection tfoot td { border-bottom:0; text-align:right; padding:7px 12px; }
       .order-selection thead th:nth-child(n+3), .order-selection tbody td:nth-child(n+3) { text-align:right; }
-      .order-selection-group th { background:rgba(115,80,55,0.07); color:var(--app-text); font-size:13px; }
-      .order-selection-total { font-size:16px; background:rgba(115,80,55,0.07); }
+      .order-selection thead th { background:#eee5da; color:#594431; padding-top:13px; padding-bottom:13px; }
+      .order-selection tbody tr:nth-child(odd):not(.order-selection-group) { background:#faf7f3; }
+      .order-selection tbody tr:not(.order-selection-group):hover { background:#f1e9df; }
+      .order-selection-group th { background:#f1e8dc; color:#64482f; font-size:13px; border-left:4px solid #ac8761; }
+      .order-selection tbody[data-group="included"] .order-selection-group th { background:#e7f0e9; color:#315b40; border-left-color:#73977c; }
+      .order-selection tbody[data-group="included"] tr:nth-child(odd):not(.order-selection-group) { background:#f5f9f5; }
+      .order-selection tbody[data-group="included"] tr:not(.order-selection-group):hover { background:#eaf2eb; }
+      .order-selection tbody[data-group="unknown"] .order-selection-group th { background:#fff3dc; color:#73521b; border-left-color:#bf963f; }
+      .order-selection-total { font-size:16px; background:#ede2d4; color:#503924; font-weight:700; border-top:2px solid #b89b7b; }
       .order-selection-total td { padding:13px 12px !important; }
       .order-selection summary { cursor:pointer; }
     `}</style>

@@ -30,11 +30,16 @@ export function AdminOrderSummaryTable({ order }) {
     <style>{`
       .order-overview table { width:100%; border-collapse:collapse; font-size:14px; }
       .order-overview th,.order-overview td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--app-border); vertical-align:top; overflow-wrap:anywhere; }
-      .order-overview th { color:var(--app-text-muted); font-weight:500; width:17%; }
-      .order-overview td { width:33%; }
-      .order-overview a { color:inherit; }
+      .order-overview th { color:#66513e; background:#f4eee7; font-weight:600; width:17%; }
+      .order-overview td { width:33%; color:#302a25; }
+      .order-overview tr:nth-child(even) td { background:#faf7f3; }
+      .order-overview > table td:nth-child(2) { border-right:3px solid #fff; }
+      .order-overview > table tr:first-child td { font-weight:650; }
+      .order-overview tr:hover td { background:#f1e9df; }
+      .order-overview a { color:#694b34; text-underline-offset:3px; }
       .order-overview details { margin-top:14px; }
-      .order-overview summary { cursor:pointer; font-size:13px; color:var(--app-text-muted); }
+      .order-overview summary { cursor:pointer; font-size:13px; font-weight:600; color:#66513e; background:#f4eee7; padding:10px 12px; border-radius:8px; }
+      .order-overview summary:focus-visible { outline:2px solid #806044; outline-offset:3px; }
       .order-overview details table { margin-top:8px; table-layout:fixed; }
       @media(max-width:700px) {
         .order-overview > table tr { display:grid; grid-template-columns:110px minmax(0,1fr); }
