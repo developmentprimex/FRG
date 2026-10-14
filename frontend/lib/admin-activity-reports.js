@@ -1,4 +1,4 @@
-import { getOrderReportDetails, getPurchasedReportItems } from "./report-details.js";
+import { getOrderReportDetails, getPurchasedReportItems, getClaimReportIssueSummary } from "./report-details.js";
 import { prisma } from "./prisma.js";
 import { ORDER_REPORT_STATUSES, loadOrderReportData, getOrderReportExportRows, calculateOrderReportSummary } from "./admin-order-reports.js";
 import { queryServiceClaimsList } from "./service-claim-admin-query.js";
@@ -60,6 +60,7 @@ export function buildActivityReportRows(orders = [], claims = []) {
     country: claim.clientCountry || "",
     serialNumber: claim.serialNumber || "",
     issue: claim.problemDescription || "",
+    issueSummary: getClaimReportIssueSummary(claim),
     requestType: claim.requestType || "",
     itemCount: null,
     gross: null,
