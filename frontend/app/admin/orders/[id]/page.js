@@ -1,5 +1,5 @@
-import { AdminOrderInformation } from "../../../../components/admin-order-information";
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
+import { AdminOrderSummaryTable } from "../../../../components/admin-order-summary-table";
 import { OrderStatus } from "@prisma/client";
 import {
   ActionLink,
@@ -21,6 +21,7 @@ import {
 } from "../../../../components/admin-i18n";
 import { OrderActionButton, OrderActionFeedback } from "../../../../components/admin-order-action-buttons";
 import { CancellationRequestPanel } from "../../../../components/admin-order-cancellation-panel";
+import { AdminOrderAs400Form } from "../../../../components/admin-order-as400-form";
 import { OrderEmailReviewModal } from "../../../../components/order-email-review-modal";
 import { AdminOrderEmailDelivery } from "../../../../components/admin-order-email-delivery";
 import { attachOrderEmailDelivery } from "../../../../lib/email/order-email-store";
@@ -206,6 +207,12 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
             </div>
           }
         >
+          <AdminOrderAs400Form
+            orderId={order.id}
+            initialValue={order.as400Number || ""}
+            initialSaved={as400Saved}
+          />
+
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
           {paymentLink ? (
@@ -218,7 +225,17 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
           ) : null}
 
           <form action={`/api/admin/orders/${order.id}`} method="post" style={actionPanelStyle}>
-            <strong><AdminText i18nKey="orderDetailAdmin.orderActions" fallback="Order actions" /></strong>
+            <div style={statusRowStyle}>
+              <div style={statusItemStyle}>
+                <span style={compactLabelStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></span>
+                <AdminStatusBadge status={order.status} />
+              </div>
+              <div style={statusItemStyle}>
+                <span style={compactLabelStyle}><AdminText i18nKey="reportsAdmin.payment" fallback="Payment" /></span>
+                <PaymentStatusBadge status={order.paymentStatus} />
+                <PaymentMethodText value={order.paymentMethod} />
+              </div>
+            </div>
             <div style={actionButtonsStyle}>
               <OrderEmailReviewModal
                 to={order.email}
@@ -258,14 +275,11 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
                 </OrderActionButton>
               ) : null}
             </div>
-            <details style={{ borderTop: "1px solid var(--app-border)", paddingTop: 12 }}>
-              <summary style={{ cursor: "pointer", fontWeight: 700 }}><AdminText i18nKey="orderDetailAdmin.emailDelivery" fallback="Email delivery" /></summary>
-              <div style={{ marginTop: 12 }}><AdminOrderEmailDelivery delivery={order.confirmationEmailDelivery} /></div>
-            </details>
+            <details><summary style={{ cursor: "pointer", fontSize: 13 }}><AdminText i18nKey="orderItemsAdmin.emailDetails" fallback="Email delivery details" /></summary><AdminOrderEmailDelivery delivery={order.confirmationEmailDelivery} /></details>
             <OrderActionFeedback />
           </form>
 
-          <AdminOrderInformation order={order} itemCount={displayItems.length} as400Saved={as400Saved} />
+          <AdminOrderSummaryTable order={order} />
         </AdminSection>
 
         {cancellationRequests.length ? (
