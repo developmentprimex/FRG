@@ -188,7 +188,7 @@
     "customer": "Kunde",
     "copy": "Absenderkopie",
     "lastAttempt": "Zuletzt protokollierter Versuch",
-    "hint": "Zuletzt protokollierter Versuch. Gesendet bedeutet vom Mailserver angenommen, nicht im Postfach nachgewiesen. Der Status wird nach der Verarbeitung gespeichert; zum Aktualisieren neu laden. Bei Störungen kann das Ergebnis fehlen oder veraltet sein.",
+    "hint": "Gesendet bedeutet: vom Mailserver angenommen. Der Eingang im Postfach ist nicht bestätigt.",
     "status": {
       "SENT": "Gesendet",
       "SKIPPED": "Nicht gesendet (E-Mail nicht konfiguriert)",
@@ -196,7 +196,8 @@
       "PENDING": "Versand läuft / Ergebnis ausstehend",
       "UNKNOWN": "Unbekannt",
       "NOT_REQUIRED": "Keine separate Kopie"
-    }
+    },
+    "info": "Versandinfo"
   },
   "adminShellLogin": {
     "fragmentoAdmin": "Fragmento Admin",
@@ -1658,7 +1659,7 @@
     "requestedClaimDoesNotExist": "Die angeforderte Reklamation existiert nicht.",
     "backToClaims": "Zurück zu den Reklamationen",
     "claimTitle": "Reklamation {claimNumber}",
-    "claimDetailDescription": "Details aus der eingereichten Reklamation.",
+    "claimDetailDescription": "Details zur eingereichten Reklamation.",
     "clientAddress": "Kundenadresse",
     "floor": "Etage",
     "unit": "Wohnungsnummer",
@@ -1686,7 +1687,8 @@
     "kitchenPreview": "Küchenvorschau",
     "selectedPartSingular": "Ausgewählter Artikel",
     "noItemDescription": "Keine artikelspezifische Beschreibung angegeben.",
-    "noItemFiles": "Keine artikelspezifischen Dateien hochgeladen."
+    "noItemFiles": "Keine artikelspezifischen Dateien hochgeladen.",
+    "submissionNumber": "Einreichung {number}"
   },
   "pagination": {
     "label": "Seitennavigation",
@@ -1763,7 +1765,11 @@
     "confirmNotDelivered": "Haben Sie geprüft, dass diese E-Mail nicht zugestellt wurde? Dies ermöglicht einen erneuten Versand beim nächsten geplanten Lauf.",
     "verifiedDelivered": "Zustellung geprüft",
     "verifiedNotDelivered": "Nichtzustellung geprüft",
-    "doneAction": "Erledigen"
+    "doneAction": "Erledigen",
+    "withinDeadline": "Innerhalb der Frist",
+    "openForDay": "Seit {count} Tag offen",
+    "openForDays": "Seit {count} Tagen offen",
+    "day": "{count} Tag"
   },
   "orderItemsAdmin": {
     "moreDetails": "Weitere Bestelldetails",
@@ -1786,5 +1792,21 @@
     "typeCOMPONENT": "Komponente",
     "typeACCESSORY": "Zubehör",
     "typeSERVICE": "Dienstleistung"
+  },
+  "claimEmailReview": {
+    "review": "E-Mail ansehen",
+    "close": "Schließen",
+    "notification": "Reklamationsmeldung",
+    "confirmation": "Kundenbestätigung",
+    "previewNote": "Vorschau aus gespeicherten Angaben mit der aktuellen E-Mail-Vorlage.",
+    "loading": "E-Mail wird geladen…",
+    "loadError": "Die E-Mail-Vorschau konnte nicht geladen werden.",
+    "from": "Von",
+    "to": "An",
+    "cc": "CC",
+    "replyTo": "Antwort an",
+    "subject": "Betreff",
+    "emailContent": "E-Mail-Inhalt",
+    "attachments": "Anhänge"
   }
 }

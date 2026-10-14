@@ -52,9 +52,10 @@ export function AdminOrderEmailDelivery({ delivery, compact = false, titleKey = 
         );
       })}
       {delivery?.attemptedAt ? <div><AdminText i18nKey="orderEmailDelivery.lastAttempt" fallback="Last recorded attempt" />: <AdminDateTime value={delivery.attemptedAt} /></div> : null}
-      <span style={{ color: "var(--app-text-muted)" }}>
-        <AdminText i18nKey="orderEmailDelivery.hint" fallback="Last recorded attempt. Sent means accepted by the mail server, not verified inbox delivery. Status is saved after processing; refresh to see updates. If tracking is unavailable, this result may be missing or outdated." />
-      </span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6, color: "var(--app-text-muted)", fontSize: 12, lineHeight: 1.5 }}>
+        <span aria-hidden="true" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, flexShrink: 0, border: "1px solid currentColor", borderRadius: "50%", fontSize: 10, fontWeight: 700, fontStyle: "normal", lineHeight: 1 }}>i</span>
+        <span><AdminText i18nKey="orderEmailDelivery.hint" fallback="Sent means accepted by the mail server; inbox delivery is not confirmed." /></span>
+      </div>
     </div>
   );
 

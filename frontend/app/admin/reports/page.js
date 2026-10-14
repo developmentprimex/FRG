@@ -142,7 +142,7 @@ export default async function AdminReportsPage({ searchParams = {} }) {
                 {!rows.length && <tr><td style={reportTdStyle} colSpan={columnCount}><AdminText i18nKey="reportsAdmin.noRecords" fallback="No orders or claims found." /></td></tr>}
                 {rows.map((row, index) => {
                   const detailHref = row.href + "?returnTo=" + encodeURIComponent(returnToReports);
-                  const reference = row.type === "ORDER" ? row.reference : row.contractNumber || row.reference;
+                  const reference = row.reference;
                   return <tr key={row.type + ":" + row.id}>
                     <td style={{ ...reportTdStyle, textAlign: "center", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{index + 1}</td>
                     <td style={reportTdStyle}>
@@ -157,7 +157,7 @@ export default async function AdminReportsPage({ searchParams = {} }) {
                     {!claimsOnly && <td style={reportTdStyle}>{row.type === "ORDER" ? <AdminStatusBadge status={row.status} /> : "—"}</td>}
                     {showIssue && <td style={{ ...reportTdStyle, whiteSpace: "normal", minWidth: 200, maxWidth: 300 }} title={row.type === "CLAIM" ? row.issue : undefined}>
                       {row.type === "CLAIM"
-                        ? <AdminClaimLocalizedText text={row.issue || "—"} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.5, fontSize: 13 }} />
+                        ? <AdminClaimLocalizedText text={row.issueSummary || row.issue || "—"} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.5, fontSize: 13 }} />
                         : "—"}
                     </td>}
                     {!claimsOnly && <td style={{ ...reportTdStyle, textAlign: "right", fontWeight: 700 }}>{row.gross === null ? "—" : formatCurrency(row.gross)}</td>}

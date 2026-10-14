@@ -15,7 +15,7 @@ export const workTones = {
   cancelled: { color: "var(--app-text-muted)", background: "var(--app-surface)", borderColor: "var(--app-border)" },
 };
 
-export function WorkBadge({ item, compact = false }) {
+export function WorkBadge({ item, compact = false, inline = false }) {
   const router = useRouter();
   const state = workState(item);
   // Calendar boundaries update even if the worker keeps the dashboard open.
@@ -28,13 +28,13 @@ export function WorkBadge({ item, compact = false }) {
     return () => clearInterval(timer);
   }, [router]);
   const labels = { green: "On track", orange: "Needs attention", red: "Overdue", done: "Done", cancelled: "Cancelled" };
-  return <div style={{ display: "grid", gap: 5, marginBlock: 6 }}>
+  return <div style={{ display: inline ? "inline-flex" : "grid", alignItems: inline ? "center" : undefined, flexWrap: inline ? "wrap" : undefined, gap: 5, marginBlock: inline ? 0 : 6 }}>
     <span style={{ ...workTones[state.tone], borderWidth: 1, borderStyle: "solid", borderRadius: 12, padding: "5px 9px", fontSize: 12, fontWeight: 800, width: "fit-content", maxWidth: "100%", boxSizing: "border-box", whiteSpace: "normal", overflowWrap: "anywhere", lineHeight: 1.4 }}>
-      {state.tone === "done" ? "✓ " : ""}<AdminText i18nKey={`workProcessing.${state.tone}`} fallback={labels[state.tone]} />
-      {!compact && !['done', 'cancelled'].includes(state.tone) ? <> · <AdminText i18nKey="workProcessing.days" fallback="{count} days" values={{ count: state.days }} /></> : null}
+      {state.tone === "done" ? "✓ " : ""}<AdminText i18nKey={inline && state.tone === "green" ? "workProcessing.OPEN" : `workProcessing.${state.tone}`} fallback={inline && state.tone === "green" ? "Open" : labels[state.tone]} />
+      {!compact && !['done', 'cancelled'].includes(state.tone) ? <> · <AdminText i18nKey={state.days === 1 ? "workProcessing.day" : "workProcessing.days"} fallback={state.days === 1 ? "{count} day" : "{count} days"} values={{ count: state.days }} /></> : null}
     </span>
     {compact && !['done', 'cancelled'].includes(state.tone) ? <small style={{ color: "var(--app-text-muted)" }}><AdminText i18nKey="workProcessing.days" fallback="{count} days" values={{ count: state.days }} /></small> : null}
-    {!compact && !["done", "cancelled"].includes(state.tone) ? <small><AdminText i18nKey="workProcessing.OPEN" fallback="Open" /></small> : null}
+    {!compact && !inline && !["done", "cancelled"].includes(state.tone) ? <small><AdminText i18nKey="workProcessing.OPEN" fallback="Open" /></small> : null}
     {!compact && item.processing?.completedAt ? <small><AdminDateTime value={item.processing.completedAt} /> · {item.processing.completedBy}</small> : null}
   </div>;
 }

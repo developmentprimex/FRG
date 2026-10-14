@@ -1,3 +1,6 @@
+import { ClaimEmailReview } from "../../../../components/claim-email-review";
+import Link from "next/link";
+import { REPORT_TIME_ZONE } from "../../../../lib/admin-date-time";
 import { formatServiceClaimReference } from "../../../../lib/service-claim-email-subject";
 import { prisma as processingDb } from "../../../../lib/prisma";
 import { attachWorkProcessing } from "../../../../lib/work-processing";
@@ -239,37 +242,11 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
         </div>}
         <AdminSection
           title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber) }} />}
-          description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted service request." />}
-          actions={!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}
-        >
-          {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
-          {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
-
-          <AdminWorkPanel item={claim} />
-          <section style={{ ...itemCardStyle, marginBottom: 16 }}>
-            <strong><AdminText i18nKey="claimsAdmin.submissionHistory" fallback="Submission history" /></strong>
-            <ol>{submissions.map((submission, index) => <li key={submission.id} style={{ marginTop: 10 }}>
-              <a href={`/admin/claims/${claim.id}?submission=${encodeURIComponent(submission.id)}`} aria-current={selectedSubmission?.id === submission.id ? "page" : undefined}>
-                #{index + 1} · <AdminDateTime value={submission.createdAt} numeric /> · {submission.payload.fullName}
-              </a>
-              <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{submission.payload.problemDescription}</div>
-            </li>)}</ol>
-          </section>
-          <AdminClaimFeedback feedback={feedback ? {
-            id: feedback.id, status: feedback.status, createdAt: feedback.createdAt.toISOString(), attemptedAt: feedback.attemptedAt?.toISOString() || null,
-            sentAt: feedback.sentAt?.toISOString() || null, submittedAt: feedback.submittedAt?.toISOString() || null,
-            resolved: feedback.resolved, speedRating: feedback.speedRating,
-            communicationRating: feedback.communicationRating, overallRating: feedback.overallRating,
-            comment: feedback.comment,
-          } : null} />
-          <form action={`/api/admin/claims/${claim.id}`} method="post" style={actionPanelStyle}>
-            <div style={subMetaStyle}>
-              <span>{formatClaimCustomerName(claim.fullName)}</span>
-              <span aria-hidden="true">·</span>
-              <span><ClaimRequestTypeText requestType={claim.requestType} /></span>
-              <span aria-hidden="true">·</span>
-              <span><AdminDateTime value={claim.createdAt} /></span>
-            </div>
+          description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted claim." />}
+          actions={<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <ClaimEmailReview claimId={claim.id} submissionId={selectedSubmission?.id} />
+            {!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}
+            <form action={`/api/admin/claims/${claim.id}`} method="post" style={{ margin: 0 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <AdminConfirmSubmitButton
                 name="_intent"
@@ -278,12 +255,44 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
                 confirmKey="claimsAdmin.deleteConfirmMessage"
                 confirmFallback={"Delete this claim?\nThis action cannot be undone."}
               >
-                <AdminText i18nKey="claimsAdmin.deleteClaim" fallback="Delete claim" />
+                <AdminText i18nKey="ordersAdmin.delete" fallback="Delete" />
               </AdminConfirmSubmitButton>
             </div>
           </form>
+          </div>}
+        >
+          {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
+          {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-          <AdminOrderEmailDelivery delivery={claim.emailDelivery} titleKey="orderEmailDelivery.claimTitle" titleFallback="Claim email" />
+          <div style={{ display: "grid", gap: 10 }}>
+          <AdminWorkPanel item={claim} compact />
+          {submissions.length > 1 && <details style={{ border: "1px solid var(--app-border)", borderRadius: 12, padding: "12px 14px" }}>
+            <summary style={{ cursor: "pointer", fontSize: 14, fontWeight: 600 }}><AdminText i18nKey="claimsAdmin.submissionHistory" fallback="Submission history" /> ({submissions.length})</summary>
+            <ol style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 8 }}>
+              {submissions.map((submission, index) => {
+                const selected = selectedSubmission?.id === submission.id;
+                const query = new URLSearchParams({ submission: submission.id });
+                if (reportsReturnHref) query.set("returnTo", reportsReturnHref);
+                return <li key={submission.id}>
+                  <Link href={"/admin/claims/" + claim.id + "?" + query.toString()} aria-current={selected ? "page" : undefined} style={{ display: "block", padding: "10px 12px", border: "1px solid var(--app-border)", borderRadius: 8, color: "var(--app-text)", textDecoration: "none", background: selected ? "var(--app-surface-muted)" : "transparent" }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" }}>
+                      <strong style={{ fontSize: 13 }}><AdminText i18nKey="claimsAdmin.submissionNumber" fallback="Submission {number}" values={{ number: index + 1 }} /></strong>
+                      <span style={{ fontSize: 12, color: "var(--app-text-muted)" }}><AdminDateTime value={submission.createdAt} timeZone={REPORT_TIME_ZONE} numeric /></span>
+                    </div>
+                  </Link>
+                </li>;
+              })}
+            </ol>
+          </details>}
+          <AdminClaimFeedback feedback={feedback ? {
+            id: feedback.id, status: feedback.status, createdAt: feedback.createdAt.toISOString(), attemptedAt: feedback.attemptedAt?.toISOString() || null,
+            sentAt: feedback.sentAt?.toISOString() || null, submittedAt: feedback.submittedAt?.toISOString() || null,
+            resolved: feedback.resolved, speedRating: feedback.speedRating,
+            communicationRating: feedback.communicationRating, overallRating: feedback.overallRating,
+            comment: feedback.comment,
+          } : null} />
+          <AdminOrderEmailDelivery delivery={claim.emailDelivery} compact titleKey="orderEmailDelivery.claimTitle" titleFallback="Claim email" />
+          </div>
           <div style={splitGridStyle}>
             <article style={itemCardStyle}>
               <strong style={sectionTitleStyle}><AdminText i18nKey="claimsAdmin.customer" fallback="Customer" /></strong>
@@ -479,20 +488,12 @@ function ClaimRequestTypeText({ requestType }) {
   return requestType || "-";
 }
 
-const actionPanelStyle = {
-  display: "grid",
-  gap: 14,
-  border: "1px solid var(--app-border)",
-  borderRadius: 14,
-  background: "linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,248,242,0.74))",
-  padding: 18,
-};
 
 const deleteClaimButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.24)",
   borderRadius: 10,
-  minHeight: 42,
-  padding: "10px 14px",
+  minHeight: 32,
+  padding: "6px 10px",
   background: "rgba(255,255,255,0.72)",
   color: "var(--app-danger-text)",
   fontWeight: 800,

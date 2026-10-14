@@ -1,4 +1,5 @@
-import { getOrderReportDetails, getPurchasedReportItems } from "./report-details.js";
+import { formatServiceClaimReference } from "./service-claim-email-subject.js";
+import { getOrderReportDetails, getPurchasedReportItems, getClaimReportIssueSummary } from "./report-details.js";
 import { prisma } from "./prisma.js";
 import { ORDER_REPORT_STATUSES, loadOrderReportData, getOrderReportExportRows, calculateOrderReportSummary } from "./admin-order-reports.js";
 import { queryServiceClaimsList } from "./service-claim-admin-query.js";
@@ -47,7 +48,7 @@ export function buildActivityReportRows(orders = [], claims = []) {
   const claimRows = claims.map((claim) => ({
     id: claim.id,
     type: "CLAIM",
-    reference: claim.id,
+    reference: formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber),
     href: "/admin/claims/" + claim.id,
     createdAt: claim.createdAt,
     status: "RECEIVED",
@@ -60,6 +61,7 @@ export function buildActivityReportRows(orders = [], claims = []) {
     country: claim.clientCountry || "",
     serialNumber: claim.serialNumber || "",
     issue: claim.problemDescription || "",
+    issueSummary: getClaimReportIssueSummary(claim),
     requestType: claim.requestType || "",
     itemCount: null,
     gross: null,

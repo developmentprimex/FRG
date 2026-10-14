@@ -188,7 +188,7 @@
     "customer": "Customer",
     "copy": "Sender copy",
     "lastAttempt": "Last recorded attempt",
-    "hint": "Last recorded attempt. Sent means accepted by the mail server, not verified inbox delivery. Status is saved after processing; refresh to see updates. If tracking is unavailable, this result may be missing or outdated.",
+    "hint": "Sent means accepted by the mail server; inbox delivery is not confirmed.",
     "status": {
       "SENT": "Sent",
       "SKIPPED": "Not sent (email not configured)",
@@ -196,7 +196,8 @@
       "PENDING": "Sending / awaiting result",
       "UNKNOWN": "Unknown",
       "NOT_REQUIRED": "No separate copy"
-    }
+    },
+    "info": "Delivery info"
   },
   "adminShellLogin": {
     "fragmentoAdmin": "Fragmento Admin",
@@ -1657,8 +1658,8 @@
     "claimNotFound": "Service request not found",
     "requestedClaimDoesNotExist": "The requested service request does not exist.",
     "backToClaims": "Back to service requests",
-    "claimTitle": "Service request {claimNumber}",
-    "claimDetailDescription": "Details from the submitted service request.",
+    "claimTitle": "Claim {claimNumber}",
+    "claimDetailDescription": "Details from the submitted claim.",
     "clientAddress": "Client address",
     "floor": "Floor",
     "unit": "Unit",
@@ -1686,7 +1687,8 @@
     "kitchenPreview": "Kitchen preview",
     "selectedPartSingular": "Selected part",
     "noItemDescription": "No item-specific description provided.",
-    "noItemFiles": "No item-specific files uploaded."
+    "noItemFiles": "No item-specific files uploaded.",
+    "submissionNumber": "Submission {number}"
   },
   "pagination": {
     "label": "Pagination",
@@ -1763,7 +1765,11 @@
     "confirmNotDelivered": "Have you verified that this email was not delivered? This allows it to be retried on the next scheduled run.",
     "verifiedDelivered": "Verified delivered",
     "verifiedNotDelivered": "Verified not delivered",
-    "doneAction": "Done"
+    "doneAction": "Done",
+    "withinDeadline": "Within deadline",
+    "openForDay": "Open for {count} day",
+    "openForDays": "Open for {count} days",
+    "day": "{count} day"
   },
   "orderItemsAdmin": {
     "moreDetails": "More order details",
@@ -1786,5 +1792,21 @@
     "typeCOMPONENT": "Component",
     "typeACCESSORY": "Accessory",
     "typeSERVICE": "Service"
+  },
+  "claimEmailReview": {
+    "review": "Review email",
+    "close": "Close",
+    "notification": "Claim notification",
+    "confirmation": "Customer confirmation",
+    "previewNote": "Preview rebuilt from saved details using the current email template.",
+    "loading": "Loading email…",
+    "loadError": "Unable to load the email preview.",
+    "from": "From",
+    "to": "To",
+    "cc": "CC",
+    "replyTo": "Reply-To",
+    "subject": "Subject",
+    "emailContent": "Email content",
+    "attachments": "Attachments"
   }
 }

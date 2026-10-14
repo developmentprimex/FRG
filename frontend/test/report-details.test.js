@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getOrderReportDetails, getPurchasedReportItems } from "../lib/report-details.js";
+import { getOrderReportDetails, getPurchasedReportItems, getClaimReportIssueSummary } from "../lib/report-details.js";
 
 test("order details retain saved products, quantities, article codes, and separate rows", () => {
   const details = getOrderReportDetails({ items: [
@@ -25,4 +25,11 @@ test("purchased item details omit locked defaults regardless of saved price", ()
   assert.equal(getOrderReportDetails(order), "3 × Upper Cabinet [H6002]\n1 × Free addition");
   assert.equal(getPurchasedReportItems(order).reduce((count, item) => count + item.quantity, 0), 4);
   assert.equal(getOrderReportDetails({ items: [order.items[0]] }), "");
+});
+
+test("claim issue summary shows affected parts without repeating problem paragraphs", () => {
+  const claim = { problemDescription: "Full long problem description", problemAreasJson: JSON.stringify([{ componentId: "fridge", name: "Fridge / freezer", detail: "Loud noise" }, { componentId: "fridge-2", name: "Fridge / freezer", detail: "Second issue" }, { componentId: "oven", name: "Oven", detail: "Does not heat" }]) };
+  assert.equal(getClaimReportIssueSummary(claim), "Fridge / freezer, Oven");
+  assert.equal(getClaimReportIssueSummary({ problemDescription: "First line\nSecond line" }), "First line");
+  assert.equal(getClaimReportIssueSummary({ problemAreasJson: "invalid" }), "");
 });
