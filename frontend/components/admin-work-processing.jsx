@@ -46,8 +46,10 @@ export function WorkActions({ item, compact = false }) {
   const [error, setError] = useState("");
   if (item.status === "CANCELLED") return null;
   const status = item.processing?.status || "OPEN";
+  if (status === "DONE") return null;
   async function update(nextStatus) {
     if (pending) return;
+    if (nextStatus === "DONE" && !window.confirm(translate("workProcessing.confirmClose", "Close this ticket permanently? It cannot be reopened."))) return;
     setPending(true); setError("");
     try {
       const response = await fetch("/api/admin/work-processing", {
@@ -63,12 +65,10 @@ export function WorkActions({ item, compact = false }) {
   const button = { border: "1px solid var(--app-border)", borderRadius: 8, padding: "9px 12px", minHeight: 38, fontSize: 13, background: "var(--app-surface)", color: "var(--app-accent)", cursor: pending ? "wait" : "pointer", fontWeight: 800, whiteSpace: "nowrap" };
   return <div style={{ display: "grid", gap: 8, ...(compact ? { width: "100%", minWidth: 0 } : {}) }}>
     <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} aria-busy={pending}>
-      {status === "DONE" ? <button type="button" disabled={pending} style={button} onClick={() => update("OPEN")}><AdminText i18nKey="workProcessing.reopen" fallback="Reopen" /></button> : <>
         <button type="button" disabled={pending} title={translate("workProcessing.markDone", "Mark as done")} style={{ ...button, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, color: "var(--app-accent-contrast)", background: "var(--color-primary)", border: "1px solid var(--color-primary)", boxShadow: "none", padding: "8px 10px", lineHeight: 1.3, whiteSpace: "nowrap", ...(compact ? { width: "100%", maxWidth: "100%", minWidth: 0 } : {}) }} onClick={() => update("DONE")}>
           <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}><path d="m5 12 4 4L19 6" /></svg>
           <span><AdminText i18nKey={compact ? "workProcessing.doneAction" : "workProcessing.markDone"} fallback={compact ? "Done" : "Mark as done"} /></span>
         </button>
-      </>}
     </div>
     {pending ? <small role="status"><AdminText i18nKey="workProcessing.saving" fallback="Saving…" /></small> : null}
     {error ? <small role="alert" style={{ color: "#a51b28" }}>{error}</small> : null}

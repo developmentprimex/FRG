@@ -40,6 +40,13 @@ test("customer receives the agreed acknowledgement with a contract-specific refe
   assert.equal(buildClaimConfirmationMessage({ ...payload, contractNumber: "111123456" }, env).replyTo, "primex@example.com");
 });
 
+test("follow-up acknowledgement keeps the ticket reference and confirms an addition", () => {
+  const message = buildClaimConfirmationMessage({ ...payload, ticketNumber: 1020, isFollowUp: true }, env);
+  assert.match(message.subject, /Ihr Ticket wurde ergänzt/);
+  assert.match(message.subject, /#1020 670123456 KD 02/);
+  assert.match(message.text, /offenen Ticket hinzugefügt/);
+});
+
 test("missing customer address does not send; SMTP failure is exposed to the background handler", async () => {
   let calls = 0;
   const send = async () => { calls += 1; throw new Error("SMTP unavailable"); };

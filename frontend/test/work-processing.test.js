@@ -98,16 +98,15 @@ test("newest-first sorting, processing filters and counts cover done and cancell
   assert.deepEqual(summarizeWork(items, now), { OPEN: 3, DONE: 1, OVERDUE: 1 });
 });
 
-test("completion and reopening are audited with optimistic concurrency", async () => {
+test("completion is final and stale updates are rejected", async () => {
   const { db, state } = memoryDb();
   let record = await updateWorkProcessing({ db, workType: "CLAIM", workId: "old", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
   assert.equal(record.completedBy, "admin@example.com"); assert.ok(record.completedAt); assert.equal(record.version, 1);
   await assert.rejects(updateWorkProcessing({ db, workType: "CLAIM", workId: "old", actor: "other@example.com", status: "OPEN", expectedVersion: 0 }), /another worker/);
-  record = await updateWorkProcessing({ db, workType: "CLAIM", workId: "old", actor: "other@example.com", status: "OPEN", expectedVersion: 1 });
-  assert.equal(record.completedAt, null); assert.equal(record.completedBy, null);
-  assert.equal(state.events.length, 2); assert.equal(state.claims[0].createdAt.getTime(), overdue.createdAt.getTime());
+  await assert.rejects(updateWorkProcessing({ db, workType: "CLAIM", workId: "old", actor: "other@example.com", status: "OPEN", expectedVersion: 1 }), /cannot be reopened/);
+  assert.equal(state.events.length, 1); assert.equal(state.claims[0].createdAt.getTime(), overdue.createdAt.getTime());
   const [attached] = await attachWorkProcessing(db, [overdue], "CLAIM");
-  assert.equal(workState(attached, now).tone, "red");
+  assert.equal(workState(attached, now).tone, "done");
 });
 
 test("invalid status, missing claims and order processing are rejected", async () => {

@@ -42,6 +42,7 @@ export async function updateWorkProcessing({ db, workType, workId, status, actor
       throw new Error("This item was updated by another worker. Refresh the page and try again.");
     }
     const oldStatus = previous?.status || "OPEN";
+    if (oldStatus === "DONE" && status !== "DONE") throw new Error("Closed tickets cannot be reopened.");
     if (oldStatus === status) return previous;
     const now = new Date();
     const data = {

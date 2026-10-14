@@ -720,7 +720,9 @@ model ServiceClaimEmailAttempt {
 }
 
 model ServiceClaim {
-  ticketNumber         Int      @unique @default(autoincrement())
+  submissions          ServiceClaimSubmission[]
+  ticketNumber         Int      @default(dbgenerated())
+  ticketSeries         String   @default("live")
   id                   String   @id
   contractNumber       String
   claimSequence        Int
@@ -748,8 +750,20 @@ model ServiceClaim {
   createdAt            DateTime @default(now())
 
   @@unique([contractNumber, claimSequence])
+  @@unique([ticketSeries, ticketNumber])
   @@index([contractNumber])
   @@index([createdAt])
+}
+
+model ServiceClaimSubmission {
+  id              String @id
+  claimId         String
+  claim           ServiceClaim @relation(fields: [claimId], references: [id], onDelete: Cascade)
+  payload         Json
+  attachmentStart Int @default(0)
+  createdAt       DateTime @default(now())
+
+  @@index([claimId, createdAt])
 }
 
 model ClaimFeedbackInvitation {

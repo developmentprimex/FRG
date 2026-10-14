@@ -198,6 +198,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                       <strong style={{ whiteSpace: "nowrap" }}>{formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber)}</strong>
 
                       <div style={rowMetaStyle}><ClaimRequestTypeText requestType={claim.requestType} /></div>
+                      {claim.submissionCount > 1 ? <div style={rowMetaStyle}><AdminText i18nKey="claimsAdmin.submissionCount" fallback="{count} submissions" values={{ count: claim.submissionCount }} /></div> : null}
                     </td>
                     <td style={tdStyle}>
                       <div style={customerNameStyle}>{formatClaimCustomerName(claim.fullName)}</div>
@@ -207,7 +208,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                       <AdminClaimLocalizedText text={truncate(claim.problemDescription, 220)} style={issueClampStyle} />
                     </td>
                     <td className="claims-table-date" style={tdStyle}><AdminDateTime value={claim.createdAt} numeric /></td>
-                    <td style={tdStyle}><AdminEmailDeliveryStatus delivery={claim.emailDelivery} /></td>
+                    <td style={tdStyle}><AdminEmailDeliveryStatus delivery={claim.emailDelivery} showExplanation={false} /></td>
                     <td style={{ ...tdStyle, width: 1 }}>
                       <div className="claims-actions" style={actionCellStyle}>
                         <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
@@ -246,7 +247,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   <AdminClaimLocalizedText text={truncate(claim.problemDescription, 160)} style={issueClampStyle} />
                   <div style={{ display: "grid", gap: 6 }}>
                     <span style={rowMetaStyle}><AdminText i18nKey="orderEmailDelivery.column" fallback="Email status" /></span>
-                    <AdminEmailDeliveryStatus delivery={claim.emailDelivery} />
+                    <AdminEmailDeliveryStatus delivery={claim.emailDelivery} showExplanation={false} />
                   </div>
                   <div className="claims-actions" style={actionCellStyle}>
                     <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>

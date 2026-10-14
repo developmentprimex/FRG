@@ -12,7 +12,7 @@ export function buildClaimConfirmationMessage(payload, env = process.env) {
   const reference = formatServiceClaimReference(payload.contractNumber, payload.claimSequence, payload.ticketNumber);
   const paragraphs = [
     payload.fullName ? `Guten Tag ${payload.fullName},` : "Guten Tag,",
-    "wir haben Ihre Reklamation erhalten.",
+    payload.isFollowUp ? "wir haben Ihre weiteren Angaben erhalten und Ihrem offenen Ticket hinzugefügt." : "wir haben Ihre Reklamation erhalten.",
     `Ticketnummer: ${reference}\nVertragsnummer: ${payload.contractNumber}`,
     "Wir prüfen Ihr Anliegen und melden uns bei Ihnen, sobald die nächsten Schritte feststehen oder weitere Informationen benötigt werden.",
     "Bitte geben Sie bei Rückfragen Ihre Ticketnummer an. Eine erneute Einreichung ist nicht erforderlich.",
@@ -21,7 +21,7 @@ export function buildClaimConfirmationMessage(payload, env = process.env) {
   return {
     to: String(payload.email || "").trim(),
     replyTo: resolveServiceClaimEmailRecipient(payload.contractNumber, env) || undefined,
-    subject: `Ihre Reklamation wurde erfasst – ${reference}`,
+    subject: `${payload.isFollowUp ? "Ihr Ticket wurde ergänzt" : "Ihre Reklamation wurde erfasst"} – ${reference}`,
     text: paragraphs.join("\n\n"),
     html: `<div lang="de" style="font-family:Arial,sans-serif;line-height:1.6;color:#222">${paragraphs.map((paragraph) => `<p>${escapeHtml(paragraph).replace(/\n/g, "<br>")}</p>`).join("")}</div>`,
   };

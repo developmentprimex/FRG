@@ -153,7 +153,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
   const claims = await queryServiceClaimById(prisma, id);
   if (claims[0] && !canAccessClaim(admin, claims[0].contractNumber)) redirect("/admin");
 
-  const [claim] = await attachWorkProcessing(processingDb, await attachClaimEmailDelivery(claims), "CLAIM");
+  let [claim] = await attachWorkProcessing(processingDb, await attachClaimEmailDelivery(claims), "CLAIM");
 
   if (!claim) {
     return (
@@ -168,6 +168,16 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
         </div>
       </AdminShell>
     );
+  }
+
+  const submissions = await prisma.serviceClaimSubmission.findMany({ where: { claimId: claim.id }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
+  const selectedSubmission = submissions.find((entry) => entry.id === resolvedSearchParams.submission) || submissions[0];
+  const attachmentStart = selectedSubmission?.attachmentStart || 0;
+  if (selectedSubmission) {
+    // Display the selected immutable form snapshot, preserving ticket identity/status.
+    claim = { ...claim, ...selectedSubmission.payload, id: claim.id, ticketNumber: claim.ticketNumber,
+      claimSequence: claim.claimSequence, contractNumber: claim.contractNumber, createdAt: claim.createdAt,
+      processing: claim.processing, workType: claim.workType, emailDelivery: claim.emailDelivery };
   }
 
   const feedback = isTestContractNumber(claim.contractNumber)
@@ -186,7 +196,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
     ? await getServiceClaimKitchenPlan(claim.contractNumber).catch(() => null)
     : null;
   const referenceSketchUrl = storedSketchIndex >= 0
-    ? `/api/admin/claims/${claim.id}/attachments/${storedSketchIndex}?view=1&compactMarkers=1`
+    ? `/api/admin/claims/${claim.id}/attachments/${attachmentStart + storedSketchIndex}?view=1&compactMarkers=1`
     : referencePlan?.selectionMode === "reference-pdf" ? referencePlan.previewImagePath : null;
   const claimKitchenPreview = referenceSketchUrl ? null : await renderClaimKitchenPreviewPng({
     kitchenSlug: claim.kitchenSlug,
@@ -195,7 +205,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
     width: 1040,
   }).catch(() => null);
   const uploadedAttachmentFiles = rawUploadedAttachments.map((file, index) => ({
-    index,
+    index: attachmentStart + index,
     filename: file.filename,
     contentType: file.contentType || "",
     size: file.size,
@@ -230,6 +240,15 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
           <AdminWorkPanel item={claim} />
+          <section style={{ ...itemCardStyle, marginBottom: 16 }}>
+            <strong><AdminText i18nKey="claimsAdmin.submissionHistory" fallback="Submission history" /></strong>
+            <ol>{submissions.map((submission, index) => <li key={submission.id} style={{ marginTop: 10 }}>
+              <a href={`/admin/claims/${claim.id}?submission=${encodeURIComponent(submission.id)}`} aria-current={selectedSubmission?.id === submission.id ? "page" : undefined}>
+                #{index + 1} · <AdminDateTime value={submission.createdAt} numeric /> · {submission.payload.fullName}
+              </a>
+              <div style={{ whiteSpace: "pre-wrap", marginTop: 4 }}>{submission.payload.problemDescription}</div>
+            </li>)}</ol>
+          </section>
           <AdminClaimFeedback feedback={feedback ? {
             id: feedback.id, status: feedback.status, createdAt: feedback.createdAt.toISOString(), attemptedAt: feedback.attemptedAt?.toISOString() || null,
             sentAt: feedback.sentAt?.toISOString() || null, submittedAt: feedback.submittedAt?.toISOString() || null,

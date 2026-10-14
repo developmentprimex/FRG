@@ -31,6 +31,8 @@ import { formatServiceClaimProblemAreaForEmail, formatServiceClaimProblemAreaLis
 import { KITCHEN_AREA_FIRST_LINE_PREFIXES } from "../../../lib/service-claim-problem-description";
 import { isElectricalApplianceProblemArea } from "../../../lib/service-claim-serial-number";
 import { formatServiceClaimEmailSubject, formatServiceClaimReference } from "../../../lib/service-claim-email-subject";
+import { lockWorkProcessing } from "../../../lib/work-processing";
+import { findOpenClaim, saveClaimSubmission } from "../../../lib/service-claim-submissions";
 import { getServiceClaimKitchenPlan } from "../../../lib/service-claim-kitchen-plan";
 import { buildServiceClaimComponentChoiceGroups } from "../../../lib/service-claim-component-choices";
 import { validateReferenceAppliances } from "../../../lib/contract-appliances";
@@ -396,7 +398,7 @@ async function sendComplaintEmailMessage(payload, attachmentParts = [], referenc
   // 111 and 222 contract claims are sent from SMTP_111_* (315primex), all others from SMTP_*.
   const { receipt } = await sendMailForContract(payload.contractNumber, {
     to: recipient,
-    subject: formatServiceClaimEmailSubject(payload.contractNumber, payload.claimSequence, payload.ticketNumber),
+    subject: `${formatServiceClaimEmailSubject(payload.contractNumber, payload.claimSequence, payload.ticketNumber)}${payload.isFollowUp ? " – Ergänzung" : ""}`,
     replyTo: payload.email || undefined,
     text: buildComplaintEmailText(emailPayload),
     html: buildComplaintEmailHtml(emailPayload, kitchenPreviewAttachment),
@@ -871,6 +873,9 @@ async function insertServiceClaimRecord(prismaClient, payload) {
   while (true) {
     try {
       const savedClaim = await prismaClient.$transaction(async (transaction) => {
+        await lockWorkProcessing(transaction);
+        const activeClaim = await findOpenClaim(transaction, payload.contractNumber);
+        if (activeClaim) return saveClaimSubmission(transaction, payload, activeClaim, true);
         // Serialize sequence allocation per contract so simultaneous submissions
         // cannot receive the same KD number.
         await transaction.$queryRaw`
@@ -897,11 +902,10 @@ async function insertServiceClaimRecord(prismaClient, payload) {
           { ...payload, claimSequence: nextSequence },
           options,
         ));
-        return { claimSequence: nextSequence, ticketNumber: inserted[0].ticketNumber };
-      });
+        return saveClaimSubmission(transaction, payload, { id: payload.id, claimSequence: nextSequence, ticketNumber: inserted[0].ticketNumber }, false);
+      }, { maxWait: 10000, timeout: 45000 });
 
-      payload.claimSequence = savedClaim.claimSequence;
-      payload.ticketNumber = savedClaim.ticketNumber;
+      Object.assign(payload, savedClaim);
       return savedClaim.claimSequence;
     } catch (error) {
       // The column-support result can be cached by a dev server that was already
@@ -1805,7 +1809,7 @@ export async function POST(request) {
     after(async () => {
       await Promise.all([
         storedAttachmentParts.length
-          ? persistServiceClaimAttachments(payload.id, storedAttachmentParts).catch((persistError) => {
+          ? persistServiceClaimAttachments(payload.id, storedAttachmentParts, payload.attachmentStart).catch((persistError) => {
               console.error("Service claim attachment persist error:", persistError);
               return false;
             })
@@ -1824,7 +1828,8 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: "Your complaint has been recorded successfully and is being sent.",
+      message: payload.isFollowUp ? "Your submission has been added to your open ticket." : "Your complaint has been recorded successfully and is being sent.",
+      isFollowUp: payload.isFollowUp,
       ticketNumber: payload.ticketNumber,
       claimSequence: payload.claimSequence,
       ticketReference: formatServiceClaimReference(payload.contractNumber, payload.claimSequence, payload.ticketNumber),

@@ -50,7 +50,7 @@ function memoryDb({ email = "customer@example.com", contractNumber = "111123" } 
   return { db, state };
 }
 
-test("claim completion creates one invitation, reopening cancels it", async () => {
+test("claim completion creates one invitation and cannot be reopened", async () => {
   const { db, state } = memoryDb();
   const done = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
   assert.equal(state.invitations.length, 1);
@@ -59,8 +59,8 @@ test("claim completion creates one invitation, reopening cancels it", async () =
   const again = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 1 });
   assert.equal(again.feedbackInvitation, undefined);
   assert.equal(state.invitations.length, 1);
-  await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "OPEN", expectedVersion: 1 });
-  assert.equal(state.invitations[0].status, "CANCELLED");
+  await assert.rejects(updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "OPEN", expectedVersion: 1 }), /cannot be reopened/);
+  assert.equal(state.invitations[0].status, "PENDING");
 });
 
 test("only 111 contracts receive invitations; 670 processing continues without one", async () => {
@@ -134,18 +134,17 @@ test("SMTP acceptance sends once; database failure after acceptance requires rev
   assert.equal(await dispatchClaimFeedbackInvitation({ ...args, createTransport }), "skipped");
   assert.equal(sends, 1);
 
-  const retry = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "OPEN", expectedVersion: 1 });
-  assert.equal(retry.status, "OPEN");
-  const doneAgain = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 2 });
-  const originalUpdate = db.claimFeedbackInvitation.update;
-  db.claimFeedbackInvitation.update = async ({ data, ...rest }) => {
+  const second = memoryDb();
+  const doneAgain = await updateWorkProcessing({ db: second.db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  const originalUpdate = second.db.claimFeedbackInvitation.update;
+  second.db.claimFeedbackInvitation.update = async ({ data, ...rest }) => {
     if (data.status === "SENT") throw new Error("Database write failed after send");
     return originalUpdate({ data, ...rest });
   };
-  assert.equal(await dispatchClaimFeedbackInvitation({ ...args, invitationId: doneAgain.feedbackInvitation.id, token: doneAgain.feedbackInvitation.token, createTransport }), "unknown");
-  assert.equal(state.invitations[1].status, "UNKNOWN");
-  await assert.rejects(prepareClaimFeedbackRetry({ db, invitationId: doneAgain.feedbackInvitation.id }), /cannot be retried/);
-  assert.equal(await submitClaimFeedback({ db, token: doneAgain.feedbackInvitation.token, data: answers }), true);
+  assert.equal(await dispatchClaimFeedbackInvitation({ ...args, db: second.db, invitationId: doneAgain.feedbackInvitation.id, token: doneAgain.feedbackInvitation.token, createTransport }), "unknown");
+  assert.equal(second.state.invitations[0].status, "UNKNOWN");
+  await assert.rejects(prepareClaimFeedbackRetry({ db: second.db, invitationId: doneAgain.feedbackInvitation.id }), /cannot be retried/);
+  assert.equal(await submitClaimFeedback({ db: second.db, token: doneAgain.feedbackInvitation.token, data: answers }), true);
 });
 
 test("failed delivery can rotate its link; uncertain delivery needs an explicit review", async () => {

@@ -1604,6 +1604,8 @@
     "emailDelivery": "E-Mail-Versand"
   },
   "claimsAdmin": {
+    "submissionHistory": "Verlauf der Einreichungen",
+    "submissionCount": "{count} Einreichungen",
     "openAction": "Öffnen",
     "claims": "Reklamationen",
     "claim": "Reklamation",
@@ -1714,6 +1716,7 @@
     "rejectConfirm": "Diesen Widerruf ablehnen?\nDie Bestellung bleibt unverändert und der Kunde wird benachrichtigt."
   },
   "workProcessing": {
+    "confirmClose": "Dieses Ticket endgültig schließen? Es kann nicht wieder geöffnet werden.",
     "processing": "Bearbeitung",
     "green": "Im Zeitplan",
     "orange": "Handlungsbedarf",

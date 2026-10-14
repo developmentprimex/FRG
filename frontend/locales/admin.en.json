@@ -1604,6 +1604,8 @@
     "emailDelivery": "Email delivery"
   },
   "claimsAdmin": {
+    "submissionHistory": "Submission history",
+    "submissionCount": "{count} submissions",
     "openAction": "Open",
     "claims": "Service requests",
     "claim": "Service request",
@@ -1714,6 +1716,7 @@
     "rejectConfirm": "Reject this withdrawal?\nThe order stays unchanged and the customer is notified."
   },
   "workProcessing": {
+    "confirmClose": "Close this ticket permanently? It cannot be reopened.",
     "processing": "Processing",
     "green": "On track",
     "orange": "Needs attention",

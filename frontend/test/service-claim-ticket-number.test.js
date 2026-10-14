@@ -11,6 +11,9 @@ test("insert uses database default and exposes the returned number only after co
   const payload = { id: "fixture", contractNumber: "670105809", ticketNumber: 9999 };
   const context = vm.createContext({
     Prisma,
+    lockWorkProcessing: async () => {},
+    findOpenClaim: async () => null,
+    saveClaimSubmission: async (_tx, _payload, claim) => claim,
     getServiceClaimInsertColumnSupport: async () => ({ includeClaimSequence: true }),
     getMissingOptionalInsertColumns: () => [],
   });
