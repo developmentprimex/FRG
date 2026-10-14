@@ -1532,6 +1532,9 @@
     "rejectConfirm": "Diesen Widerruf ablehnen?\nDie Bestellung bleibt unverändert und der Kunde wird benachrichtigt."
   },
   "orderItemsAdmin": {
+    "moreDetails": "Weitere Bestelldetails",
+    "emailDetails": "Details zum E-Mail-Versand",
+    "priceDetails": "Preis- und Konfigurationsdetails",
     "program": "Küchenprogramm (aktuelle Konfiguration)",
     "itemsTotal": "Summe der angezeigten Positionen",
     "orderTotal": "Gespeicherter Bestellbetrag (inkl. MwSt.)",

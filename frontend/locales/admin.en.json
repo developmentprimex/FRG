@@ -1532,6 +1532,9 @@
     "rejectConfirm": "Reject this withdrawal?\nThe order stays unchanged and the customer is notified."
   },
   "orderItemsAdmin": {
+    "moreDetails": "More order details",
+    "emailDetails": "Email delivery details",
+    "priceDetails": "Price and configuration details",
     "program": "Kitchen program (current configuration)",
     "itemsTotal": "Displayed item total",
     "orderTotal": "Recorded order total (incl. VAT)",
