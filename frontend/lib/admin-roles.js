@@ -1,4 +1,4 @@
-export const ADMIN_ROLES = ["SUPERADMIN", "ADMIN", "USER"];
+export const ADMIN_ROLES = ["SUPERADMIN", "PX_ADMIN", "ADMIN", "USER"];
 
 export function isSuperAdmin(admin) {
   return admin?.role === "SUPERADMIN";
@@ -13,6 +13,8 @@ export function formatAdminRoleLabel(role) {
   switch (role) {
     case "SUPERADMIN":
       return "Superadmin";
+    case "PX_ADMIN":
+      return "PX Admin";
     case "ADMIN":
       return "Admin";
     case "USER":
