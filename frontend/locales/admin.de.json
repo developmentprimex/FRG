@@ -1406,7 +1406,7 @@
   },
   "reportsAdmin": {
     "reports": "Berichte",
-    "description": "Bestellberichte mit bestaetigten Summen, MwSt., offenen Bestellungen und Excel-Export.",
+    "description": "Bestellungen und Reklamationen in einer Tabelle mit Filtern und Excel-Export.",
     "exportExcel": "Excel exportieren",
     "totalOrders": "Bestellungen gesamt",
     "matchingCurrentFilters": "Entspricht den aktuellen Filtern",
@@ -1467,7 +1467,23 @@
     "accessAccepted": "Akzeptiert",
     "accessTest": "Test",
     "accessRejected": "Abgelehnt",
-    "noContractAccess": "Keine Vertragszugriffe gefunden."
+    "noContractAccess": "Keine Vertragszugriffe gefunden.",
+    "type": "Typ",
+    "allTypes": "Bestellungen und Reklamationen",
+    "activityRows": "Bestellungen und Reklamationen",
+    "reference": "Referenz",
+    "details": "Details",
+    "totalClaims": "Reklamationen gesamt",
+    "totalRecords": "Einträge gesamt",
+    "noRecords": "Keine Bestellungen oder Reklamationen gefunden.",
+    "received": "Eingegangen",
+    "claimReceived": "Eingegangen (Reklamation)",
+    "orderType": "Bestellung",
+    "claimType": "Reklamation",
+    "viewDetails": "Details ansehen",
+    "backToReports": "← Zurück zu den Berichten",
+    "amountsConfirmedOnly": "Beträge nur für bestätigte Bestellungen",
+    "rowNumber": "Nr."
   },
   "contractAccessAdmin": {
     "title": "Vertragszugriffe",
@@ -1748,5 +1764,27 @@
     "verifiedDelivered": "Zustellung geprüft",
     "verifiedNotDelivered": "Nichtzustellung geprüft",
     "doneAction": "Erledigen"
+  },
+  "orderItemsAdmin": {
+    "moreDetails": "Weitere Bestelldetails",
+    "emailDetails": "Details zum E-Mail-Versand",
+    "priceDetails": "Preis- und Konfigurationsdetails",
+    "program": "Küchenprogramm (aktuelle Konfiguration)",
+    "itemsTotal": "Summe der angezeigten Positionen",
+    "orderTotal": "Gespeicherter Bestellbetrag (inkl. MwSt.)",
+    "historyNote": "Artikelnummern, Namen, Mengen und gespeicherte Preise stammen aus dieser Bestellung. Die Zuordnung zur Grundausstattung und das Programm basieren auf der aktuellen Küchenkonfiguration, da sie nicht mit der Bestellung gespeichert wurden.",
+    "mismatch": "Die angezeigten Positionen stimmen nicht mit dem gespeicherten Bestellbetrag überein. Die Küchenkonfiguration könnte sich geändert haben. Bitte prüfen Sie die ursprüngliche Bestätigung, bevor Sie diese Aufstellung verwenden.",
+    "additional": "Bestellte Ergänzungen",
+    "included": "Grundausstattung — enthalten",
+    "unknown": "Positionen ohne verknüpfte Küchenkonfiguration",
+    "unknownNote": "Für diese Positionen lässt sich die Zugehörigkeit zur Grundausstattung nicht bestimmen. Die gespeicherten Preise werden angezeigt.",
+    "codes": "Artikelnummer / Positionscode",
+    "unitPrice": "Berechneter Stückpreis",
+    "currentBlende": "Blende (aktuelle Konfiguration)",
+    "savedPrice": "Gespeicherter Referenzpreis, nicht berechnet",
+    "subtotal": "Zwischensumme",
+    "typeCOMPONENT": "Komponente",
+    "typeACCESSORY": "Zubehör",
+    "typeSERVICE": "Dienstleistung"
   }
 }

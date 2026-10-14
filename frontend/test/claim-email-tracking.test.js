@@ -5,7 +5,7 @@ import { createRequire } from "node:module";
 import { setImmediate as nextTurn } from "node:timers/promises";
 import vm from "node:vm";
 import test from "node:test";
-import { resolveServiceClaimEmailRecipient } from "../lib/service-claim-email-recipient.js";
+import { resolveServiceClaimEmailCc, resolveServiceClaimEmailRecipient } from "../lib/service-claim-email-recipient.js";
 import { formatServiceClaimEmailSubject } from "../lib/service-claim-email-subject.js";
 import { attachClaimEmailDelivery } from "../lib/email/claim-email-store.js";
 import { CLAIM_INTERNAL_PREFIXES, resolveSmtpConfigForContract, sendMailForContract } from "../lib/email/contract-smtp.js";
@@ -28,7 +28,7 @@ test("multiple configured recipients are checked separately; Reply-To is not a r
   assert.deepEqual(result.recipients.map((r) => [r.email, r.status]), [["service@example.com", "SENT"], ["copy@example.com", "FAILED"]]);
 });
 
-for (const scenario of ["success", "px", "partial", "failure", "missing-recipient", "missing-from", "tracking-failure", "tracking-hang"]) {
+for (const scenario of ["success", "px", "222", "arc-reference", "arc-reference-other", "arc-reference-cc-rejected", "arc-interactive", "partial", "failure", "missing-recipient", "missing-from", "tracking-failure", "tracking-hang"]) {
   test(`claim sender preserves original delivery and background response flow: ${scenario}`, async (t) => {
     t.mock.method(console, "warn", () => {});
     const previousClient = globalThis.orderEmailTrackingPrisma;
@@ -61,12 +61,21 @@ for (const scenario of ["success", "px", "partial", "failure", "missing-recipien
       SERVICE_REQUEST_OTHER_EMAIL: scenario === "missing-recipient" ? "" : scenario === "partial" ? "service@example.com, other@example.com" : "service@example.com",
     };
     const payload = { id: "claim-fixture", ticketNumber: 1020, contractNumber: scenario === "px" ? "111123456" : "670123456", claimSequence: 2, email: "customer@example.com", attachmentsMeta: [{ filename: "photo.png" }] };
+    payload.contractType = scenario.startsWith("arc-") ? "ARC" : "PX";
+    if (scenario === "222") payload.contractNumber = "222123456";
+    if (scenario === "arc-reference-other") payload.contractNumber = "671123456";
+    const kitchenPlan = { selectionMode: scenario.startsWith("arc-reference") ? "reference-pdf" : "interactive" };
+    const expectedCc = scenario.startsWith("arc-reference")
+      ? scenario === "arc-reference-other" ? "334primex.eu@gmail.com" : "verwaltung@hbi-wohnen.de"
+      : undefined;
     const expectedTo = resolveServiceClaimEmailRecipient(payload.contractNumber, env);
     const smtpError = new Error("Original SMTP failure");
     const mails = [];
     const context = vm.createContext({
       process: { env }, observeClaimEmailSend,
       resolveServiceClaimEmailRecipient: (number) => resolveServiceClaimEmailRecipient(number, env),
+      resolveServiceClaimEmailCc,
+      getServiceClaimKitchenPlan: async () => kitchenPlan,
       formatServiceClaimEmailSubject,
       buildClaimKitchenPreviewAttachment: async () => null,
       isEmailInlineImage: () => true,
@@ -82,8 +91,8 @@ for (const scenario of ["success", "px", "partial", "failure", "missing-recipien
         mails.push(mail);
         if (scenario === "failure") throw smtpError;
         return {
-          accepted: [scenario === "px" ? "px-service@example.com" : "service@example.com"],
-          rejected: scenario === "partial" ? ["other@example.com"] : [], messageId: "claim-mail",
+          accepted: [scenario === "px" || scenario === "222" ? "px-service@example.com" : "service@example.com", ...(expectedCc && scenario !== "arc-reference-cc-rejected" ? [expectedCc] : [])],
+          rejected: scenario === "partial" ? ["other@example.com"] : scenario === "arc-reference-cc-rejected" ? [expectedCc] : [], messageId: "claim-mail",
         };
       } }) },
     });
@@ -114,7 +123,7 @@ for (const scenario of ["success", "px", "partial", "failure", "missing-recipien
     if (!skipped) {
       assert.equal(mails[0].to, expectedTo);
       assert.equal(mails[0].replyTo, payload.email);
-      assert.equal(mails[0].cc, undefined);
+      assert.equal(mails[0].cc, expectedCc);
       assert.equal(mails[0].subject, formatServiceClaimEmailSubject(payload.contractNumber, 2, 1020));
       assert.equal(mails[0].text, "Original text");
       assert.equal(mails[0].html, "<p>Original HTML</p>");
@@ -127,8 +136,9 @@ for (const scenario of ["success", "px", "partial", "failure", "missing-recipien
     else {
       assert.equal(saved.length, 1);
       assert.equal(saved[0].claimId, payload.id);
-      const expected = skipped ? ["SKIPPED"] : scenario === "failure" ? ["FAILED"] : scenario === "partial" ? ["SENT", "FAILED"] : ["SENT"];
+      const expected = skipped ? ["SKIPPED"] : scenario === "failure" ? ["FAILED"] : scenario === "partial" || scenario === "arc-reference-cc-rejected" ? ["SENT", "FAILED"] : expectedCc ? ["SENT", "SENT"] : ["SENT"];
       assert.deepEqual(saved[0].delivery.recipients.map((r) => r.status), expected);
+      if (expectedCc) assert.equal(saved[0].delivery.recipients[1].email, expectedCc);
       assert.equal(saved[0].delivery.recipients.some((r) => r.email === payload.email), false);
     }
   });

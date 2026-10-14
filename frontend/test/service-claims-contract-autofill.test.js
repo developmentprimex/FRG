@@ -16,8 +16,9 @@ test("splitPersonName splits a full name into given name and surname", () => {
   });
 });
 
-test("buildServiceClaimAutofillFromContract maps address and landlord fields", () => {
+test("buildServiceClaimAutofillFromContract leaves client address for manual entry and maps landlord fields", () => {
   const autofill = buildServiceClaimAutofillFromContract({
+    contractNumber: "670104296",
     floor: "2",
     unitNumber: "14",
     address: {
@@ -35,10 +36,17 @@ test("buildServiceClaimAutofillFromContract maps address and landlord fields", (
     },
   });
 
-  assert.equal(autofill.clientCountry, "Germany");
-  assert.equal(autofill.clientAddressLine1, "Invalidenstrasse 10");
-  assert.equal(autofill.clientFloor, "2");
-  assert.equal(autofill.clientUnitNumber, "14");
+  for (const field of [
+    "clientCountry",
+    "clientAddressLine1",
+    "clientAddressLine2",
+    "clientPostalCode",
+    "clientCity",
+    "clientFloor",
+    "clientUnitNumber",
+  ]) {
+    assert.equal(Object.hasOwn(autofill, field), false, `${field} must be entered by the client`);
+  }
   assert.equal(autofill.registrationVerificationPostalCode, "10115");
   assert.equal(autofill.registrationVerificationUnit, "Invalidenstrasse 10");
   assert.equal(autofill.landlordCompanyName, "Anna Schmidt Housing GmbH");
@@ -49,6 +57,32 @@ test("buildServiceClaimAutofillFromContract maps address and landlord fields", (
   assert.equal(autofill.landlordPhone, undefined);
   assert.equal(autofill.landlordEmail, undefined);
 });
+
+for (const contractNumber of ["670104332", "111104332"]) {
+test(`${contractNumber} leaves client address and landlord company name for user input`, () => {
+  const autofill = buildServiceClaimAutofillFromContract({
+    contractNumber,
+    floor: "3",
+    unitNumber: "3B",
+    address: {
+      country: "Germany",
+      city: "Munich",
+      postalCode: "64410",
+      address1: "Hermannstal 92-114",
+      address2: "Shared project",
+    },
+    landlord: { companyName: "ARGE" },
+  });
+  for (const field of [
+    "clientCountry", "clientCity", "clientPostalCode", "clientAddressLine1",
+    "clientAddressLine2", "clientFloor", "clientUnitNumber", "landlordCompanyName",
+  ]) {
+    assert.equal(Object.hasOwn(autofill, field), false, `${field} must remain user input`);
+  }
+  assert.equal(autofill.registrationVerificationPostalCode, "22149");
+  assert.equal(autofill.registrationVerificationUnit, "Theodor-Storm-Str. 7-9");
+});
+}
 
 test("buildServiceClaimAutofillFromContract maps active registration customer fields", () => {
   const autofill = buildServiceClaimAutofillFromContract({

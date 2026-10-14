@@ -1,4 +1,5 @@
 import { AdminOrderInformation } from "../../../../components/admin-order-information";
+import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import { OrderStatus } from "@prisma/client";
 import {
   ActionLink,
@@ -9,16 +10,11 @@ import {
   pageGridStyle,
   splitGridStyle,
   subMetaStyle,
-  tableStyle,
-  tableWrapStyle,
-  tdStyle,
-  thStyle,
 } from "../../../../components/admin-ui";
 import { AdminShell } from "../../../../components/admin-shell";
 import {
   AdminDateTime,
   AdminKitchenDisplayName,
-  AdminLocalizedName,
   AdminPluralText,
   AdminStatusBadge,
   AdminText,
@@ -34,7 +30,7 @@ import { getCancellationRequestsForOrder } from "../../../../lib/order-cancellat
 import { getOrderById } from "../../../../lib/catalog";
 import { getPriceBreakdown } from "../../../../lib/price-utils";
 import { buildOrderConfirmationAttachmentLabels, buildOrderConfirmationEmailDraft, buildOrderConfirmationEmailStaticHtml } from "../../../../lib/email/order-notifications";
-import { mergeSinkAndWorktopItems, SINK_AND_WORKTOP_CODE, SINK_AND_WORKTOP_NAME, SINK_AND_WORKTOP_NAME_DE } from "../../../../lib/order-item-display";
+import { AdminOrderItems } from "../../../../components/admin-order-items";
 import { buildOrderForNotifications } from "../../../../lib/orders";
 
 export const dynamic = "force-dynamic";
@@ -103,35 +99,6 @@ function formatPreferredDeliveryDate(value) {
   }).format(date);
 }
 
-function getOrderItemPriceParts(item) {
-  const quantity = Math.max(1, Math.floor(Number(item.quantity || 1)));
-  const totalUnitPrice = Number(item.priceSnapshot || 0);
-  const blendeUnitPrice = item.kitchenItem?.blendePrice == null ? 0 : Number(item.kitchenItem.blendePrice || 0);
-  const blendeQuantity = item.kitchenItem?.catalogBlendeId
-    ? Math.max(1, Math.floor(Number(item.kitchenItem.catalogBlendeQuantity || 1)))
-    : 0;
-  const blendeUnitTotal = blendeUnitPrice * blendeQuantity;
-  const articleUnitPrice = Math.max(totalUnitPrice - blendeUnitTotal, 0);
-
-  return {
-    quantity,
-    articleUnitPrice,
-    blendeCode: item.kitchenItem?.blendeCode || "",
-    blendeUnitPrice,
-    blendeQuantity,
-    blendeUnitTotal,
-    totalUnitPrice,
-    lineTotal: totalUnitPrice * quantity,
-  };
-}
-
-function getOrderItemNameFields(item) {
-  return {
-    name: item.nameSnapshot || item.name || item.kitchenItem?.name || item.code || "",
-    nameDe: item.nameDeSnapshot || item.nameDe || item.kitchenItem?.nameDe || "",
-  };
-}
-
 function OwnerSummary({ owner }) {
   if (!owner) {
     return <AdminText i18nKey="orderDetailAdmin.noHousingCompanySelected" fallback="No housing company selected" />;
@@ -189,14 +156,18 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
   const admin = await requireAdminPage();
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
+  const reportsReturnHref = getReportsReturnHref(resolvedSearchParams.returnTo);
   const [order] = await attachOrderEmailDelivery([await getOrderById(id)]);
 
   if (!order) {
     return (
       <AdminShell adminEmail={admin.email}>
         <div style={pageGridStyle}>
+        {reportsReturnHref && <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <ActionLink href={reportsReturnHref}><AdminText i18nKey="reportsAdmin.backToReports" fallback="← Back to reports" /></ActionLink>
+        </div>}
           <AdminSection title={<AdminText i18nKey="orderDetailAdmin.orderNotFound" fallback="Order not found" />} description={<AdminText i18nKey="orderDetailAdmin.requestedOrderDoesNotExist" fallback="The requested order does not exist." />}>
-            <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>
+            {!reportsReturnHref && <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>}
           </AdminSection>
         </div>
       </AdminShell>
@@ -214,15 +185,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
     order.status !== OrderStatus.CANCELLED &&
     String(order.paymentStatus || "UNPAID").toUpperCase() !== "PAID";
   const notificationOrder = buildOrderForNotifications(order);
-  const displayItems = mergeSinkAndWorktopItems(order.items || [], (sinkItem, worktopItem) => ({
-    ...sinkItem,
-    id: `${sinkItem.id}-with-${worktopItem.id}`,
-    code: SINK_AND_WORKTOP_CODE,
-    nameSnapshot: SINK_AND_WORKTOP_NAME,
-    nameDeSnapshot: SINK_AND_WORKTOP_NAME_DE,
-    priceSnapshot: Number(sinkItem.priceSnapshot || 0) + Number(worktopItem.priceSnapshot || 0),
-    quantity: 1,
-  }));
+  const displayItems = order.items || [];
   const emailDraft = buildOrderConfirmationEmailDraft(notificationOrder);
   const emailStatic = await buildOrderConfirmationEmailStaticHtml(notificationOrder);
   const emailAttachmentLabels = await buildOrderConfirmationAttachmentLabels(notificationOrder, emailStatic.attachmentLinks);
@@ -231,11 +194,14 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
+        {reportsReturnHref && <div style={{ display: "flex", justifyContent: "flex-start" }}>
+          <ActionLink href={reportsReturnHref}><AdminText i18nKey="reportsAdmin.backToReports" fallback="← Back to reports" /></ActionLink>
+        </div>}
         <AdminSection
           title={<AdminText i18nKey="orderDetailAdmin.orderTitle" fallback="Order {orderNumber}" values={{ orderNumber: order.orderNumber }} />}
           actions={
             <div style={actionRowStyle}>
-              <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>
+              {!reportsReturnHref && <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>}
               <ActionLink href={`/kitchens/${order.kitchen.slug}`}><AdminText i18nKey="orderDetailAdmin.viewKitchen" fallback="View kitchen" /></ActionLink>
             </div>
           }
@@ -318,106 +284,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
         <AdminSection
           title={<AdminText i18nKey="orderDetailAdmin.orderItems" fallback="Order items" />}
         >
-          <div className="admin-order-items-table" style={tableWrapStyle}>
-            <table style={tableStyle}>
-              <thead>
-                <tr>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.item" fallback="Item" /></th>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.type" fallback="Type" /></th>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.itemCode" fallback="Item code" /></th>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.quantity" fallback="Quantity" /></th>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.articlePrice" fallback="Article price" /></th>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.blende" fallback="Blende" /></th>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.unitPrice" fallback="Unit price" /></th>
-                  <th style={thStyle}><AdminText i18nKey="orderDetailAdmin.lineTotal" fallback="Line total" /></th>
-                </tr>
-              </thead>
-              <tbody>
-                {displayItems.map((item) => {
-                  const priceParts = getOrderItemPriceParts(item);
-                  const itemName = getOrderItemNameFields(item);
-
-                  return (
-                    <tr key={item.id}>
-                      <td style={tdStyle}>
-                        <AdminLocalizedName name={itemName.name} nameDe={itemName.nameDe} as="strong" />
-                      </td>
-                      <td style={tdStyle}><ItemTypeLabel type={item.itemType} /></td>
-                      <td style={tdStyle}>{item.code}</td>
-                      <td style={tdStyle}>{priceParts.quantity}</td>
-                      <td style={tdStyle}>{formatCurrency(priceParts.articleUnitPrice)}</td>
-                      <td style={tdStyle}>
-                        {priceParts.blendeCode
-                          ? `${priceParts.blendeCode}: ${formatCurrency(priceParts.blendeUnitPrice)} x ${priceParts.blendeQuantity} = ${formatCurrency(priceParts.blendeUnitTotal)}`
-                          : "-"}
-                      </td>
-                      <td style={tdStyle}>{formatCurrency(priceParts.totalUnitPrice)}</td>
-                      <td style={tdStyle}>{formatCurrency(priceParts.lineTotal)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          <div className="admin-order-items-cards" style={{ display: "none", gap: 12 }}>
-            {displayItems.map((item) => {
-              const priceParts = getOrderItemPriceParts(item);
-              const itemName = getOrderItemNameFields(item);
-
-              return (
-                <article key={item.id} style={mobileItemCardStyle}>
-                  <AdminLocalizedName name={itemName.name} nameDe={itemName.nameDe} as="strong" />
-                  <div style={subMetaStyle}>
-                    <span><ItemTypeLabel type={item.itemType} /></span>
-                    <span>{item.code}</span>
-                  </div>
-                  <div style={mobileItemGridStyle}>
-                    <div>
-                      <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.quantity" fallback="Quantity" /></span>
-                      <span>{priceParts.quantity}</span>
-                    </div>
-                    <div>
-                      <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.articlePrice" fallback="Article price" /></span>
-                      <span>{formatCurrency(priceParts.articleUnitPrice)}</span>
-                    </div>
-                    <div>
-                      <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.blende" fallback="Blende" /></span>
-                      <span>{priceParts.blendeCode ? `${priceParts.blendeCode}: ${formatCurrency(priceParts.blendeUnitTotal)}` : "-"}</span>
-                    </div>
-                    <div>
-                      <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.unitPrice" fallback="Unit price" /></span>
-                      <span>{formatCurrency(priceParts.totalUnitPrice)}</span>
-                    </div>
-                    <div>
-                      <span style={detailLabelStyle}><AdminText i18nKey="orderDetailAdmin.lineTotal" fallback="Line total" /></span>
-                      <strong>{formatCurrency(priceParts.lineTotal)}</strong>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-          <style>{`
-            .admin-order-items-cards {
-              display: none;
-            }
-
-            button:focus-visible,
-            a:focus-visible {
-              outline: 3px solid rgba(143, 62, 44, 0.24);
-              outline-offset: 2px;
-            }
-
-            @media (max-width: 760px) {
-              .admin-order-items-table {
-                display: none;
-              }
-
-              .admin-order-items-cards {
-                display: grid !important;
-              }
-            }
-          `}</style>
+          <AdminOrderItems order={order} />
         </AdminSection>
 
       </div>
@@ -499,8 +366,8 @@ const actionPanelStyle = {
   gap: 14,
   border: "1px solid var(--app-border)",
   borderRadius: 14,
-  background: "linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,248,242,0.74))",
-  padding: 18,
+  background: "transparent",
+  padding: 14,
 };
 
 const statusRowStyle = {
@@ -609,15 +476,4 @@ const paymentLinkAnchorStyle = {
   color: "#1f6f43",
   overflowWrap: "anywhere",
   fontWeight: 800,
-};
-
-const mobileItemCardStyle = {
-  ...itemCardStyle,
-  padding: 16,
-};
-
-const mobileItemGridStyle = {
-  display: "grid",
-  gap: 12,
-  gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
 };

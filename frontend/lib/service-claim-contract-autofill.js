@@ -1,3 +1,5 @@
+import contractClientAddressDefaults from "./contract-client-address-defaults.cjs";
+
 export function splitPersonName(fullName) {
   const parts = String(fullName || "")
     .trim()
@@ -19,7 +21,11 @@ export function splitPersonName(fullName) {
 }
 
 export function buildServiceClaimAutofillFromContract(contract) {
-  const address = contract?.address || {};
+  const contractNumber = String(contract?.contractNumber || "").trim().replace(/\s+/g, "");
+  const clientAddressDefault = Object.hasOwn(contractClientAddressDefaults, contractNumber)
+    ? contractClientAddressDefaults[contractNumber]
+    : null;
+  const address = clientAddressDefault || contract?.address || {};
   const landlord = contract?.landlord || {};
   const registration = contract?.registration || {};
   const contact = splitPersonName(landlord.managerName);
@@ -38,16 +44,11 @@ export function buildServiceClaimAutofillFromContract(contract) {
     surname: String(customer.surname || "").trim(),
     phone: String(registration.phone || "").trim(),
     email: String(registration.email || "").trim(),
-    clientCountry: String(address.country || "").trim(),
-    clientAddressLine1: String(address.address1 || "").trim(),
-    clientAddressLine2: String(address.address2 || "").trim(),
-    clientPostalCode: String(address.postalCode || "").trim(),
-    clientCity: String(address.city || "").trim(),
-    clientFloor: String(contract?.floor || "").trim(),
-    clientUnitNumber: String(contract?.unitNumber || "").trim(),
     registrationVerificationPostalCode: String(address.postalCode || "").trim(),
     registrationVerificationUnit: String(registrationVerificationUnit || "").trim(),
-    landlordCompanyName: String(landlord.companyName || "").trim(),
+    ...(!["670104332", "111104332"].includes(contractNumber) ? {
+      landlordCompanyName: String(landlord.companyName || "").trim(),
+    } : {}),
     landlordCompanyPhone: String(landlord.phone || "").trim(),
     landlordCompanyEmail: String(landlord.email || "").trim(),
     landlordContactGivenName: String(contact.givenName || "").trim(),

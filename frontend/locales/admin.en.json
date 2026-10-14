@@ -1406,7 +1406,7 @@
   },
   "reportsAdmin": {
     "reports": "Reports",
-    "description": "Order reports with confirmed totals, VAT, open order counts, and Excel export.",
+    "description": "Orders and claims in one table, with filters and Excel export.",
     "exportExcel": "Export Excel",
     "totalOrders": "Total orders",
     "matchingCurrentFilters": "Matching current filters",
@@ -1467,7 +1467,23 @@
     "accessAccepted": "Accepted",
     "accessTest": "Test",
     "accessRejected": "Rejected",
-    "noContractAccess": "No contract access events found."
+    "noContractAccess": "No contract access events found.",
+    "type": "Type",
+    "allTypes": "Orders and claims",
+    "activityRows": "Orders and claims",
+    "reference": "Reference",
+    "details": "Details",
+    "totalClaims": "Total claims",
+    "totalRecords": "Total records",
+    "noRecords": "No orders or claims found.",
+    "received": "Received",
+    "claimReceived": "Received (claim)",
+    "orderType": "Order",
+    "claimType": "Claim",
+    "viewDetails": "View details",
+    "backToReports": "← Back to reports",
+    "amountsConfirmedOnly": "Amounts for confirmed orders only",
+    "rowNumber": "No."
   },
   "contractAccessAdmin": {
     "title": "Contract access",
@@ -1748,5 +1764,27 @@
     "verifiedDelivered": "Verified delivered",
     "verifiedNotDelivered": "Verified not delivered",
     "doneAction": "Done"
+  },
+  "orderItemsAdmin": {
+    "moreDetails": "More order details",
+    "emailDetails": "Email delivery details",
+    "priceDetails": "Price and configuration details",
+    "program": "Kitchen program (current configuration)",
+    "itemsTotal": "Displayed item total",
+    "orderTotal": "Recorded order total (incl. VAT)",
+    "historyNote": "Article numbers, names, quantities and saved prices come from this order. Default inclusion and the program use the current kitchen configuration because they were not saved with the order.",
+    "mismatch": "The displayed items do not match the recorded order total. The kitchen configuration may have changed; verify the original confirmation before using this breakdown.",
+    "additional": "Ordered additions",
+    "included": "Default kitchen — included",
+    "unknown": "Items without a linked kitchen configuration",
+    "unknownNote": "Default inclusion cannot be determined for these items. Their saved prices are shown.",
+    "codes": "Article number / item code",
+    "unitPrice": "Charge per unit",
+    "currentBlende": "Blende (current configuration)",
+    "savedPrice": "Saved reference price, not charged",
+    "subtotal": "Subtotal",
+    "typeCOMPONENT": "Component",
+    "typeACCESSORY": "Accessory",
+    "typeSERVICE": "Service"
   }
 }
