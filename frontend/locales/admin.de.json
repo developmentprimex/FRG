@@ -1530,5 +1530,24 @@
     "approveNeedsMatch": "Ordnen Sie diesen Antrag einer Bestellung zu, bevor Sie ihn genehmigen.",
     "approveConfirm": "Diesen Widerruf genehmigen?\nDie Bestellung wird als storniert markiert.",
     "rejectConfirm": "Diesen Widerruf ablehnen?\nDie Bestellung bleibt unverändert und der Kunde wird benachrichtigt."
+  },
+  "orderItemsAdmin": {
+    "program": "Küchenprogramm (aktuelle Konfiguration)",
+    "itemsTotal": "Summe der angezeigten Positionen",
+    "orderTotal": "Gespeicherter Bestellbetrag (inkl. MwSt.)",
+    "historyNote": "Artikelnummern, Namen, Mengen und gespeicherte Preise stammen aus dieser Bestellung. Die Zuordnung zur Grundausstattung und das Programm basieren auf der aktuellen Küchenkonfiguration, da sie nicht mit der Bestellung gespeichert wurden.",
+    "mismatch": "Die angezeigten Positionen stimmen nicht mit dem gespeicherten Bestellbetrag überein. Die Küchenkonfiguration könnte sich geändert haben. Bitte prüfen Sie die ursprüngliche Bestätigung, bevor Sie diese Aufstellung verwenden.",
+    "additional": "Bestellte Ergänzungen",
+    "included": "Grundausstattung — enthalten",
+    "unknown": "Positionen ohne verknüpfte Küchenkonfiguration",
+    "unknownNote": "Für diese Positionen lässt sich die Zugehörigkeit zur Grundausstattung nicht bestimmen. Die gespeicherten Preise werden angezeigt.",
+    "codes": "Artikelnummer / Positionscode",
+    "unitPrice": "Berechneter Stückpreis",
+    "currentBlende": "Blende (aktuelle Konfiguration)",
+    "savedPrice": "Gespeicherter Referenzpreis, nicht berechnet",
+    "subtotal": "Zwischensumme",
+    "typeCOMPONENT": "Komponente",
+    "typeACCESSORY": "Zubehör",
+    "typeSERVICE": "Dienstleistung"
   }
 }

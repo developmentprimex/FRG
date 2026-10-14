@@ -1530,5 +1530,24 @@
     "approveNeedsMatch": "Match this request to an order before approving.",
     "approveConfirm": "Approve this withdrawal?\nThe order will be marked as cancelled.",
     "rejectConfirm": "Reject this withdrawal?\nThe order stays unchanged and the customer is notified."
+  },
+  "orderItemsAdmin": {
+    "program": "Kitchen program (current configuration)",
+    "itemsTotal": "Displayed item total",
+    "orderTotal": "Recorded order total (incl. VAT)",
+    "historyNote": "Article numbers, names, quantities and saved prices come from this order. Default inclusion and the program use the current kitchen configuration because they were not saved with the order.",
+    "mismatch": "The displayed items do not match the recorded order total. The kitchen configuration may have changed; verify the original confirmation before using this breakdown.",
+    "additional": "Ordered additions",
+    "included": "Default kitchen — included",
+    "unknown": "Items without a linked kitchen configuration",
+    "unknownNote": "Default inclusion cannot be determined for these items. Their saved prices are shown.",
+    "codes": "Article number / item code",
+    "unitPrice": "Charge per unit",
+    "currentBlende": "Blende (current configuration)",
+    "savedPrice": "Saved reference price, not charged",
+    "subtotal": "Subtotal",
+    "typeCOMPONENT": "Component",
+    "typeACCESSORY": "Accessory",
+    "typeSERVICE": "Service"
   }
 }
