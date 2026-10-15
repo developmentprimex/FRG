@@ -12,6 +12,7 @@ export function AdminClaimFeedback({ feedback }) {
   const [error, setError] = useState("");
   if (!feedback) return null;
   const answered = feedback.status === "ANSWERED";
+  const statusDate = answered ? feedback.submittedAt : feedback.sentAt;
   const needsAttention = answered && (feedback.resolved !== "YES" || feedback.overallRating <= 2);
   const ratingTone = (value) => value >= 4 ? "positive" : value === 3 ? "neutral" : "negative";
   const scores = [
@@ -43,7 +44,7 @@ export function AdminClaimFeedback({ feedback }) {
     finally { setPending(false); }
   }
   return <section className="claim-feedback-panel" data-tone={answered ? needsAttention ? "attention" : "positive" : "pending"} aria-label={t("title", "Customer feedback")}>
-    <div className="feedback-top"><div><h2>{t("title", "Customer feedback")}</h2><p>{statusText}{feedback.sentAt ? <> · <AdminDateTime value={feedback.sentAt} /></> : null}</p></div>{canRetry ? <button type="button" disabled={pending} onClick={retry}>{pending ? t("retrying", "Sending…") : t("retry", "Retry email")}</button> : null}</div>
+    <div className="feedback-top"><div><h2>{t("title", "Customer feedback")}</h2><p>{statusText}{statusDate ? <> · <AdminDateTime value={statusDate} /></> : null}</p></div>{canRetry ? <button type="button" disabled={pending} onClick={retry}>{pending ? t("retrying", "Sending…") : t("retry", "Retry email")}</button> : null}</div>
     {feedback.status === "ANSWERED" ? <>
       <div className="score-grid">
         <div data-tone={feedback.resolved === "YES" ? "positive" : feedback.resolved === "PARTLY" ? "neutral" : "negative"}>
@@ -57,7 +58,6 @@ export function AdminClaimFeedback({ feedback }) {
         </div>)}
       </div>
       {feedback.comment ? <p className="comment"><b>{t("comment", "Customer comment")}:</b> {feedback.comment}</p> : null}
-      <small>{t("received", "Received")}: <AdminDateTime value={feedback.submittedAt} /></small>
     </> : null}
     {canReview ? <div className="delivery-review"><p>{t("unknownDetail", "Check the sending mailbox and decide whether the email was delivered.")}</p><button type="button" disabled={pending} onClick={() => review("DELIVERED")}>{t("markDelivered", "Email was delivered")}</button><button type="button" disabled={pending} onClick={() => review("NOT_DELIVERED")}>{t("markNotDelivered", "Email was not delivered")}</button></div> : null}
     {error ? <p role="alert" className="error">{error}</p> : null}
