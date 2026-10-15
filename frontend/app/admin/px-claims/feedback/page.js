@@ -2,13 +2,13 @@ import Link from "next/link";
 import { AdminShell } from "../../../../components/admin-shell";
 import { AdminDateTime, AdminText, AdminTranslatedInput } from "../../../../components/admin-i18n";
 import { requirePxAdminPage } from "../../../../lib/admin-role-guards";
-import { FEEDBACK_PAGE_SIZE, loadClaimFeedback } from "../../../../lib/claim-feedback-dashboard";
+import { FEEDBACK_PAGE_SIZE, loadClaimFeedback, needsFeedbackAttention } from "../../../../lib/claim-feedback-dashboard";
 import { requireAdminClaimsPage } from "../../../../lib/admin-claims-access";
 import { canAccessPx } from "../../../../lib/admin-roles";
 import { prisma } from "../../../../lib/prisma";
+import "./feedback-dashboard.css";
 
 export const dynamic = "force-dynamic";
-
 const basePath = "/admin/px-claims/feedback";
 
 function href(filters, changes = {}) {
@@ -24,28 +24,78 @@ function href(filters, changes = {}) {
   return `${filters.basePath || basePath}${params.size ? `?${params}` : ""}`;
 }
 
-const statusKeys = {
-  PENDING: "pending", SENDING: "sending", SENT: "sent", FAILED: "failed",
-  UNKNOWN: "unknown", NO_EMAIL: "noEmail", CANCELLED: "cancelled", ANSWERED: "answered",
-};
-const statusFallbacks = {
-  PENDING: "Waiting to send", SENDING: "Sending invitation", SENT: "Invitation sent", FAILED: "Email failed",
-  UNKNOWN: "Delivery uncertain", NO_EMAIL: "No customer email", CANCELLED: "Invitation cancelled", ANSWERED: "Customer responded",
-};
+function Text({ name, children, values }) {
+  return <AdminText i18nKey={`claimFeedbackList.${name}`} fallback={children} values={values} />;
+}
+
+function Icon({ name, size = 18 }) {
+  const paths = {
+    responses: "M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6A8.4 8.4 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8v.5Z",
+    send: "m22 2-7 20-4-9-9-4 20-7ZM22 2 11 13",
+    chart: "M4 19V5m0 14h16M8 15v-4m4 4V7m4 8v-6",
+    star: "m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z",
+    attention: "M12 9v4m0 4h.01M10.3 3.8 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z",
+    filters: "M4 7h16M7 12h10m-7 5h4",
+    arrowLeft: "m12 5-7 7 7 7M5 12h14",
+    arrowRight: "m12 5 7 7-7 7M19 12H5",
+    down: "m6 9 6 6 6-6",
+    check: "m5 12 4 4L19 6",
+    search: "m21 21-4.3-4.3M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0Z",
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name] || paths.responses} /></svg>;
+}
+
+const statusKeys = { PENDING: "pending", SENDING: "sending", SENT: "sent", FAILED: "failed", UNKNOWN: "unknown", NO_EMAIL: "noEmail", CANCELLED: "cancelled", ANSWERED: "answered" };
+const statusFallbacks = { PENDING: "Waiting to send", SENDING: "Sending invitation", SENT: "Invitation sent", FAILED: "Email failed", UNKNOWN: "Delivery uncertain", NO_EMAIL: "No customer email", CANCELLED: "Invitation cancelled", ANSWERED: "Customer responded" };
 
 function Status({ status }) {
-  return <span className={`feedback-status feedback-status-${status.toLowerCase()}`}>
-    <AdminText i18nKey={`claimFeedbackAdmin.${statusKeys[status] || "pending"}`} fallback={statusFallbacks[status] || status} />
-  </span>;
+  return <span className={`feedback-status feedback-status-${String(status || "pending").toLowerCase()}`}><AdminText i18nKey={`claimFeedbackAdmin.${statusKeys[status] || "pending"}`} fallback={statusFallbacks[status] || "Waiting to send"} /></span>;
 }
 
 function Resolution({ value }) {
-  if (!value) return "—";
-  return <AdminText i18nKey={`claimFeedbackAdmin.resolution${value}`} fallback={{ YES: "Yes", PARTLY: "Partly", NO: "No" }[value] || value} />;
+  const names = { YES: ["resolvedYes", "Resolved"], PARTLY: ["resolvedPartly", "Partly resolved"], NO: ["resolvedNo", "Not resolved"] };
+  const [name, fallback] = names[value] || ["notSpecified", "Not specified"];
+  return <span className={`feedback-resolution feedback-resolution-${String(value || "unknown").toLowerCase()}`}>{value === "YES" ? <Icon name="check" size={13} /> : null}<Text name={name}>{fallback}</Text></span>;
 }
 
 function Rating({ value }) {
-  return Number.isInteger(value) ? `${value}/5` : "—";
+  return Number.isInteger(value) && value >= 1 && value <= 5 ? <>{value}<span className="rating-scale">/5</span></> : "—";
+}
+
+function CellLabel({ name, children }) {
+  return <span className="px-feedback-cell-label"><Text name={name}>{children}</Text></span>;
+}
+
+function Comments({ row }) {
+  const count = Number(Boolean(row.comment)) + Number(Boolean(row.unresolvedComment));
+  if (!count) return <span className="px-feedback-muted"><Text name="noComment">No comment</Text></span>;
+  return <details className="px-feedback-comments">
+    <summary><span className="px-feedback-comment-preview">{row.unresolvedComment || row.comment}</span><span className="px-feedback-comment-toggle"><span className="when-closed"><Text name="readComments">Read comments</Text></span><span className="when-open"><Text name="closeComments">Close comments</Text></span><Icon name="down" size={13} /></span></summary>
+    <div className="px-feedback-comment-body">
+      {row.unresolvedComment ? <div><strong><AdminText i18nKey="claimFeedbackAdmin.unresolvedComment" fallback="Still unresolved" /></strong><p>{row.unresolvedComment}</p></div> : null}
+      {row.comment ? <div><strong><AdminText i18nKey="claimFeedbackAdmin.comment" fallback="Customer comment" /></strong><p>{row.comment}</p></div> : null}
+    </div>
+  </details>;
+}
+
+function EmptyState({ filters, summary, hasFilters, responses }) {
+  let title = "noResponsesTitle", detail = "noResponsesDetail", action = "viewInvitations", actionText = "View invitations", target = href({ view: "invitations", basePath: filters.basePath }), icon = "responses";
+  if (hasFilters) {
+    title = "noMatchesTitle"; detail = "noMatchesDetail"; action = "resetFilters"; actionText = "Reset filters"; target = href({ view: filters.view, basePath: filters.basePath }); icon = "search";
+  } else if (responses && filters.attention) {
+    title = "noAttentionTitle"; detail = "noAttentionDetail"; action = "allResponses"; actionText = "All responses"; target = filters.basePath || basePath; icon = "check";
+  } else if (!responses || !summary.invitationCount) {
+    title = responses ? "noResponsesTitle" : "noInvitationsTitle"; detail = "noInvitationsDetail"; action = "backToClaims"; actionText = "Back to PX claims"; target = filters.basePath === basePath ? "/admin/px-claims" : "/admin/claims"; icon = "send";
+  }
+  const titles = { noResponsesTitle: "No customer responses yet", noMatchesTitle: "No matching results", noAttentionTitle: "No feedback needs attention", noInvitationsTitle: "No feedback invitations yet" };
+  const details = { noResponsesDetail: "Customer ratings and comments will appear here once feedback is submitted. You can check invitation delivery in the Invitations view.", noMatchesDetail: "Try another search or reset the filters to see the available records.", noAttentionDetail: "Unresolved issues, partial resolutions and overall ratings of 1–2 will appear in this view.", noInvitationsDetail: "Feedback invitations are created automatically when eligible claims are marked Done." };
+  return <div className="px-feedback-empty">
+    <span className="px-feedback-empty-icon"><Icon name={icon} size={25} /></span>
+    <h3><Text name={title}>{titles[title]}</Text></h3>
+    <p><Text name={detail}>{details[detail]}</Text></p>
+    {responses && !hasFilters && !filters.attention && summary.invited > 0 ? <span className="px-feedback-empty-note"><Text name="invitationsSentCount" values={{ count: summary.invited }}>{"{count} feedback invitations sent"}</Text></span> : null}
+    <Link className="px-feedback-button px-feedback-button-primary" href={target}>{action === "backToClaims" && filters.basePath !== basePath ? <AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /> : <Text name={action}>{actionText}</Text>}<Icon name="arrowRight" size={15} /></Link>
+  </div>;
 }
 
 export default async function PxClaimFeedbackPage({ searchParams = {}, pxOnly = true }) {
@@ -55,101 +105,62 @@ export default async function PxClaimFeedbackPage({ searchParams = {}, pxOnly = 
   const { summary, rows, total, page, pages } = result;
   const filters = { ...result.filters, basePath: pageBasePath };
   const responses = filters.view === "responses";
+  const hasFilters = Boolean(filters.q || filters.dateFrom || filters.dateTo || filters.status);
+  const first = total ? (page - 1) * FEEDBACK_PAGE_SIZE + 1 : 0;
+  const last = total ? first + rows.length - 1 : 0;
   return <AdminShell adminEmail={admin.email}>
     <main className="px-feedback-page">
       <header className="px-feedback-header">
-        <div>
-          <h1><AdminText i18nKey={pxOnly ? "pxClaimsAdmin.title" : "claimsAdmin.claims"} fallback={pxOnly ? "PX claims" : "Claims"} /> – <AdminText i18nKey="claimFeedbackList.title" fallback="Customer feedback" /></h1>
-        </div>
-        <Link className="px-feedback-back" href={pxOnly ? "/admin/px-claims" : "/admin/claims"}><AdminText i18nKey={pxOnly ? "claimFeedbackList.backToClaims" : "claimsAdmin.backToClaims"} fallback={pxOnly ? "Back to PX claims" : "Back to claims"} /></Link>
+        <div><span className="px-feedback-eyebrow"><AdminText i18nKey={pxOnly ? "pxClaimsAdmin.title" : "claimsAdmin.claims"} fallback={pxOnly ? "PX claims" : "Claims"} /></span><h1><Text name="title">Customer feedback</Text></h1><p><Text name="description">Understand customer satisfaction, review open issues and track feedback invitations.</Text></p></div>
+        <Link className="px-feedback-button" href={pxOnly ? "/admin/px-claims" : "/admin/claims"}><Icon name="arrowLeft" size={16} /><AdminText i18nKey={pxOnly ? "claimFeedbackList.backToClaims" : "claimsAdmin.backToClaims"} fallback={pxOnly ? "Back to PX claims" : "Back to claims"} /></Link>
       </header>
 
-      <div className="px-feedback-metrics">
-        <article><span><AdminText i18nKey="claimFeedbackList.responses" fallback="Responses" /></span><strong>{summary.answered}</strong><small><AdminText i18nKey="claimFeedbackList.sentInvitations" fallback="Sent feedback requests" />: {summary.invited}</small></article>
-        <article><span><AdminText i18nKey="claimFeedbackList.responseRate" fallback="Response rate" /></span><strong>{summary.responseRate}%</strong><small><AdminText i18nKey="claimFeedbackList.ofSent" fallback="Of sent feedback requests" /></small></article>
-        <article><span><AdminText i18nKey="claimFeedbackList.averageOverall" fallback="Average overall rating" /></span><strong>{summary.averageOverall == null ? "—" : `${summary.averageOverall.toFixed(1)}/5`}</strong><small><AdminText i18nKey="claimFeedbackList.ofResponses" fallback="Of responses" /></small></article>
-        <article className={summary.attention ? "px-feedback-alert" : ""}><span><AdminText i18nKey="claimFeedbackList.needsAttention" fallback="Needs attention" /></span><strong>{summary.attention}</strong><small><AdminText i18nKey="claimFeedbackList.attentionHint" fallback="Not resolved, partly resolved, or 1–2 overall" /></small></article>
-      </div>
+      <section aria-labelledby="feedback-overview-title" className="px-feedback-overview">
+        <div className="px-feedback-overview-label"><h2 id="feedback-overview-title"><Text name="overview">Service overview</Text></h2><span><Text name="allFeedbackHint">Across all customer feedback</Text></span></div>
+        <div className="px-feedback-metrics">
+          <article><div className="px-feedback-metric-label"><span><Text name="responsesReceived">Responses received</Text></span><Icon name="responses" /></div><strong>{summary.answered}</strong><small><Text name="sentCount" values={{ count: summary.invited }}>{"{count} invitations sent"}</Text></small></article>
+          <article><div className="px-feedback-metric-label"><span><Text name="responseRate">Response rate</Text></span><Icon name="chart" /></div><strong>{summary.responseRate}<span className="metric-unit">%</span></strong><small><Text name="responseRatio" values={{ answered: summary.answered, invited: summary.invited }}>{"{answered} responses from {invited} sent invitations"}</Text></small></article>
+          <article><div className="px-feedback-metric-label"><span><Text name="averageOverall">Overall satisfaction</Text></span><Icon name="star" /></div><strong>{summary.averageOverall == null ? "—" : <>{summary.averageOverall.toFixed(1)}<span className="metric-unit">/5</span></>}</strong><small><Text name={summary.averageOverall == null ? "noRatingsYet" : "averageHint"}>{summary.averageOverall == null ? "Available after the first response" : "Average of all overall service ratings"}</Text></small></article>
+          <article className={summary.attention ? "px-feedback-metric-alert" : ""}><div className="px-feedback-metric-label"><span><Text name="needsAttention">Needs attention</Text></span><Icon name="attention" /></div><strong>{summary.attention}</strong><small><Text name="attentionHint">Unresolved issues or overall ratings of 1–2/5</Text></small></article>
+        </div>
+      </section>
 
-      <section className="px-feedback-panel">
-        <nav className="px-feedback-tabs" aria-label="Feedback views">
-          <Link aria-current={responses ? "page" : undefined} href={href(filters, { view: "responses", attention: false, status: "", page: 1 })}><AdminText i18nKey="claimFeedbackList.responses" fallback="Responses" /></Link>
-          <Link aria-current={!responses ? "page" : undefined} href={href(filters, { view: "invitations", attention: false, status: "", page: 1 })}><AdminText i18nKey="claimFeedbackList.invitations" fallback="Feedback requests" /></Link>
+      <section className="px-feedback-panel" aria-labelledby="feedback-panel-title">
+        <h2 id="feedback-view-title" className="px-feedback-sr-only"><Text name="views">Feedback views</Text></h2>
+        <nav className="px-feedback-tabs" aria-labelledby="feedback-view-title">
+          <Link aria-current={responses ? "page" : undefined} href={href(filters, { view: "responses", attention: false, status: "", page: 1 })}><Icon name="responses" size={17} /><Text name="responses">Customer responses</Text><span className="px-feedback-tab-count">{summary.answered}</span></Link>
+          <Link aria-current={!responses ? "page" : undefined} href={href(filters, { view: "invitations", attention: false, status: "", page: 1 })}><Icon name="send" size={17} /><Text name="invitations">Feedback invitations</Text><span className="px-feedback-tab-count">{summary.invitationCount}</span></Link>
         </nav>
         <div className="px-feedback-heading">
-          <div><h2><AdminText i18nKey={responses ? "claimFeedbackList.responses" : "claimFeedbackList.invitations"} fallback={responses ? "Responses" : "Feedback requests"} /></h2></div>
-          {responses ? <div className="px-feedback-segments">
-            <Link className={!filters.attention ? "selected" : ""} href={href(filters, { attention: false, page: 1 })}><AdminText i18nKey="claimFeedbackList.allResponses" fallback="All responses" /></Link>
-            <Link className={filters.attention ? "selected" : ""} href={href(filters, { attention: true, page: 1 })}><AdminText i18nKey="claimFeedbackList.needsAttention" fallback="Needs attention" /> ({summary.attention})</Link>
-          </div> : null}
+          <div><h2 id="feedback-panel-title"><Text name={responses ? "responseTitle" : "invitationTitle"}>{responses ? "Service ratings & comments" : "Invitation delivery"}</Text></h2><p><Text name={responses ? "responseDescription" : "invitationDescription"}>{responses ? "Review customer satisfaction and identify what still needs to be resolved." : "Latest invitation for each complaint. Open the claim to review delivery or retry a failed email."}</Text></p></div>
+          {responses ? <div className="px-feedback-segments"><Link aria-current={!filters.attention ? "page" : undefined} href={href(filters, { attention: false, page: 1 })}><Text name="allResponses">All responses</Text></Link><Link aria-current={filters.attention ? "page" : undefined} href={href(filters, { attention: true, page: 1 })}><Text name="needsAttention">Needs attention</Text><span>{summary.attention}</span></Link></div> : null}
         </div>
 
-        <form action={pageBasePath} method="get" className="px-feedback-filters">
+        <form action={pageBasePath} method="get" className={`px-feedback-filters${responses ? "" : " px-feedback-filters-invitations"}`}>
+          <div className="px-feedback-filter-heading"><span><Icon name="filters" size={17} /><Text name="filters">Filters</Text></span>{hasFilters ? <span className="px-feedback-filter-active"><Text name="filtersActive">Filters applied</Text></span> : null}</div>
           {filters.view === "invitations" ? <input type="hidden" name="view" value="invitations" /> : null}
           {filters.attention ? <input type="hidden" name="attention" value="1" /> : null}
-          <label><span><AdminText i18nKey="claimFeedbackList.search" fallback="Search" /></span><AdminTranslatedInput name="q" defaultValue={filters.q} placeholderKey="claimFeedbackList.searchPlaceholder" placeholderFallback="Claim, contract, customer, email" /></label>
-          {!responses ? <label><span><AdminText i18nKey="claimFeedbackList.status" fallback="Status" /></span><select name="status" defaultValue={filters.status}>
-            <option value=""><AdminText i18nKey="claimFeedbackList.allStatuses" fallback="All statuses" /></option>
-            {Object.keys(statusKeys).map((status) => <option key={status} value={status}><AdminText i18nKey={`claimFeedbackAdmin.${statusKeys[status]}`} fallback={statusFallbacks[status]} /></option>)}
-          </select></label> : null}
-          <label><span><AdminText i18nKey="claimFeedbackList.dateFrom" fallback="Date from" /></span><input type="date" name="dateFrom" defaultValue={filters.dateFrom} /></label>
-          <label><span><AdminText i18nKey="claimFeedbackList.dateTo" fallback="Date to" /></span><input type="date" name="dateTo" defaultValue={filters.dateTo} /></label>
-          <div className="px-feedback-filter-actions"><button type="submit"><AdminText i18nKey="claimFeedbackList.applyFilters" fallback="Apply filters" /></button><Link href={href({ view: filters.view, basePath: pageBasePath })}><AdminText i18nKey="claimFeedbackList.clear" fallback="Clear" /></Link></div>
+          <label className="px-feedback-search"><span><Text name="search">Search</Text></span><AdminTranslatedInput name="q" defaultValue={filters.q} placeholderKey="claimFeedbackList.searchPlaceholder" placeholderFallback="Claim reference, customer or email" /></label>
+          {!responses ? <label><span><Text name="deliveryStatus">Delivery status</Text></span><select name="status" defaultValue={filters.status}><option value=""><Text name="allStatuses">All statuses</Text></option>{Object.keys(statusKeys).map((status) => <option key={status} value={status}><AdminText i18nKey={`claimFeedbackAdmin.${statusKeys[status]}`} fallback={statusFallbacks[status]} /></option>)}</select></label> : null}
+          <label><span><Text name={responses ? "receivedFrom" : "dateFrom"}>{responses ? "Received from" : "Date from"}</Text></span><input type="date" name="dateFrom" defaultValue={filters.dateFrom} /></label>
+          <label><span><Text name={responses ? "receivedTo" : "dateTo"}>{responses ? "Received to" : "Date to"}</Text></span><input type="date" name="dateTo" defaultValue={filters.dateTo} /></label>
+          <div className="px-feedback-filter-actions"><button className="px-feedback-button px-feedback-button-primary" type="submit"><Text name="applyFilters">Apply filters</Text></button><Link className="px-feedback-button" href={href({ view: filters.view, basePath: filters.basePath })}><Text name="resetFilters">Reset filters</Text></Link></div>
         </form>
 
-        {rows.length ? <div className="px-feedback-table-wrap"><table className="px-feedback-table">
-          <thead><tr>
-            <th scope="col" className="px-feedback-number"><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
-            <th><AdminText i18nKey="claimFeedbackList.date" fallback="Date" /></th>
-            <th><AdminText i18nKey="claimFeedbackList.claim" fallback="Claim" /></th>
-            <th><AdminText i18nKey="claimFeedbackList.customer" fallback="Customer" /></th>
-            {responses ? <><th><AdminText i18nKey="claimFeedbackList.resolved" fallback="Issue resolved" /></th><th><AdminText i18nKey="claimFeedbackList.ratings" fallback="Ratings" /></th><th><AdminText i18nKey="claimFeedbackList.comment" fallback="Comment" /></th></> : <><th><AdminText i18nKey="claimFeedbackList.status" fallback="Status" /></th><th><AdminText i18nKey="claimFeedbackList.email" fallback="Email" /></th></>}
-            <th><AdminText i18nKey="claimFeedbackList.action" fallback="Action" /></th>
-          </tr></thead>
-          <tbody>{rows.map((row, index) => <tr key={row.id} className={responses && (row.resolved !== "YES" || (Number.isInteger(row.overallRating) && row.overallRating <= 2)) ? "px-feedback-row-alert" : ""}>
-            <td className="px-feedback-number">{total - (page - 1) * FEEDBACK_PAGE_SIZE - index}</td>
-            <td><AdminDateTime value={responses ? row.submittedAt : (row.sentAt || row.createdAt)} numeric /></td>
-            <td><strong>{row.reference}</strong><small>{row.contractNumber}</small></td>
-            <td>{row.fullName || "—"}</td>
-            {responses ? <><td><Resolution value={row.resolved} /></td><td className="px-feedback-ratings"><span><AdminText i18nKey="claimFeedbackAdmin.overall" fallback="Overall" /> <b><Rating value={row.overallRating} /></b></span><span><AdminText i18nKey="claimFeedbackAdmin.speed" fallback="Speed" /> <b><Rating value={row.speedRating} /></b></span><span><AdminText i18nKey="claimFeedbackAdmin.communication" fallback="Communication" /> <b><Rating value={row.communicationRating} /></b></span></td><td className="px-feedback-comment"><span title={row.comment || ""}>{row.comment || "—"}</span></td></> : <><td><Status status={row.status} /></td><td>{row.recipientEmail || "—"}</td></>}
-            <td><Link className="px-feedback-open" href={`/admin/claims/${row.claimId}`}><AdminText i18nKey="claimFeedbackList.openClaim" fallback="Open claim" /></Link></td>
+        <div className="px-feedback-result-count"><Text name={responses ? (total === 1 ? "oneResponse" : "responseCount") : (total === 1 ? "oneInvitation" : "invitationCount")} values={{ count: total }}>{responses ? "{count} customer responses" : "{count} feedback invitations"}</Text></div>
+        {rows.length ? <div className="px-feedback-table-wrap"><table className="px-feedback-table" role="table">
+          <caption className="px-feedback-sr-only"><Text name={responses ? "responses" : "invitations"}>{responses ? "Customer responses" : "Feedback invitations"}</Text></caption>
+          <thead role="rowgroup"><tr role="row"><th scope="col"><Text name="customerClaim">Customer & claim</Text></th>{responses ? <><th scope="col"><Text name="resolutionStatus">Resolution</Text></th><th scope="col"><Text name="ratings">Service ratings</Text></th><th scope="col"><Text name="comment">Comments</Text></th></> : <><th scope="col"><Text name="deliveryStatus">Delivery status</Text></th><th scope="col"><Text name="recipient">Recipient</Text></th></>}<th scope="col"><Text name={responses ? "received" : "invitationDate"}>{responses ? "Received" : "Invitation date"}</Text></th><th scope="col"><span className="px-feedback-sr-only"><Text name="action">Action</Text></span></th></tr></thead>
+          <tbody role="rowgroup">{rows.map((row) => <tr role="row" key={row.id} className={responses && needsFeedbackAttention(row) ? "px-feedback-row-alert" : ""}>
+            <td className="px-feedback-customer" role="cell"><CellLabel name="customerClaim">Customer & claim</CellLabel><strong>{row.fullName || <Text name="unknownCustomer">Customer</Text>}</strong><span className="px-feedback-reference">{row.reference}</span></td>
+            {responses ? <><td role="cell"><CellLabel name="resolutionStatus">Resolution</CellLabel><Resolution value={row.resolved} />{row.resolved === "NO" ? <span className="px-feedback-review"><Text name="reviewRequired">Review required</Text></span> : null}</td><td className="px-feedback-ratings" role="cell"><CellLabel name="ratings">Service ratings</CellLabel><strong className="px-feedback-overall"><Icon name="star" size={14} /><Rating value={row.overallRating} /></strong><span className="px-feedback-subrating"><Text name="processingTime">Processing time</Text><b><Rating value={row.speedRating} /></b></span><span className="px-feedback-subrating"><AdminText i18nKey="claimFeedbackAdmin.communication" fallback="Communication" /><b><Rating value={row.communicationRating} /></b></span></td><td className="px-feedback-comment-cell" role="cell"><CellLabel name="comment">Comments</CellLabel><Comments row={row} /></td></> : <><td role="cell"><CellLabel name="deliveryStatus">Delivery status</CellLabel><Status status={row.status} /></td><td className="px-feedback-email" role="cell"><CellLabel name="recipient">Recipient</CellLabel>{row.recipientEmail || <span className="px-feedback-muted"><Text name="noRecipient">No email address</Text></span>}</td></>}
+            <td className="px-feedback-date" role="cell"><CellLabel name={responses ? "received" : "invitationDate"}>{responses ? "Received" : "Invitation date"}</CellLabel><AdminDateTime value={responses ? row.submittedAt : (row.sentAt || row.createdAt)} numeric /></td>
+            <td className="px-feedback-action" role="cell"><Link className="px-feedback-button" href={`/admin/claims/${row.claimId}`}><Text name="openClaim">Open claim</Text><Icon name="arrowRight" size={14} /></Link></td>
           </tr>)}</tbody>
-        </table></div> : <p className="px-feedback-empty"><AdminText i18nKey="claimFeedbackList.empty" fallback="No feedback matches these filters." /></p>}
+        </table></div> : <EmptyState filters={filters} summary={summary} hasFilters={hasFilters} responses={responses} />}
 
-        {pages > 1 ? <nav className="px-feedback-pagination" aria-label="Pages"><span>{page} / {pages}</span><div>
-          {page > 1 ? <Link href={href(filters, { page: page - 1 })}><AdminText i18nKey="claimFeedbackList.previous" fallback="Previous" /></Link> : null}
-          {page < pages ? <Link href={href(filters, { page: page + 1 })}><AdminText i18nKey="claimFeedbackList.next" fallback="Next" /></Link> : null}
-        </div></nav> : null}
+        {rows.length ? <nav className="px-feedback-pagination" aria-label="Pagination"><span><Text name="showingRange" values={{ first, last, total }}>{"Showing {first}–{last} of {total}"}</Text></span><div><span><Text name="pageCount" values={{ page, pages }}>{"Page {page} of {pages}"}</Text></span>{page > 1 ? <Link className="px-feedback-button" href={href(filters, { page: page - 1 })}><Icon name="arrowLeft" size={14} /><Text name="previous">Previous</Text></Link> : null}{page < pages ? <Link className="px-feedback-button" href={href(filters, { page: page + 1 })}><Text name="next">Next</Text><Icon name="arrowRight" size={14} /></Link> : null}</div></nav> : null}
       </section>
     </main>
-    <style>{`
-      .px-feedback-page { display: grid; gap: 24px; min-width: 0; width: 100%; color: var(--app-text); }
-      .px-feedback-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
-      .px-feedback-header h1 { margin: 4px 0; font-size: var(--admin-text-title); line-height: 1.3; font-weight: 700; } .px-feedback-header p { margin: 0; color: var(--app-text-muted); }
-      .px-feedback-eyebrow { color: var(--app-accent); font-weight: 600; font-size: var(--admin-text-label); letter-spacing: .08em; text-transform: uppercase; }
-      .px-feedback-back, .px-feedback-open, .px-feedback-pagination a { display: inline-flex; align-items: center; min-height: 38px; padding: 8px 12px; border: 1px solid var(--app-border); border-radius: 8px; background: var(--app-surface); color: var(--app-accent); text-decoration: none; font-size: var(--admin-text-meta); font-weight: 600; white-space: nowrap; }
-      .px-feedback-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-      .px-feedback-metrics article { display: grid; align-content: start; gap: 3px; padding: 10px 16px; border: 1px solid var(--app-border); border-radius: 8px; background: var(--app-surface); }
-      .px-feedback-metrics span { color: var(--app-text-muted); font-size: var(--admin-text-label); font-weight: 700; }.px-feedback-metrics strong { font-size: var(--admin-text-metric); font-weight: 700; line-height: 1.2; }.px-feedback-metrics small { color: var(--app-text-muted); font-size: var(--admin-text-label); }
-      .px-feedback-metrics .px-feedback-alert { border-color: var(--app-danger-text); }.px-feedback-alert strong { color: var(--app-danger-text); }
-      .px-feedback-panel { overflow: hidden; border: 1px solid var(--app-border); border-radius: 8px; background: var(--app-surface); box-shadow: var(--app-shadow-soft); }
-      .px-feedback-tabs { display: flex; gap: 4px; padding: 16px 24px 0; border-bottom: 1px solid var(--app-border); }
-      .px-feedback-tabs a { padding: 10px 16px; color: var(--app-text-muted); text-decoration: none; font-weight: 600; font-size: var(--admin-text-meta); border-bottom: 3px solid transparent; }
-      .px-feedback-tabs a[aria-current=page] { color: var(--app-accent); border-color: var(--app-accent); }
-      .px-feedback-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 24px; }.px-feedback-heading h2 { margin: 0; font-size: 20px; }.px-feedback-heading p { margin: 3px 0 0; color: var(--app-text-muted); font-size: var(--admin-text-meta); }
-      .px-feedback-segments { display: flex; flex-wrap: wrap; gap: 6px; }.px-feedback-segments a { padding: 8px 12px; border: 1px solid var(--app-border); border-radius: 8px; color: var(--app-text); text-decoration: none; font-size: var(--admin-text-label); font-weight: 600; }.px-feedback-segments a.selected { border-color: var(--app-accent); background: var(--app-accent-soft); color: var(--app-accent); }
-      .px-feedback-filters { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; margin: 0 24px 20px; padding: 14px; border: 1px solid var(--app-border); border-radius: 8px; background: linear-gradient(180deg, rgba(255,247,241,0.82), rgba(255,255,255,0.72)); }
-      .px-feedback-filters label { display: grid; gap: 6px; min-width: 0; flex: 1 1 150px; color: var(--app-text-muted); font-size: var(--admin-text-label); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }.px-feedback-filters label:first-of-type { flex-basis: 250px; }
-      .px-feedback-filters input, .px-feedback-filters select { box-sizing: border-box; width: 100%; min-height: 42px; padding: 8px 10px; border: 1px solid var(--app-border-strong); border-radius: 8px; background: var(--app-surface); color: var(--app-text); font: inherit; font-size: var(--admin-text-body); font-weight: 400; line-height: 1.5; text-transform: none; letter-spacing: normal; }
-      .px-feedback-filter-actions { display: flex; gap: 8px; align-items: center; }.px-feedback-filter-actions button, .px-feedback-filter-actions a { display: inline-flex; align-items: center; min-height: 42px; box-sizing: border-box; padding: 8px 12px; border: 1px solid var(--app-border); border-radius: 8px; font: inherit; font-size: var(--admin-text-body); font-weight: 600; text-decoration: none; cursor: pointer; white-space: nowrap; }.px-feedback-filter-actions button { background: var(--app-accent); color: var(--app-accent-contrast); }.px-feedback-filter-actions a { background: var(--app-surface); color: var(--app-accent); }
-      .px-feedback-table-wrap { overflow-x: auto; margin: 0 24px 24px; border: 1px solid var(--app-border); border-radius: 4px; }.px-feedback-table { width: 100%; border-collapse: collapse; min-width: 950px; font-size: var(--admin-text-body); line-height: 1.5; }.px-feedback-table th { text-align: left; color: var(--app-text-muted); background: var(--app-surface-muted); font-size: var(--admin-text-label); text-transform: uppercase; letter-spacing: .05em; }.px-feedback-table th, .px-feedback-table td { padding: 16px 12px; border-bottom: 1px solid var(--app-border); vertical-align: middle; }.px-feedback-table th { padding: 16px 20px; font-weight: 700; letter-spacing: .12em; } .px-feedback-table td { font-variant-numeric: tabular-nums; } .px-feedback-table tbody tr:last-child td { border-bottom: 0; } .px-feedback-table td small { font-size: var(--admin-text-meta); display: block; margin-top: 3px; color: var(--app-text-muted); }.px-feedback-table tr:hover td { background: var(--app-surface-muted); }.px-feedback-row-alert td:first-child { border-left: 3px solid var(--app-danger-text); }
-      .px-feedback-ratings { min-width: 135px; }.px-feedback-ratings span { display: flex; justify-content: space-between; gap: 8px; font-size: var(--admin-text-meta); color: var(--app-text-muted); }.px-feedback-ratings b { font-weight: 600; color: var(--app-text); }.px-feedback-comment { max-width: 270px; overflow-wrap: anywhere; line-height: 1.4; }.px-feedback-comment span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }.feedback-status { display: inline-flex; padding: 5px 8px; border-radius: 8px; background: var(--app-surface-muted); font-size: var(--admin-text-label); font-weight: 600; white-space: nowrap; }.feedback-status-failed, .feedback-status-unknown, .feedback-status-no_email { color: var(--app-danger-text); }
-      .px-feedback-empty { margin: 0; padding: 28px 20px; color: var(--app-text-muted); }.px-feedback-pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 18px 20px; border-top: 1px solid var(--app-border); font-size: var(--admin-text-meta); }.px-feedback-pagination div { display: flex; gap: 8px; }
-      .px-feedback-page a:focus-visible, .px-feedback-page button:focus-visible, .px-feedback-page input:focus-visible, .px-feedback-page select:focus-visible { outline: 3px solid var(--app-accent); outline-offset: 2px; }
-      .px-feedback-table .px-feedback-number { width: 64px; min-width: 64px; box-sizing: border-box; padding-left: 12px; padding-right: 12px; text-align: center; white-space: nowrap; color: var(--app-text-muted); font-size: var(--admin-text-label); letter-spacing: .04em; }
-      .px-feedback-table td.px-feedback-number { font-weight: 500; font-variant-numeric: tabular-nums; }
-      @media(max-width: 900px) { .px-feedback-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-      @media(max-width: 600px) { .px-feedback-page { padding: 0; }.px-feedback-metrics { grid-template-columns: 1fr; }.px-feedback-filters, .px-feedback-table-wrap { margin-inline: 12px; }.px-feedback-heading { padding-inline: 12px; } }
-    `}</style>
   </AdminShell>;
 }

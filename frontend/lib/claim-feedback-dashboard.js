@@ -47,6 +47,7 @@ export function buildFeedbackDashboard(rows, filters) {
   const ratings = answered.map((row) => row.overallRating).filter((rating) => Number.isInteger(rating) && rating >= 1 && rating <= 5);
   const summary = {
     answered: answered.length,
+    invitationCount: latestByClaim.size,
     invited: invited.length,
     responseRate: invited.length ? Math.round(answered.length / invited.length * 100) : 0,
     averageOverall: ratings.length ? ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length : null,
@@ -83,7 +84,7 @@ export async function loadClaimFeedback(db, params, { pxOnly = false, includePx 
   const rows = await db.$queryRaw(Prisma.sql`
     SELECT
       fi."id", fi."claimId", fi."status", fi."createdAt", fi."sentAt", fi."submittedAt", fi."recipientEmail",
-      fi."overallRating", fi."speedRating", fi."communicationRating", fi."resolved", fi."comment",
+      fi."overallRating", fi."speedRating", fi."communicationRating", fi."resolved", fi."comment", fi."unresolvedComment",
       sc."contractNumber", sc."claimSequence", sc."ticketNumber", sc."fullName", sc."email"
     FROM "ClaimFeedbackInvitation" fi
     INNER JOIN "ServiceClaim" sc ON sc."id" = fi."claimId"

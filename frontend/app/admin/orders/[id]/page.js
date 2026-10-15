@@ -1,5 +1,7 @@
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import { AdminOrderSummaryTable } from "../../../../components/admin-order-summary-table";
+import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
+import { loadOrderKitchenSpecifications } from "../../../../lib/kitchen-ab-runtime";
 import { OrderStatus } from "@prisma/client";
 import {
   ActionLink,
@@ -294,6 +296,10 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
             />
           </AdminSection>
         ) : null}
+
+        <AdminSection title={<AdminText i18nKey="kitchenSpecificationsAdmin.title" fallback="Kitchen specifications" />}>
+          <AdminOrderKitchenSpecifications details={await loadOrderKitchenSpecifications(order)} />
+        </AdminSection>
 
         <AdminSection
           title={<AdminText i18nKey="orderDetailAdmin.orderItems" fallback="Order items" />}

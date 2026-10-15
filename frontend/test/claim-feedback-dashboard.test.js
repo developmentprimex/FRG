@@ -88,3 +88,29 @@ test("combined feedback includes both live and PX claims when access permits", a
   const result = await loadClaimFeedback(db, {}, { includePx: true });
   assert.equal(result.summary.answered, 2);
 });
+
+test("an unresolved complaint enters the existing review queue even with high ratings", () => {
+  const result = buildFeedbackDashboard([
+    invitation("7", { resolved: "NO", overallRating: 5, unresolvedComment: "The sink still leaks." }),
+    invitation("8", { resolved: "YES", overallRating: 5 }),
+  ], normalizeFeedbackFilters({ attention: "1" }));
+  assert.equal(result.summary.attention, 1);
+  assert.equal(result.summary.averageOverall, 5);
+  assert.equal(result.rows.length, 1);
+  assert.equal(result.rows[0].unresolvedComment, "The sink still leaks.");
+  assert.equal(result.rows[0].claimId, "7");
+});
+
+
+test("invitation tab counts latest complaint cycles independently of response filters", () => {
+  const rows = [
+    invitation("1", { id: "latest", status: "FAILED", submittedAt: null }),
+    invitation("1", { id: "older", status: "ANSWERED" }),
+    invitation("2", { id: "waiting", status: "SENT", submittedAt: null }),
+  ];
+  const result = buildFeedbackDashboard(rows, normalizeFeedbackFilters({ q: "no matching customer" }));
+  assert.equal(result.summary.invitationCount, 2);
+  assert.equal(result.summary.invited, 2);
+  assert.equal(result.summary.answered, 1);
+  assert.equal(result.total, 0);
+});

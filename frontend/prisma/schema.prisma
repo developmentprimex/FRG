@@ -60,6 +60,43 @@ model AppSetting {
   updatedAt DateTime @updatedAt
 }
 
+// AB documents are retained independently so an AB can arrive before its kitchen.
+model KitchenAbDocument {
+  id           String                 @id
+  sha256       String                 @unique
+  kitchenSlug  String
+  metadata     Json
+  pdfBytes     Bytes?
+  pdfStorageKey String?
+  status       String                 @default("REVIEW")
+  importedAt   DateTime               @default(now())
+  lastReadAt   DateTime?              @db.Timestamptz(3)
+  reviewedAt   DateTime?
+  reviewedBy   String?
+  publications KitchenAbPublication[]
+
+  @@index([kitchenSlug, importedAt])
+  @@index([lastReadAt(sort: Desc)])
+}
+
+model KitchenAbPublication {
+  kitchenSlug String            @id
+  documentId  String
+  document    KitchenAbDocument @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  updatedAt   DateTime          @default(now())
+}
+
+model KitchenAbSyncRun {
+  id         String    @id
+  source     String
+  status     String    @default("RUNNING")
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  summary    Json      @default("{}")
+
+  @@index([startedAt])
+}
+
 // Processing is independent of order/payment/email status. Absence means OPEN.
 model WorkProcessing {
   id             String   @id @default(cuid())
@@ -782,6 +819,7 @@ model ClaimFeedbackInvitation {
   communicationRating Int?
   resolved          String?
   comment           String?   @db.Text
+  unresolvedComment String?   @db.Text
   error             String?   @db.Text
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt

@@ -5,6 +5,9 @@ export default function nextConfig(phase) {
     distDir: phase === PHASE_DEVELOPMENT_SERVER ? ".next-dev" : ".next",
     devIndicators: false,
     serverExternalPackages: ["ip-location-api"],
+    outputFileTracingIncludes: {
+      "/api/admin/kitchen-specifications/*/pdf": ["./data/kitchen-specifications/pdfs/*.[pP][dD][fF]"],
+    },
     async headers() {
       return [
         {
