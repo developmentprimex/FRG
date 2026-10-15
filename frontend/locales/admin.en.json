@@ -23,6 +23,16 @@
     }
   },
   "adminShellLogin": {
+    "sections": {
+      "operations": "Daily work",
+      "management": "Setup & catalog",
+      "monitoring": "Monitoring",
+      "administration": "Administration"
+    },
+    "allOrders": "All orders",
+    "allClaims": "All claims",
+    "kitchenSetup": "Kitchen setup",
+    "articles": "Articles",
     "fragmentoAdmin": "Fragmento Admin",
     "modernEditorialOperationsForKitchensAndOrders": "Kitchen catalog and order operations.",
     "logout": "Logout",
@@ -35,6 +45,8 @@
     "orders": "Orders",
     "orderCancellations": "Withdrawals",
     "reports": "Reports",
+    "px": "PX",
+    "visitors": "Visitors",
     "contractAccess": "Contract access",
     "claimActivity": "Claim activity",
     "pxClaims": "PX claims",

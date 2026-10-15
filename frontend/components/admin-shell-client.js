@@ -5,27 +5,87 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminI18nProvider, AdminLanguageSwitcher, AdminText, useAdminI18n } from "./admin-i18n";
 
-const navItems = [
-  { href: "/admin", labelKey: "adminShellLogin.dashboard", fallback: "Dashboard", icon: GridIcon },
-  { href: "/admin/kitchens", labelKey: "adminShellLogin.kitchens", fallback: "Kitchens", icon: KitchenIcon },
-  { href: "/admin/contracts", labelKey: "adminShellLogin.contracts", fallback: "Contracts", icon: ContractsIcon },
-  { href: "/admin/property-owners", labelKey: "adminShellLogin.owners", fallback: "Owners", icon: OwnersIcon },
-  { href: "/admin/orders", labelKey: "adminShellLogin.orders", fallback: "Orders", icon: OrdersIcon },
-  { href: "/admin/order-cancellations", labelKey: "adminShellLogin.orderCancellations", fallback: "Withdrawals", icon: WithdrawalIcon, badge: "cancellations" },
-  { href: "/admin/reports", labelKey: "adminShellLogin.reports", fallback: "Reports", icon: ReportsIcon },
-  { href: "/admin/contract-access", labelKey: "adminShellLogin.contractAccess", fallback: "Contract access", icon: ContractsIcon, requiresSuperAdmin: true },
-  { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimActivity", fallback: "Claim activity", icon: ClaimsIcon, requiresSuperAdmin: true },
-  { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon },
-  { href: "/admin/px-claims", labelKey: "adminShellLogin.pxClaims", fallback: "PX claims", icon: ClaimsIcon, requiresClaimsNav: true },
-  { href: "/admin/claims", labelKey: "adminShellLogin.claims", fallback: "Claims", icon: ClaimsIcon, requiresClaimsNav: true },
-  { href: "/admin/catalog/articles", labelKey: "adminShellLogin.catalogArticles", fallback: "Catalog", icon: CatalogAuditIcon },
-  { href: "/admin/catalog/imports", labelKey: "adminShellLogin.catalogImports", fallback: "Price Imports", icon: CatalogAuditIcon },
-  { href: "/admin/settings", labelKey: "adminShellLogin.settings", fallback: "Settings", icon: SettingsIcon },
-  { href: "/admin/users", labelKey: "adminShellLogin.users", fallback: "Users", icon: UsersIcon, requiresUsersNav: true },
-  { href: "/admin/account", labelKey: "adminShellLogin.account", fallback: "Account", icon: AccountIcon },
-  { href: "/", labelKey: "adminShellLogin.publicSite", fallback: "Public site", icon: GlobeIcon },
+const navSections = [
+  {
+    id: "overview",
+    items: [
+      { href: "/admin", labelKey: "adminShellLogin.dashboard", fallback: "Dashboard", icon: GridIcon },
+    ],
+  },
+  {
+    id: "operations", labelKey: "adminShellLogin.sections.operations", fallback: "Daily work",
+    items: [
+      {
+        id: "orders", labelKey: "adminShellLogin.orders", fallback: "Orders", icon: OrdersIcon, badge: "cancellations",
+        children: [
+          { href: "/admin/orders", labelKey: "adminShellLogin.allOrders", fallback: "All orders", icon: OrdersIcon },
+          { href: "/admin/order-cancellations", labelKey: "adminShellLogin.orderCancellations", fallback: "Withdrawals", icon: WithdrawalIcon, badge: "cancellations" },
+        ],
+      },
+      {
+        id: "claims", labelKey: "adminShellLogin.claims", fallback: "Claims", icon: ClaimsIcon, requiresClaimsNav: true,
+        children: [
+          { href: "/admin/claims", labelKey: "adminShellLogin.allClaims", fallback: "All claims", icon: ClaimsIcon },
+        ],
+      },
+      {
+        id: "px", labelKey: "adminShellLogin.px", fallback: "PX", icon: OrdersIcon,
+        children: [
+          { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon },
+          { href: "/admin/px-claims", labelKey: "adminShellLogin.pxClaims", fallback: "PX claims", icon: ClaimsIcon, requiresClaimsNav: true },
+        ],
+      },
+    ],
+  },
+  {
+    id: "management", labelKey: "adminShellLogin.sections.management", fallback: "Setup & catalog",
+    items: [
+      {
+        id: "kitchens", labelKey: "adminShellLogin.kitchenSetup", fallback: "Kitchen setup", icon: KitchenIcon,
+        children: [
+          { href: "/admin/kitchens", labelKey: "adminShellLogin.kitchens", fallback: "Kitchens", icon: KitchenIcon },
+          { href: "/admin/contracts", labelKey: "adminShellLogin.contracts", fallback: "Contract numbers", icon: ContractsIcon },
+          { href: "/admin/property-owners", labelKey: "adminShellLogin.owners", fallback: "Housing Companies", icon: OwnersIcon },
+        ],
+      },
+      {
+        id: "catalog", labelKey: "adminShellLogin.catalogArticles", fallback: "Catalog", icon: CatalogAuditIcon,
+        children: [
+          { href: "/admin/catalog/articles", labelKey: "adminShellLogin.articles", fallback: "Articles", icon: CatalogAuditIcon },
+          { href: "/admin/catalog/imports", labelKey: "adminShellLogin.catalogImports", fallback: "Price imports", icon: CatalogAuditIcon },
+        ],
+      },
+    ],
+  },
+  {
+    id: "monitoring", labelKey: "adminShellLogin.sections.monitoring", fallback: "Monitoring",
+    items: [
+      { href: "/admin/reports", labelKey: "adminShellLogin.reports", fallback: "Reports", icon: ReportsIcon },
+      {
+        id: "visitors", labelKey: "adminShellLogin.visitors", fallback: "Visitors", icon: UsersIcon, requiresSuperAdmin: true,
+        children: [
+          { href: "/admin/contract-access", labelKey: "adminShellLogin.contractAccess", fallback: "Contract access", icon: ContractsIcon },
+          { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimActivity", fallback: "Claim activity", icon: ClaimsIcon },
+        ],
+      },
+    ],
+  },
+  {
+    id: "administration", labelKey: "adminShellLogin.sections.administration", fallback: "Administration",
+    items: [
+      { href: "/admin/settings", labelKey: "adminShellLogin.settings", fallback: "Settings", icon: SettingsIcon },
+      { href: "/admin/users", labelKey: "adminShellLogin.users", fallback: "Users", icon: UsersIcon, requiresUsersNav: true },
+    ],
+  },
+  {
+    id: "utility",
+    items: [
+      { href: "/admin/account", labelKey: "adminShellLogin.account", fallback: "Account", icon: AccountIcon },
+      { href: "/", labelKey: "adminShellLogin.publicSite", fallback: "Public site", icon: GlobeIcon },
+    ],
+  },
 ];
-const DESKTOP_SIDEBAR_WIDTH = "clamp(240px, 18vw, 300px)";
+const DESKTOP_SIDEBAR_WIDTH = "clamp(260px, 18vw, 300px)";
 
 export function AdminShellClient({ adminEmail, adminRole = "ADMIN", initialLanguage = "en", showClaimsNav = false, showUsersNav = false, openCancellationCount = 0, children }) {
   return (
@@ -66,13 +126,79 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   function startNavigation(href) {
     if (href !== pathname) setPendingHref(href);
   }
-  const visibleNavItems = navItems.filter((item) => {
+  const isNavItemVisible = (item) => {
     if (item.requiresClaimsNav && !showClaimsNav) return false;
     if (item.requiresUsersNav && !showUsersNav) return false;
     if (item.requiresSuperAdmin && adminRole !== "SUPERADMIN") return false;
     return true;
-  });
-  const activeNavItem = visibleNavItems.find((item) => isActivePath(pathname, item.href)) ?? visibleNavItems[0];
+  };
+  const visibleNavSections = navSections.map((section) => ({
+    ...section,
+    items: section.items.filter(isNavItemVisible).map((item) => (
+      item.children ? { ...item, children: item.children.filter(isNavItemVisible) } : item
+    )).filter((item) => !item.children || item.children.length > 0),
+  })).filter((section) => section.items.length > 0);
+  const visibleNavItems = visibleNavSections.flatMap((section) => section.items);
+  const activeNavItem = visibleNavItems.flatMap((item) => item.children ?? [item]).sort((a, b) => b.href.length - a.href.length).find((item) => isActivePath(pathname, item.href)) ?? visibleNavItems[0];
+  const activeGroupId = visibleNavItems.find((item) => item.children?.some((child) => child.href === activeNavItem.href))?.id ?? "";
+  const [expandedGroupId, setExpandedGroupId] = useState(activeGroupId);
+
+  useEffect(() => {
+    setExpandedGroupId(activeGroupId);
+  }, [pathname, activeGroupId]);
+
+  function renderNavigation(mobile = false) {
+    return visibleNavSections.map((section) => (
+      <section key={section.id} className={section.id === "utility" ? "admin-sidebar-section admin-sidebar-section--utility" : "admin-sidebar-section"} aria-label={section.labelKey ? translate(section.labelKey, section.fallback) : undefined}>
+        {section.labelKey ? <h2 style={sidebarSectionHeadingStyle}>{translate(section.labelKey, section.fallback)}</h2> : null}
+        <div style={{ display: "grid", gap: 3 }}>
+          {section.items.map((item) => renderNavItem(item, mobile))}
+        </div>
+      </section>
+    ));
+  }
+
+
+  function renderNavItem(item, mobile = false, nested = false) {
+    if (item.children) {
+      return (
+        <SidebarNavGroup key={item.id} item={item} activeHref={activeNavItem.href} mobile={mobile} translate={translate} isOpen={expandedGroupId === item.id} onToggle={() => setExpandedGroupId((current) => current === item.id ? "" : item.id)} badgeCount={getNavBadgeCount(item, { openCancellationCount })}>
+          {item.children.map((child) => renderNavItem(child, mobile, true))}
+        </SidebarNavGroup>
+      );
+    }
+    const active = activeNavItem.href === item.href;
+    const Icon = item.icon;
+    const badgeCount = getNavBadgeCount(item, { openCancellationCount });
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        prefetch
+        className="admin-sidebar-item"
+        aria-current={active ? "page" : undefined}
+        onMouseEnter={() => prepareNavigation(item.href)}
+        onFocus={() => prepareNavigation(item.href)}
+        onClick={() => {
+          startNavigation(item.href);
+          if (mobile) setIsMobileNavOpen(false);
+        }}
+        style={{
+          ...(mobile ? mobileSidebarLinkStyle : sidebarLinkStyle),
+          ...(nested ? { padding: "8px 12px", minHeight: 38, fontSize: 13, borderRadius: 6 } : {}),
+          background: active ? "var(--color-primary-soft)" : "transparent",
+          color: active ? "var(--app-accent)" : "var(--app-text)",
+          borderColor: active ? "var(--app-border-strong)" : "transparent",
+          fontWeight: active ? (mobile ? 800 : 700) : (mobile ? 700 : 600),
+          boxShadow: "none",
+        }}
+      >
+        {!nested ? <Icon active={active} /> : null}
+        <span style={{ ...sidebarLabelStyle, ...(nested ? { whiteSpace: "normal", overflowWrap: "anywhere" } : {}) }}>{translate(item.labelKey, item.fallback)}</span>
+        {badgeCount > 0 ? <span style={navBadgeStyle}>{badgeCount}</span> : null}
+      </Link>
+    );
+  }
 
   return (
     <div
@@ -203,36 +329,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
             </div>
 
             <div style={mobileSidebarNavStyle}>
-              {visibleNavItems.map((item) => {
-                const active = isActivePath(pathname, item.href);
-                const Icon = item.icon;
-                const badgeCount = getNavBadgeCount(item, { openCancellationCount });
-
-                return (
-                  <Link
-                    key={`mobile-${item.href}`}
-                    href={item.href}
-                    prefetch
-                    onMouseEnter={() => prepareNavigation(item.href)}
-                    onFocus={() => prepareNavigation(item.href)}
-                    onClick={() => {
-                      startNavigation(item.href);
-                      setIsMobileNavOpen(false);
-                    }}
-                    style={{
-                      ...mobileSidebarLinkStyle,
-                      background: active ? "var(--color-primary-soft)" : "transparent",
-                      color: active ? "var(--app-accent)" : "var(--app-text)",
-                      borderColor: active ? "var(--app-border-strong)" : "transparent",
-                      fontWeight: active ? 800 : 700,
-                    }}
-                  >
-                    <Icon active={active} />
-                    <span style={sidebarLabelStyle}>{translate(item.labelKey, item.fallback)}</span>
-                    {badgeCount > 0 ? <span style={navBadgeStyle}>{badgeCount}</span> : null}
-                  </Link>
-                );
-              })}
+              {renderNavigation(true)}
             </div>
           </aside>
         </nav>
@@ -244,14 +341,14 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
             top: 0,
             left: 0,
             width: DESKTOP_SIDEBAR_WIDTH,
-            display: "grid",
-            gridTemplateRows: "auto auto 1fr auto",
-            gap: 18,
+            display: "flex",
+            flexDirection: "column",
+            gap: 10,
             alignContent: "start",
             height: "100vh",
-            overflowY: "auto",
+            overflowY: "hidden",
             overflowX: "hidden",
-            padding: "0 20px 20px",
+            padding: "0 16px 14px",
             background: "var(--color-sidebar-bg)",
             borderRight: "1px solid var(--color-border)",
             zIndex: 30,
@@ -260,7 +357,8 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
         >
           <div
             style={{
-              padding: "24px 8px 6px",
+              padding: "20px 10px 10px",
+              flexShrink: 0,
             }}
           >
             <img
@@ -269,32 +367,12 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               style={{
                 display: "block",
                 width: "100%",
-                maxWidth: 220,
+                maxWidth: 190,
                 height: "auto",
                 objectFit: "contain",
               }}
             />
           </div>
-
-          <section
-            style={{
-              padding: "10px 8px 4px",
-              display: "grid",
-              gap: 4,
-            }}
-          >
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-                color: "var(--app-text-muted)",
-              }}
-            >
-              <AdminText i18nKey="adminShellLogin.adminWorkspace" fallback="Admin workspace" />
-            </span>
-          </section>
 
           <nav
             aria-label={translate("adminShellLogin.sidebar", "Sidebar")}
@@ -302,59 +380,31 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               padding: 0,
               display: "flex",
               flexDirection: "column",
-              gap: 8,
-              alignItems: "stretch",
-              alignSelf: "start",
+              gap: 16,
+              minHeight: 0,
+              flex: 1,
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollbarWidth: "thin",
+              paddingRight: 2,
             }}
           >
-            {visibleNavItems.map((item) => {
-              const active = isActivePath(pathname, item.href);
-              const Icon = item.icon;
-              const badgeCount = getNavBadgeCount(item, { openCancellationCount });
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  prefetch
-                  onMouseEnter={() => prepareNavigation(item.href)}
-                  onFocus={() => prepareNavigation(item.href)}
-                  onClick={() => startNavigation(item.href)}
-                  style={{
-                    textDecoration: "none",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    minWidth: 0,
-                    minHeight: 56,
-                    padding: "10px 14px",
-                    borderRadius: 8,
-                    background: active
-                      ? "var(--color-primary-soft)"
-                      : "transparent",
-                    color: active ? "var(--app-accent)" : "var(--app-text)",
-                    border: `1px solid ${active ? "var(--app-border-strong)" : "transparent"}`,
-                    fontWeight: active ? 700 : 600,
-                    boxShadow: active ? "0 10px 22px rgba(84, 59, 40, 0.08)" : "none",
-                    boxSizing: "border-box",
-                  }}
-                >
-                  <Icon active={active} />
-                  <span style={sidebarLabelStyle}>{translate(item.labelKey, item.fallback)}</span>
-                  {badgeCount > 0 ? <span style={navBadgeStyle}>{badgeCount}</span> : null}
-                </Link>
-              );
-            })}
+            {renderNavigation()}
           </nav>
 
           <div
             className="admin-shell__primex-badge"
             style={{
-              display: "grid",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              paddingTop: 12,
+              borderTop: "1px solid var(--app-border)",
               gap: 8,
               justifyItems: "center",
               justifySelf: "center",
-              alignSelf: "end",
+              alignSelf: "stretch",
               textAlign: "center",
             }}
           >
@@ -375,7 +425,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               alt="Primex Agentic AI"
               style={{
                 display: "block",
-                width: 96,
+                width: 76,
                 height: "auto",
                 objectFit: "contain",
               }}
@@ -473,6 +523,13 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
         </div>
 
         <style>{`
+          .admin-sidebar-section { min-width: 0; }
+          .admin-sidebar-section--utility { border-top: 1px solid var(--app-border); padding-top: 10px; margin-top: auto; }
+          .admin-sidebar-item { transition: background-color 140ms ease; }
+          .admin-sidebar-item:hover { background: rgba(107, 79, 58, 0.07) !important; }
+          .admin-sidebar-item[aria-current="page"]:hover { background: var(--color-primary-soft) !important; }
+          .admin-sidebar-item:focus-visible { outline: 2px solid var(--app-accent); outline-offset: -2px; }
+
           .admin-navigation-progress {
             position: fixed;
             top: 0;
@@ -652,6 +709,48 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   );
 }
 
+function SidebarNavGroup({ item, activeHref, mobile, translate, children, isOpen, onToggle, badgeCount }) {
+  const active = item.children.some((child) => activeHref === child.href);
+  const Icon = item.icon;
+  const panelId = `admin-${mobile ? "mobile" : "desktop"}-${item.id}`;
+
+  return (
+    <div style={{ display: "grid", gap: isOpen ? 4 : 0 }}>
+      <button
+        type="button"
+        className="admin-sidebar-item"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        onClick={onToggle}
+        style={{
+          ...(mobile ? mobileSidebarLinkStyle : sidebarLinkStyle),
+          width: "100%",
+          background: active ? "var(--color-primary-soft)" : "transparent",
+          color: active ? "var(--app-accent)" : "var(--app-text)",
+          borderColor: active ? "var(--app-border-strong)" : "transparent",
+          font: "inherit",
+          fontSize: 14,
+          fontWeight: active ? 700 : 600,
+          textAlign: "left",
+          cursor: "pointer",
+        }}
+      >
+        <Icon active={active} />
+        <span style={sidebarLabelStyle}>{translate(item.labelKey, item.fallback)}</span>
+        {badgeCount > 0 ? <span style={navBadgeStyle}>{badgeCount}</span> : null}
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ marginLeft: "auto", flexShrink: 0, transform: isOpen ? "rotate(180deg)" : undefined }}>
+          <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      <div id={panelId} hidden={!isOpen}>
+        <div style={{ display: "grid", gap: 4, marginLeft: 25, paddingLeft: 8, borderLeft: "1px solid var(--app-border-strong)" }}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function isActivePath(pathname, href) {
   if (href === "/admin") {
     return pathname === "/admin";
@@ -669,17 +768,18 @@ function IconFrame({ children, active = false }) {
     <span
       aria-hidden="true"
       style={{
-        width: 30,
-        height: 30,
+        width: 28,
+        height: 28,
+        flexShrink: 0,
         display: "inline-flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 10,
+        borderRadius: 8,
         background: active
           ? "var(--color-primary-soft)"
-          : "rgba(255,255,255,0.78)",
+          : "transparent",
         color: active ? "var(--app-accent)" : "var(--app-text-muted)",
-        border: `1px solid ${active ? "rgba(107,79,58,0.16)" : "rgba(107,79,58,0.08)"}`,
+        border: "none",
       }}
     >
       {children}
@@ -942,7 +1042,22 @@ const mobileIconButtonStyle = {
 
 const mobileSidebarNavStyle = {
   display: "grid",
-  gap: 8,
+  gap: 16,
+};
+
+const sidebarLinkStyle = {
+  textDecoration: "none",
+  display: "flex",
+  alignItems: "center",
+  gap: 12,
+  minWidth: 0,
+  minHeight: 44,
+  fontSize: 14,
+  lineHeight: 1.4,
+  padding: "7px 10px",
+  borderRadius: 8,
+  border: "1px solid transparent",
+  boxSizing: "border-box",
 };
 
 const mobileSidebarLinkStyle = {
@@ -951,11 +1066,24 @@ const mobileSidebarLinkStyle = {
   alignItems: "center",
   gap: 12,
   minWidth: 0,
-  minHeight: 54,
-  padding: "10px 12px",
+  minHeight: 44,
+  fontSize: 14,
+  lineHeight: 1.4,
+  padding: "7px 10px",
   borderRadius: 8,
   border: "1px solid transparent",
   boxSizing: "border-box",
+};
+
+const sidebarSectionHeadingStyle = {
+  margin: "0 0 6px",
+  padding: "0 10px",
+  fontSize: 10,
+  fontWeight: 800,
+  letterSpacing: "0.1em",
+  textTransform: "uppercase",
+  color: "var(--app-text-muted)",
+  lineHeight: 1.5,
 };
 
 const sidebarLabelStyle = {
