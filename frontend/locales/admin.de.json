@@ -162,7 +162,7 @@
     "createUserDescription": "Neues Admin-Konto mit E-Mail, Passwort und Rolle hinzufügen.",
     "createUserButton": "Benutzer erstellen",
     "email": "E-Mail",
-    "orderNr": "Nr",
+    "orderNr": "Nr.",
     "emailHelper": "Wird als Anmeldename verwendet.",
     "password": "Passwort",
     "passwordHelper": "Mindestens 8 Zeichen.",
@@ -1165,6 +1165,7 @@
     "close": "Schließen"
   },
   "ordersAdmin": {
+    "filterWithoutKitchen": "Nach Kunde, Vertragsnummer, Adresse oder Datum filtern.",
     "orders": "Bestellungen",
     "savedOrdersFromPublicConfigurator": "Gespeicherte Bestellungen aus dem öffentlichen Konfigurator.",
     "pageReadOnlyCoreOperationalView": "Diese Seite ist derzeit schreibgeschützt, bietet aber die zentrale operative Übersicht.",
@@ -1523,6 +1524,9 @@
     "next": "Weiter"
   },
   "orderCancellationsAdmin": {
+    "searchPlaceholder": "Referenz, Kunde, E-Mail, Bestell- oder Vertragsnummer...",
+    "reference": "Referenz",
+    "backToWithdrawals": "Zurück zu Widerrufen",
     "title": "Widerrufe",
     "description": "Prüfen Sie die Widerrufsanträge. Bestellungen werden erst nach Genehmigung storniert.",
     "panelTitle": "Widerrufsanträge",

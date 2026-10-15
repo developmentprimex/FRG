@@ -65,7 +65,7 @@ function appendCatalogSheets(workbook, programLabel, articles, blenden, services
     workbook,
     getSheetName("Articles", suffix),
     [
-      ["Nr", "Program", "Article number", "Name", "German name", "Description", "Width cm", "Height cm", "Depth cm", "Dimensions W x H x D", "Item type", "Price", "Fixed package", "Active", "Linked KitchenItems"],
+      ["No.", "Program", "Article number", "Name", "German name", "Description", "Width cm", "Height cm", "Depth cm", "Dimensions W x H x D", "Item type", "Price", "Fixed package", "Active", "Linked KitchenItems"],
       ...articles.map((article, index) => [
         index + 1,
         article.programmId,
@@ -91,7 +91,7 @@ function appendCatalogSheets(workbook, programLabel, articles, blenden, services
     workbook,
     getSheetName("Blenden", suffix),
     [
-      ["Nr", "Program", "Code", "Name", "German name", "Description", "Price", "Active", "Linked KitchenItems"],
+      ["No.", "Program", "Code", "Name", "German name", "Description", "Price", "Active", "Linked KitchenItems"],
       ...blenden.map((blende, index) => [
         index + 1,
         blende.programmId,
@@ -111,7 +111,7 @@ function appendCatalogSheets(workbook, programLabel, articles, blenden, services
     workbook,
     getSheetName("Services", suffix),
     [
-      ["Nr", "Program", "Code", "Name", "German name", "Description", "Price", "Active", "Linked KitchenItems"],
+      ["No.", "Program", "Code", "Name", "German name", "Description", "Price", "Active", "Linked KitchenItems"],
       ...services.map((service, index) => [
         index + 1,
         service.programmId,
@@ -190,7 +190,7 @@ function appendCombinedProgramSheet(workbook, programmId, articles, blenden, ser
     workbook,
     getProgramSheetName(programmId),
     [
-      ["Nr", "Type", "Program", "Article number", "Code", "Name", "German name", "Description", "Width cm", "Height cm", "Depth cm", "Dimensions W x H x D", "Item type", "Price", "Fixed package", "Active", "Linked KitchenItems"],
+      ["No.", "Type", "Program", "Article number", "Code", "Name", "German name", "Description", "Width cm", "Height cm", "Depth cm", "Dimensions W x H x D", "Item type", "Price", "Fixed package", "Active", "Linked KitchenItems"],
       ...rows.map((row, index) => [index + 1, ...row]),
     ],
     [8, 14, 18, 26, 18, 36, 36, 42, 12, 12, 12, 24, 16, 12, 16, 12, 20],

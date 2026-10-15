@@ -27,7 +27,7 @@ import {
 import AdminSelect from "../../../components/admin-select";
 import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-button";
 import { getFormMessage } from "../../../lib/admin-forms";
-import { getOrdersForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
+import { getOrdersForAdmin, getTestOrdersForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
 import { requireAdminPage } from "../../../lib/auth";
 import { paginateAdminItems } from "../../../lib/admin-pagination";
 
@@ -102,22 +102,31 @@ function DeleteOrderAction({ orderId, compact = false }) {
   );
 }
 
-export default async function AdminOrdersPage({ searchParams = {} }) {
+function DeleteAllPxOrdersAction() {
+  return <form action="/api/admin/px-orders" method="post" style={deleteFormStyle}>
+    <AdminConfirmSubmitButton name="_intent" value="delete-all" style={deleteButtonStyle} confirmKey="pxOrdersAdmin.deleteAllConfirm" confirmFallback={"Delete all PX orders?\nThis removes every test order and cannot be undone."}>
+      <AdminText i18nKey="pxOrdersAdmin.deleteAll" fallback="Delete all PX orders" />
+    </AdminConfirmSubmitButton>
+  </form>;
+}
+
+export default async function AdminOrdersPage({ searchParams = {}, pxOnly = false }) {
   const admin = await requireAdminPage();
+  const basePath = pxOnly ? "/admin/px-orders" : "/admin/orders";
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {
     q: normalizeParam(resolvedSearchParams.q).trim(),
-    kitchenId: normalizeParam(resolvedSearchParams.kitchenId).trim(),
+    kitchenId: pxOnly ? normalizeParam(resolvedSearchParams.kitchenId).trim() : "",
     status: normalizeParam(resolvedSearchParams.status).trim(),
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
   };
   const [allOrders, kitchens] = await Promise.all([
-    getOrdersForAdmin(filters),
-    listKitchensForAdmin(),
+    pxOnly ? getTestOrdersForAdmin(filters) : getOrdersForAdmin(filters),
+    pxOnly ? listKitchensForAdmin() : Promise.resolve([]),
   ]);
   const pagination = paginateAdminItems(allOrders, resolvedSearchParams.page);
-  const orders = await attachOrderEmailDelivery(pagination.items);
+  const orders = await attachOrderEmailDelivery(pagination.items, pxOnly ? "test" : "live");
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
   const summary = calculateOrderReportSummary(allOrders);
@@ -127,16 +136,8 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
         <AdminSection
-          title={<AdminText i18nKey="ordersAdmin.orders" fallback="Orders" />}
-          description={(
-            <AdminPluralText
-              count={orders.length}
-              singularKey="ordersAdmin.orderMatchesCurrentFilters"
-              pluralKey="ordersAdmin.ordersMatchCurrentFilters"
-              singularFallback="{count} order matches the current filters."
-              pluralFallback="{count} orders match the current filters."
-            />
-          )}
+          title={pxOnly ? <AdminText i18nKey="pxOrdersAdmin.title" fallback="PX orders" /> : <AdminText i18nKey="ordersAdmin.orders" fallback="Orders" />}
+          actions={pxOnly ? <DeleteAllPxOrdersAction /> : undefined}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
@@ -152,15 +153,10 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.vatTotal" fallback="VAT total (19%)" /></dt><dd style={summaryValueStyle}>{formatCurrency(summary.confirmedVat)}</dd></div>
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.totalWithVat" fallback="Total with VAT" /></dt><dd style={{ ...summaryValueStyle, fontWeight: 700 }}>{formatCurrency(summary.confirmedGross)}</dd></div>
             </dl>
-            <p style={{ margin: "8px 0 0", fontSize: 11, color: "var(--app-text-muted)" }}><AdminText i18nKey="reportsAdmin.amountsConfirmedOnly" fallback="Amounts for confirmed orders only" /></p>
           </div>
 
-          <form action="/admin/orders" method="get" style={filterPanelStyle}>
-            <div style={filterHeaderStyle}>
-              <span style={filterEyebrowStyle}><AdminText i18nKey="contractsAdmin.filters" fallback="Filters" /></span>
-              <span style={filterHintStyle}><AdminText i18nKey="ordersAdmin.filterOrdersByCustomerContractAddressAndDate" fallback="Filter by customer, contract, address, kitchen, status, or date." /></span>
-            </div>
-            <div className="orders-filter-grid" style={filterGridStyle}>
+          <form action={basePath} method="get" style={filterPanelStyle}>
+            <div className="orders-filter-grid" style={{ ...filterGridStyle, gridTemplateColumns: pxOnly ? filterGridStyle.gridTemplateColumns : "minmax(0, 2fr) repeat(2, minmax(0, 1fr)) max-content" }}>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
                 <AdminTranslatedInput
@@ -171,7 +167,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                   style={filterInputStyle}
                 />
               </label>
-              <label style={filterFieldStyle}>
+              {pxOnly ? <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="dashboard.kitchen" fallback="Kitchen" /></span>
                 <AdminSelect name="kitchenId" defaultValue={filters.kitchenId} style={filterInputStyle}>
                   <option value=""><AdminText i18nKey="dashboard.allKitchens" fallback="All kitchens" /></option>
@@ -179,7 +175,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                     <option key={kitchen.id} value={kitchen.id}>{kitchen.name}</option>
                   ))}
                 </AdminSelect>
-              </label>
+              </label> : null}
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
                 <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
@@ -190,7 +186,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               </label>
               <div style={filterActionsStyle}>
                 <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-                <Link href="/admin/orders" scroll={false} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+                <Link href={basePath} scroll={false} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
               </div>
             </div>
           </form>
@@ -198,21 +194,21 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
           <div className="admin-list-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={ordersTableStyle}>
               <colgroup>
-                <col style={{ width: "3%" }} />
-                <col style={{ width: "10%" }} />
+                <col style={{ width: "4%" }} />
                 <col style={{ width: "12%" }} />
+                <col style={{ width: "18%" }} />
                 <col style={{ width: "7%" }} />
                 <col style={{ width: "8%" }} />
                 <col style={{ width: "6%" }} />
                 <col style={{ width: "9%" }} />
                 <col className="orders-table-optional" style={{ width: "7%" }} />
-                <col className="orders-table-date" style={{ width: "8%" }} />
+                <col className="orders-table-date" style={{ width: "10%" }} />
                 <col style={{ width: "8%" }} />
                 <col style={{ width: "11%" }} />
               </colgroup>
               <thead>
                 <tr>
-                  <th style={{ ...ordersThStyle, padding: "8px 6px" }}>Nr.</th>
+                  <th style={{ ...ordersThStyle, paddingLeft: 12, paddingRight: 12, textAlign: "center", letterSpacing: "0.04em" }}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.order" fallback="Order" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.items" fallback="Items" /></th>
@@ -236,9 +232,9 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                   const articleCodes = getArticleCodes(order.items);
                   return (
                   <tr key={order.id} className="orders-table-row" style={orderRowStyle}>
-                    <td style={{ ...ordersTdStyle, padding: "16px 6px", color: "var(--app-text-muted)" }}>{rowNumber(index)}</td>
+                    <td style={{ ...ordersTdStyle, padding: "16px 12px", textAlign: "center", verticalAlign: "middle", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal", fontVariantNumeric: "tabular-nums", fontSize: "var(--admin-text-label)", fontWeight: 500, color: "var(--app-text-muted)" }}>{rowNumber(index)}</td>
                     <td style={ordersTdStyle}>
-                      <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>
+                      <Link href={`${basePath}/${order.id}`} style={orderLinkStyle}>
                         <strong>{order.orderNumber}</strong>
                       </Link>
                     </td>
@@ -262,11 +258,11 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                     <td style={ordersTdStyle}><AdminEmailDeliveryStatus delivery={order.confirmationEmailDelivery} /></td>
                     <td style={ordersActionTdStyle}>
                       <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap" }}>
-                        <Link href={`/admin/orders/${order.id}`} style={viewButtonStyle}>
+                        <Link href={`${basePath}/${order.id}`} style={viewButtonStyle}>
                           <AdminText i18nKey="ordersAdmin.view" fallback="View" />
                         </Link>
 
-                        <DeleteOrderAction orderId={order.id} />
+                        {!pxOnly ? <DeleteOrderAction orderId={order.id} /> : null}
                       </div>
                     </td>
                   </tr>
@@ -286,10 +282,10 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                 <div style={{ display: "grid", gap: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ display: "grid", gap: 6 }}>
-                      <span style={mobileLabelStyle}>Nr. {rowNumber(index)}</span>
+                      <span style={mobileLabelStyle}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /> {rowNumber(index)}</span>
                       <span style={mobileLabelStyle}><AdminText i18nKey="ordersAdmin.mobileOrderNumber" fallback="Order number" /></span>
-                      <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>
-                        <strong style={{ fontSize: "1.05rem" }}>{order.orderNumber}</strong>
+                      <Link href={`${basePath}/${order.id}`} style={orderLinkStyle}>
+                        <strong style={{ fontSize: "var(--admin-text-body)" }}>{order.orderNumber}</strong>
                       </Link>
                     </div>
                     <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
@@ -324,11 +320,11 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                     <div style={cardActionRowStyle}>
-                      <Link href={`/admin/orders/${order.id}`} style={viewButtonStyle}>
+                      <Link href={`${basePath}/${order.id}`} style={viewButtonStyle}>
                         <AdminText i18nKey="ordersAdmin.viewOrder" fallback="View order" />
                       </Link>
 
-                        <DeleteOrderAction orderId={order.id} compact />
+                        {!pxOnly ? <DeleteOrderAction orderId={order.id} compact /> : null}
                     </div>
                   </div>
                 </div>
@@ -337,7 +333,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
             })}
           </div>
 
-          <AdminPagination basePath="/admin/orders" searchParams={resolvedSearchParams} {...pagination} />
+          <AdminPagination basePath={basePath} searchParams={resolvedSearchParams} {...pagination} />
 
           <style>{`
             .orders-summary > div {
@@ -444,7 +440,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
 const orderLinkStyle = {
   color: "var(--app-text)",
   textDecoration: "none",
-  fontWeight: 800,
+  fontWeight: 600,
 };
 
 const ordersTableStyle = {
@@ -454,18 +450,15 @@ const ordersTableStyle = {
 
 const ordersThStyle = {
   ...thStyle,
-  padding: "8px 12px",
-  lineHeight: 1.3,
   whiteSpace: "nowrap",
   overflowWrap: "normal",
   wordBreak: "normal",
-  fontSize: 11,
-  letterSpacing: "0.11em",
 };
 
 const ordersTdStyle = {
   ...tdStyle,
   padding: "16px 12px",
+  verticalAlign: "middle",
 };
 
 const ordersActionTdStyle = {
@@ -484,8 +477,8 @@ const articleCountStyle = {
   background: "rgba(115, 80, 55, 0.08)",
   border: "1px solid rgba(115, 80, 55, 0.12)",
   color: "var(--app-accent)",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   whiteSpace: "nowrap",
 };
 
@@ -495,8 +488,8 @@ const paymentStatusBaseStyle = {
   borderRadius: 999,
   padding: "6px 8px",
   border: "1px solid transparent",
-  fontSize: 11,
-  fontWeight: 900,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   textTransform: "uppercase",
   letterSpacing: "0.04em",
   whiteSpace: "nowrap",
@@ -541,9 +534,9 @@ const deleteButtonStyle = {
   minHeight: 38,
   borderRadius: 8,
   padding: "9px 12px",
-  fontSize: 13,
+  fontSize: "var(--admin-text-meta)",
   boxShadow: "none",
-  fontWeight: 800,
+  fontWeight: 600,
   cursor: "pointer",
   whiteSpace: "nowrap",
 };
@@ -578,24 +571,24 @@ const viewButtonStyle = {
   background: "var(--app-surface)",
   border: "1px solid var(--app-border)",
   color: "var(--app-accent)",
-  fontWeight: 800,
-  fontSize: 13,
+  fontWeight: 600,
+  fontSize: "var(--admin-text-meta)",
   whiteSpace: "nowrap",
 };
 
 const customerNameStyle = {
-  fontWeight: 800,
+  fontWeight: 600,
 };
 
 const customerEmailStyle = {
   color: "var(--app-text-muted)",
   marginTop: 6,
-  fontSize: 13,
+  fontSize: "var(--admin-text-meta)",
 };
 
 const totalStyle = {
   whiteSpace: "nowrap",
-  fontWeight: 900,
+  fontWeight: 600,
   color: "var(--app-text)",
 };
 
@@ -612,14 +605,14 @@ const summaryGridStyle = {
 
 const summaryLabelStyle = {
   color: "inherit",
-  fontSize: 12,
+  fontSize: "var(--admin-text-label)",
   opacity: 0.85,
   marginBottom: 8,
 };
 
 const summaryValueStyle = {
   margin: 0,
-  fontSize: 20,
+  fontSize: "var(--admin-text-metric)",
   fontWeight: 700,
   lineHeight: 1.2,
 };
@@ -633,8 +626,8 @@ const mobileCardGridStyle = {
 const mobileLabelStyle = {
   display: "block",
   color: "var(--app-text-muted)",
-  fontSize: 11,
-  fontWeight: 900,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
   marginBottom: 4,
@@ -643,7 +636,7 @@ const mobileLabelStyle = {
 const mobileMutedLineStyle = {
   display: "block",
   color: "var(--app-text-muted)",
-  fontSize: 13,
+  fontSize: "var(--admin-text-meta)",
   marginTop: 4,
 };
 
@@ -680,15 +673,15 @@ const filterEyebrowStyle = {
   background: "rgba(143, 62, 44, 0.1)",
   border: "1px solid rgba(143, 62, 44, 0.14)",
   color: "var(--app-accent)",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
 };
 
 const filterHintStyle = {
   color: "var(--app-text-muted)",
-  fontSize: 13,
+  fontSize: "var(--admin-text-meta)",
   fontWeight: 700,
 };
 
@@ -697,8 +690,8 @@ const filterFieldStyle = {
   display: "grid",
   gap: 6,
   color: "var(--app-text-muted)",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
 };
@@ -710,7 +703,7 @@ const filterInputStyle = {
   borderRadius: 8,
   padding: "9px 11px",
   background: "rgba(255,255,255,0.94)",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
   boxShadow: "none",
 };
 
@@ -727,7 +720,7 @@ const filterApplyButtonStyle = {
   minHeight: 42,
   borderRadius: 8,
   padding: "9px 14px",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
   whiteSpace: "nowrap",
   boxShadow: "0 10px 20px rgba(143, 62, 44, 0.16)",
 };
@@ -740,8 +733,8 @@ const filterClearLinkStyle = {
   background: "rgba(255,255,255,0.88)",
   color: "var(--app-accent)",
   border: "1px solid rgba(143, 62, 44, 0.14)",
-  fontWeight: 800,
-  fontSize: "0.92rem",
+  fontWeight: 600,
+  fontSize: "var(--admin-text-body)",
   display: "inline-flex",
   alignItems: "center",
   whiteSpace: "nowrap",

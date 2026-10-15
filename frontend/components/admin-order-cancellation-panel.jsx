@@ -3,6 +3,52 @@ import { AdminText } from "./admin-i18n";
 import AdminConfirmSubmitButton from "./admin-confirm-submit-button";
 import { cancellationEmailNeedsAttention, cancellationRequiresRefund } from "../lib/order-cancellations";
 import styles from "./admin-order-cancellations.module.css";
+import { tableWrapStyle, tableStyle, thStyle, tdStyle as baseTdStyle } from "./admin-ui";
+
+const tdStyle = { ...baseTdStyle, verticalAlign: "middle", padding: "16px 12px" };
+
+export function CancellationRequestsTable({ requests = [], returnPath = "/admin/order-cancellations" }) {
+  return <div style={{ ...tableWrapStyle, borderRadius: 4 }}>
+    <table style={{ ...tableStyle, minWidth: 1000 }}>
+      <colgroup>
+        <col style={{ width: 64 }} />
+        <col style={{ width: "15%" }} />
+        <col style={{ width: "18%" }} />
+        <col style={{ width: "12%" }} />
+        <col style={{ width: "17%" }} />
+        <col style={{ width: "16%" }} />
+        <col style={{ width: "11%" }} />
+        <col style={{ width: "8%" }} />
+      </colgroup>
+      <thead><tr>
+        <th style={{ ...thStyle, width: 64, paddingLeft: 12, paddingRight: 12, textAlign: "center", letterSpacing: "0.04em", boxSizing: "border-box", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal" }}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
+        <th style={thStyle}><AdminText i18nKey="orderCancellationsAdmin.reference" fallback="Reference" /></th>
+        <th style={thStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
+        <th style={thStyle}><AdminText i18nKey="ordersAdmin.order" fallback="Order" /></th>
+        <th style={thStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></th>
+        <th style={thStyle}><AdminText i18nKey="ordersAdmin.created" fallback="Created" /></th>
+        <th style={thStyle}><AdminText i18nKey="orderCancellationsAdmin.customerEmail" fallback="Customer receipt" /></th>
+        <th style={thStyle}><AdminText i18nKey="ordersAdmin.action" fallback="Action" /></th>
+      </tr></thead>
+      <tbody>{!requests.length ? <tr><td style={tdStyle} colSpan={8}><AdminText i18nKey="orderCancellationsAdmin.empty" fallback="No cancellation requests match this filter." /></td></tr> : null}
+        {requests.map((request, index) => <tr key={request.id}>
+          <td style={{ ...tdStyle, width: 64, paddingLeft: 12, paddingRight: 12, textAlign: "center", fontSize: "var(--admin-text-label)", fontWeight: 500, boxSizing: "border-box", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal", fontVariantNumeric: "tabular-nums", color: "var(--app-text-muted)" }}>{requests.length - index}</td>
+          <td style={tdStyle}><strong>{request.referenceNumber}</strong></td>
+          <td style={tdStyle}><strong>{request.consumerName}</strong><div style={{ color: "var(--app-text-muted)", marginTop: 5, fontSize: "var(--admin-text-meta)" }}>{request.confirmationEmail}</div></td>
+          <td style={tdStyle}>{request.order ? <Link href={`/admin/orders/${request.order.id}`}>{request.order.orderNumber}</Link> : <span style={{ color: "var(--app-text-muted)" }}>—</span>}</td>
+          <td style={tdStyle}><StatusBadge status={request.status} /></td>
+          <td style={tdStyle}>{formatDateTime(request.receivedAt)}</td>
+          <td style={tdStyle}>
+            <span className={`${styles.emailStatus} ${request.customerEmailStatus === "SENT" ? styles.sent : request.customerEmailStatus === "FAILED" ? styles.failed : styles.pending}`}>
+              <AdminText i18nKey={`orderEmailDelivery.status.${String(request.customerEmailStatus || "PENDING").toUpperCase()}`} fallback={request.customerEmailStatus || "Pending"} />
+            </span>
+          </td>
+          <td style={tdStyle}><Link className={styles.viewButton} href={`/admin/order-cancellations/${request.id}?returnTo=${encodeURIComponent(returnPath)}`}><AdminText i18nKey="ordersAdmin.view" fallback="View" /></Link></td>
+        </tr>)}
+      </tbody>
+    </table>
+  </div>;
+}
 
 function formatDateTime(value) {
   if (!value) return "";
@@ -18,13 +64,13 @@ function StatusBadge({ status }) {
   const value = String(status || "").toUpperCase();
   const tone = value === "APPROVED" ? styles.approved : value === "REJECTED" ? styles.rejected : styles.received;
   const key = value === "APPROVED" ? "statusApproved" : value === "REJECTED" ? "statusRejected" : "badgeReceived";
-  const fallback = value === "APPROVED" ? "Approved" : value === "REJECTED" ? "Rejected" : "Withdrawal received";
+  const fallback = value === "APPROVED" ? "Approved" : value === "REJECTED" ? "Rejected" : "Request received";
   return <span className={`${styles.status} ${tone}`}><AdminText i18nKey={`orderCancellationsAdmin.${key}`} fallback={fallback} /></span>;
 }
 
 function Detail({ labelKey, labelFallback, children }) {
   if (!children) return null;
-  return <div className={styles.detail}><span className={styles.label}><AdminText i18nKey={labelKey} fallback={labelFallback} /></span><div className={styles.value}>{children}</div></div>;
+  return <tr><th scope="row"><AdminText i18nKey={labelKey} fallback={labelFallback} /></th><td className={styles.value}>{children}</td></tr>;
 }
 
 function EmailStatusRow({ labelKey, labelFallback, status, sentAt }) {
@@ -37,7 +83,7 @@ function EmailStatusRow({ labelKey, labelFallback, status, sentAt }) {
   </div>;
 }
 
-export function CancellationRequestPanel({ requests = [], returnPath = "/admin/order-cancellations", showOrderLink = true }) {
+export function CancellationRequestPanel({ requests = [], returnPath = "/admin/order-cancellations", showOrderLink = true, defaultOpen = false }) {
   if (!requests.length) return null;
 
   return <div className={styles.list}>
@@ -47,7 +93,7 @@ export function CancellationRequestPanel({ requests = [], returnPath = "/admin/o
       const refundRequired = cancellationRequiresRefund(request);
       const canApprove = Boolean(request.orderId);
 
-      return <details key={request.id} className={styles.request}>
+      return <details key={request.id} className={styles.request} open={defaultOpen}>
         <summary className={styles.summary}>
           <span className={styles.summaryMain}>
             <span className={styles.reference}>{request.referenceNumber}</span>
@@ -64,26 +110,28 @@ export function CancellationRequestPanel({ requests = [], returnPath = "/admin/o
         <div className={styles.body}>
           {refundRequired ? <div className={styles.refundNotice}><AdminText i18nKey="orderCancellationsAdmin.refundRequired" fallback="Refund required: the order was paid. Cancel the order but process the refund manually." /></div> : null}
           <div className={styles.overview}>
-            <div className={styles.detailsGrid}>
+            <table className={styles.detailsTable}><tbody>
+              <Detail labelKey="orderDetailAdmin.customer" labelFallback="Customer"><strong>{request.consumerName}</strong></Detail>
+              <Detail labelKey="adminShellLogin.email" labelFallback="Email"><a href={`mailto:${request.confirmationEmail}`}>{request.confirmationEmail}</a></Detail>
+              <Detail labelKey="orderCancellationsAdmin.address" labelFallback="Address">{request.consumerAddress}</Detail>
               <Detail labelKey="orderDetailAdmin.contractNumber" labelFallback="Contract number">{request.submittedContractNumber}</Detail>
               <Detail labelKey="orderCancellationsAdmin.goods" labelFallback="Goods / service">{request.productDescription}</Detail>
               <Detail labelKey="orderCancellationsAdmin.orderedOn" labelFallback="Ordered on">{formatDate(request.orderedOn)}</Detail>
               <Detail labelKey="orderCancellationsAdmin.receivedOn" labelFallback="Received on">{formatDate(request.receivedOn)}</Detail>
-              <Detail labelKey="kitchenDetailAdmin.name" labelFallback="Name">{request.consumerName}</Detail>
-              <Detail labelKey="orderCancellationsAdmin.address" labelFallback="Address">{request.consumerAddress}</Detail>
-              <Detail labelKey="adminShellLogin.email" labelFallback="Email"><a href={`mailto:${request.confirmationEmail}`}>{request.confirmationEmail}</a></Detail>
               {showOrderLink ? <Detail labelKey="orderCancellationsAdmin.linkedOrder" labelFallback="Linked order">
                 {request.order ? <Link href={`/admin/orders/${request.order.id}`}>{request.order.orderNumber}</Link> : <span className={styles.matchText}><AdminText i18nKey="orderCancellationsAdmin.manualMatch" fallback="Manual match required" /></span>}
               </Detail> : null}
               {request.processedAt ? <Detail labelKey="orderCancellationsAdmin.processedAt" labelFallback="Processed">{formatDateTime(request.processedAt)}</Detail> : null}
-            </div>
-            <div className={styles.communication}>
-              <span className={styles.label}><AdminText i18nKey="orderCancellationsAdmin.emailStatus" fallback="Email delivery" /></span>
+            </tbody></table>
+            <details className={styles.communication} open={needsAttention}>
+              <summary><AdminText i18nKey="orderCancellationsAdmin.emailStatus" fallback="Email delivery" /></summary>
+              <div className={styles.emailGrid}>
               <EmailStatusRow labelKey="orderCancellationsAdmin.customerEmail" labelFallback="Customer receipt" status={request.customerEmailStatus} sentAt={request.customerEmailSentAt} />
               <EmailStatusRow labelKey="orderCancellationsAdmin.internalEmail" labelFallback="Internal notice" status={request.internalEmailStatus} sentAt={request.internalEmailSentAt} />
               <EmailStatusRow labelKey="orderCancellationsAdmin.finalEmail" labelFallback="Decision email" status={request.finalEmailStatus} sentAt={request.finalEmailSentAt} />
+              </div>
               {request.lastEmailError ? <p className={styles.emailError}>{request.lastEmailError}</p> : null}
-            </div>
+            </details>
           </div>
           <div className={styles.declaration}><span className={styles.label}><AdminText i18nKey="orderCancellationsAdmin.declaration" fallback="Declaration" /></span><p>{request.declarationText}</p></div>
           {request.reason ? <div className={styles.declaration}><span className={styles.label}><AdminText i18nKey="orderCancellationsAdmin.reason" fallback="Reason" /></span><p>{request.reason}</p></div> : null}
