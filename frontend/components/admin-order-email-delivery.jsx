@@ -9,7 +9,7 @@ const statuses = {
   SKIPPED: ["Not sent (email not configured)", "var(--app-text-muted)"],
 };
 
-export function AdminEmailDeliveryStatus({ delivery }) {
+export function AdminEmailDeliveryStatus({ delivery, showExplanation = true }) {
   const recipients = Array.isArray(delivery?.recipients) ? delivery.recipients : [];
   const required = recipients.filter((recipient) => recipient.status !== "NOT_REQUIRED");
   const sent = required.length > 0 && required.every((recipient) => recipient.status === "SENT");
@@ -20,7 +20,7 @@ export function AdminEmailDeliveryStatus({ delivery }) {
       <span style={{ padding: "4px 9px", borderRadius: 6, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", color: sent ? "#1f6f43" : "#b42318", background: sent ? "rgba(31, 111, 67, 0.09)" : "rgba(180, 35, 24, 0.09)" }}>
         <AdminText i18nKey={sent ? "orderEmailDelivery.status.SENT" : "orderEmailDelivery.notSent"} fallback={sent ? "Sent" : "Not sent"} />
       </span>
-      {unverified || partial ? <span style={{ fontSize: 11, color: "var(--app-text-muted)" }}>
+      {showExplanation && (unverified || partial) ? <span style={{ fontSize: 11, color: "var(--app-text-muted)" }}>
         <AdminText i18nKey={partial ? "orderEmailDelivery.partial" : "orderEmailDelivery.unverified"} fallback={partial ? "Not all recipients confirmed" : "Sending not verified"} />
       </span> : null}
     </div>

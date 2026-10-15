@@ -217,7 +217,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               <span style={filterEyebrowStyle}><AdminText i18nKey="contractsAdmin.filters" fallback="Filters" /></span>
               <span style={filterHintStyle}><AdminText i18nKey="ordersAdmin.filterOrdersByCustomerContractAddressAndDate" fallback="Filter by customer, contract, address, kitchen, status, or date." /></span>
             </div>
-            <div style={filterGridStyle}>
+            <div className="orders-filter-grid" style={filterGridStyle}>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
                 <AdminTranslatedInput
@@ -272,16 +272,17 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
           <div className="admin-list-table" style={tableWrapStyle}>
             <table style={ordersTableStyle}>
               <colgroup>
-                <col style={{ width: "13%" }} />
-                <col style={{ width: "14.5%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "12%" }} />
                 <col style={{ width: "7%" }} />
+                <col style={{ width: "7%" }} />
+                <col style={{ width: "8%" }} />
                 <col style={{ width: "6%" }} />
-                <col style={{ width: "9.5%" }} />
-                <col style={{ width: "7%" }} />
                 <col style={{ width: "9%" }} />
-                <col className="orders-table-optional" style={{ width: "8%" }} />
-                <col className="orders-table-date" style={{ width: "12%" }} />
-                <col style={{ width: "14%" }} />
+                <col className="orders-table-optional" style={{ width: "7%" }} />
+                <col className="orders-table-date" style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
               </colgroup>
               <thead>
                 <tr>
@@ -338,17 +339,19 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                     </td>
                     <td style={ordersTdStyle}>
                       <AdminStatusBadge status={order.status} />
+
                     </td>
                     <td style={ordersTdStyle}><PaymentStatusBadge status={order.paymentStatus} /></td>
                     <td style={ordersTdStyle}><strong style={totalStyle}>{formatCurrency(order.totalPrice)}</strong></td>
-                    <td className="orders-table-optional" style={ordersTdStyle}>{order.city || <AdminText i18nKey="orderDetailAdmin.notProvided" fallback="Not provided" />}</td>
+                    <td className="orders-table-optional" style={{ ...ordersTdStyle, overflowWrap: "normal", wordBreak: "normal" }}>{order.city || <AdminText i18nKey="orderDetailAdmin.notProvided" fallback="Not provided" />}</td>
                     <td className="orders-table-date" style={ordersTdStyle}><AdminDateTime value={order.createdAt} /></td>
                     <td style={ordersTdStyle}><AdminEmailDeliveryStatus delivery={order.confirmationEmailDelivery} /></td>
                     <td style={ordersActionTdStyle}>
-                      <div style={rowActionStyle}>
+                      <div style={{ display: "grid", gap: 6 }}>
                         <Link href={`/admin/orders/${order.id}`} style={viewButtonStyle}>
                           <AdminText i18nKey="ordersAdmin.view" fallback="View" />
                         </Link>
+
                         <DeleteOrderAction orderId={order.id} />
                       </div>
                     </td>
@@ -388,6 +391,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                     </div>
                     <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
                       <AdminStatusBadge status={order.status} />
+
                       <PaymentStatusBadge status={order.paymentStatus} />
                       <strong style={totalStyle}>{formatCurrency(order.totalPrice)}</strong>
                     </div>
@@ -421,7 +425,8 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                       <Link href={`/admin/orders/${order.id}`} style={viewButtonStyle}>
                         <AdminText i18nKey="ordersAdmin.viewOrder" fallback="View order" />
                       </Link>
-                      <DeleteOrderAction orderId={order.id} compact />
+
+                        <DeleteOrderAction orderId={order.id} compact />
                     </div>
                   </div>
                 </div>
@@ -449,6 +454,18 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               outline-offset: 2px;
             }
 
+            @media (max-width: 1400px) {
+              .orders-filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+            }
+
+            @media (max-width: 800px) {
+              .orders-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            }
+
+            @media (max-width: 480px) {
+              .orders-filter-grid { grid-template-columns: minmax(0, 1fr) !important; }
+            }
+
             @media (max-width: 1180px) {
               .orders-table-optional {
                 display: none;
@@ -461,7 +478,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               }
             }
 
-            @media (max-width: 760px) {
+            @media (max-width: 1100px) {
               .admin-list-table {
                 display: none;
               }
@@ -485,7 +502,7 @@ const orderLinkStyle = {
 
 const ordersTableStyle = {
   ...tableStyle,
-  minWidth: 1040,
+  minWidth: 1280,
 };
 
 const ordersThStyle = {
@@ -493,6 +510,8 @@ const ordersThStyle = {
   padding: "8px 12px",
   lineHeight: 1.3,
   whiteSpace: "nowrap",
+  overflowWrap: "normal",
+  wordBreak: "normal",
   fontSize: 11,
   letterSpacing: "0.11em",
 };
@@ -618,6 +637,7 @@ const compactDeleteButtonStyle = {
 
 const rowActionStyle = {
   display: "flex",
+  flexWrap: "wrap",
   alignItems: "center",
   gap: 8,
 };
@@ -630,9 +650,9 @@ const viewButtonStyle = {
   justifyContent: "center",
   borderRadius: 8,
   padding: "9px 12px",
-  background: "var(--color-primary)",
-  border: "1px solid var(--color-primary)",
-  color: "var(--app-accent-contrast)",
+  background: "var(--app-surface)",
+  border: "1px solid var(--app-border)",
+  color: "var(--app-accent)",
   fontWeight: 800,
   fontSize: 13,
   whiteSpace: "nowrap",
@@ -649,6 +669,7 @@ const customerEmailStyle = {
 };
 
 const totalStyle = {
+  whiteSpace: "nowrap",
   fontWeight: 900,
   color: "var(--app-text)",
 };
@@ -731,7 +752,7 @@ const mobileMutedLineStyle = {
 const filterGridStyle = {
   display: "grid",
   gap: 10,
-  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
+  gridTemplateColumns: "repeat(4, minmax(0, 1fr)) max-content",
   alignItems: "end",
 };
 
@@ -774,6 +795,7 @@ const filterHintStyle = {
 };
 
 const filterFieldStyle = {
+  minWidth: 0,
   display: "grid",
   gap: 6,
   color: "var(--app-text-muted)",
@@ -784,6 +806,7 @@ const filterFieldStyle = {
 };
 
 const filterInputStyle = {
+  minWidth: 0,
   ...inputStyle,
   minHeight: 42,
   borderRadius: 8,
@@ -794,10 +817,11 @@ const filterInputStyle = {
 };
 
 const filterActionsStyle = {
+  minWidth: 0,
   display: "flex",
   gap: 8,
   alignItems: "end",
-  flexWrap: "nowrap",
+  flexWrap: "wrap",
 };
 
 const filterApplyButtonStyle = {

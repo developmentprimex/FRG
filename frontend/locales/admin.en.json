@@ -1450,6 +1450,7 @@
     "retryingWebhook": "Retrying webhook..."
   },
   "claimsAdmin": {
+    "openAction": "Open",
     "claims": "Service requests",
     "claim": "Service request",
     "claimMatchesCurrentFilters": "{count} service request matches the current filters.",

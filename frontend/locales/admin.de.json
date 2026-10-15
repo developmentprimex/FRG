@@ -1450,6 +1450,7 @@
     "retryingWebhook": "Webhook wird erneut versucht..."
   },
   "claimsAdmin": {
+    "openAction": "Öffnen",
     "claims": "Reklamationen",
     "claim": "Reklamation",
     "claimMatchesCurrentFilters": "{count} Reklamation entspricht den aktuellen Filtern.",
