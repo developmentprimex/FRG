@@ -29,7 +29,7 @@ export function WorkBadge({ item, compact = false, inline = false }) {
   }, [router]);
   const labels = { green: "On track", orange: "Needs attention", red: "Overdue", done: "Done", cancelled: "Cancelled" };
   return <div style={{ display: inline ? "inline-flex" : "grid", alignItems: inline ? "center" : undefined, flexWrap: inline ? "wrap" : undefined, gap: 5, marginBlock: inline ? 0 : 6 }}>
-    <span style={{ ...workTones[state.tone], borderWidth: 1, borderStyle: "solid", borderRadius: 12, padding: "5px 9px", fontSize: 12, fontWeight: 800, width: "fit-content", maxWidth: "100%", boxSizing: "border-box", whiteSpace: "normal", overflowWrap: "anywhere", lineHeight: 1.4 }}>
+    <span style={{ ...workTones[state.tone], borderWidth: 1, borderStyle: "solid", borderRadius: 8, padding: "5px 9px", fontSize: 12, fontWeight: 800, width: "fit-content", maxWidth: "100%", boxSizing: "border-box", whiteSpace: "normal", overflowWrap: "anywhere", lineHeight: 1.4 }}>
       {state.tone === "done" ? "✓ " : ""}<AdminText i18nKey={inline && state.tone === "green" ? "workProcessing.OPEN" : `workProcessing.${state.tone}`} fallback={inline && state.tone === "green" ? "Open" : labels[state.tone]} />
       {!compact && !['done', 'cancelled'].includes(state.tone) ? <> · <AdminText i18nKey={state.days === 1 ? "workProcessing.day" : "workProcessing.days"} fallback={state.days === 1 ? "{count} day" : "{count} days"} values={{ count: state.days }} /></> : null}
     </span>

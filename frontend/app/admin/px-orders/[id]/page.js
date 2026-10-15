@@ -254,7 +254,7 @@ const actionPanelStyle = {
   display: "grid",
   gap: 14,
   border: "1px solid var(--app-border)",
-  borderRadius: 14,
+  borderRadius: 8,
   background: "linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,248,242,0.74))",
   padding: 18,
 };
@@ -291,7 +291,7 @@ const metricStyle = {
   display: "grid",
   gap: 6,
   border: "1px solid var(--app-border)",
-  borderRadius: 10,
+  borderRadius: 8,
   background: "rgba(255,255,255,0.78)",
   padding: "12px 14px",
 };
@@ -334,7 +334,7 @@ const buttonRowStyle = {
 
 const dangerButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.22)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.72)",
@@ -346,7 +346,7 @@ const dangerButtonStyle = {
 
 const paymentButtonStyle = {
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(42, 145, 85, 0.1)",
@@ -360,7 +360,7 @@ const paymentLinkPanelStyle = {
   display: "grid",
   gap: 8,
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "rgba(42, 145, 85, 0.08)",
   padding: "12px 14px",
 };

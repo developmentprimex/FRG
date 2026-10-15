@@ -379,7 +379,7 @@ const actionPanelStyle = {
   display: "grid",
   gap: 14,
   border: "1px solid var(--app-border)",
-  borderRadius: 14,
+  borderRadius: 8,
   background: "transparent",
   padding: 14,
 };
@@ -417,7 +417,7 @@ const actionMetricStyle = {
   gap: 6,
   minWidth: 0,
   border: "1px solid var(--app-border)",
-  borderRadius: 10,
+  borderRadius: 8,
   background: "rgba(255,255,255,0.78)",
   padding: "12px 14px",
 };
@@ -439,7 +439,7 @@ const statusHintStyle = {
 
 const quietDangerButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.22)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.72)",
@@ -452,7 +452,7 @@ const quietDangerButtonStyle = {
 
 const technicalButtonStyle = {
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.62)",
@@ -465,7 +465,7 @@ const technicalButtonStyle = {
 
 const paymentLinkButtonStyle = {
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(42, 145, 85, 0.1)",
@@ -480,7 +480,7 @@ const paymentLinkPanelStyle = {
   display: "grid",
   gap: 8,
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "rgba(42, 145, 85, 0.08)",
   color: "var(--app-text)",
   padding: "12px 14px",

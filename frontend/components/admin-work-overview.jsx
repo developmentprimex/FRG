@@ -12,7 +12,7 @@ export async function AdminWorkOverview() {
     prisma.workReminderBatch.count({ where: { status: { in: ["FAILED", "UNKNOWN", "SENDING"] } } }),
   ]);
   const trackedClaims = await attachWorkProcessing(prisma, claims.filter((item) => !isTestContractNumber(item.contractNumber)), "CLAIM");
-  return <section style={{ padding: 18, border: "1px solid var(--app-border)", borderRadius: 12, background: "var(--app-surface)", marginBottom: 18 }}>
+  return <section style={{ padding: 18, border: "1px solid var(--app-border)", borderRadius: 8, background: "var(--app-surface)", marginBottom: 18 }}>
     <strong><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></strong>
     <WorkSummary counts={summarizeWork(trackedClaims)} />
     <div style={actionRowStyle}>

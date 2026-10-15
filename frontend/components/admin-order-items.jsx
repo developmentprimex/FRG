@@ -61,10 +61,10 @@ export function AdminOrderItems({ order }) {
     <style>{`
       .order-selection { display:grid; gap:12px; min-width:0; }
       .order-selection-note { margin:0; color:var(--app-text-muted); font-size:13px; line-height:1.6; }
-      .order-selection-warning { margin:0; padding:14px; background:#fff4dc; color:#765017; border:1px solid #dfc38a; border-radius:10px; }
+      .order-selection-warning { margin:0; padding:14px; background:#fff4dc; color:#765017; border:1px solid #dfc38a; border-radius: 8px; }
       .order-selection h3 { margin:0 0 12px; font-size:1.1rem; }
       .order-selection h3 small { font-weight:400; }
-      .order-selection-table { overflow-x:auto; border:1px solid var(--app-border); border-radius:14px; margin-top:12px; }
+      .order-selection-table { overflow-x:auto; border:1px solid var(--app-border); border-radius: 4px; margin-top:12px; }
       .order-selection table { width:100%; border-collapse:collapse; text-align:left; }
       .order-selection th, .order-selection td { padding:10px 12px; border-bottom:1px solid var(--app-border); vertical-align:top; }
       .order-selection th { font-size:12px; color:var(--app-text-muted); background:var(--app-surface); }
@@ -82,7 +82,7 @@ export function AdminOrderItems({ order }) {
       .order-selection tbody[data-group="unknown"] .order-selection-group th { background:#fff3dc; color:#73521b; border-left-color:#bf963f; }
       .order-selection-total { font-size:16px; background:#ede2d4; color:#503924; font-weight:700; border-top:2px solid #b89b7b; }
       .order-selection-total td { padding:13px 12px !important; }
-      .order-selection-included { border:1px solid var(--app-border); border-radius:14px; overflow:hidden; }
+      .order-selection-included { border:1px solid var(--app-border); border-radius: 8px; overflow:hidden; }
       .order-selection-included > summary { padding:12px 14px; background:#f7f7f6; color:var(--app-text-muted); font-size:13px; font-weight:500; }
       .order-selection-included thead th { background:#f2f2f1; color:var(--app-text-muted); }
       .order-selection-included[open] > summary { border-bottom:1px solid var(--app-border); }

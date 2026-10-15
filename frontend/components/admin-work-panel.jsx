@@ -5,7 +5,7 @@ import { workUiItem } from "../lib/work-processing-rules";
 
 export async function AdminWorkPanel({ item, compact = false }) {
   const events = (await prisma.workProcessingEvent.findMany({ where: { workType: item.workType, workId: item.id }, orderBy: { createdAt: "desc" }, take: 30 })).filter((event) => event.fromStatus !== event.toStatus);
-  return <section style={{ border: "1px solid var(--app-border)", borderRadius: 14, padding: compact ? "10px 12px" : 16, marginBlock: compact ? 0 : 16 }}>
+  return <section style={{ border: "1px solid var(--app-border)", borderRadius: 8, padding: compact ? "10px 12px" : 16, marginBlock: compact ? 0 : 16 }}>
     <div style={compact ? { display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 } : {}}>
       <div style={compact ? { display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" } : undefined}>
         <strong><AdminText i18nKey="workProcessing.status" fallback="Status" /></strong>

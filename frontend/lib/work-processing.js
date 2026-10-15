@@ -58,7 +58,7 @@ export async function updateWorkProcessing({ db, workType, workId, status, actor
     if (workType === "CLAIM") {
       if (status === "OPEN") {
         await tx.claimFeedbackInvitation.updateMany({ where: { claimId: workId, status: { in: ["PENDING", "SENDING", "FAILED", "UNKNOWN", "SENT"] } }, data: { status: "CANCELLED" } });
-      } else if (isTestContractNumber(item.contractNumber)) {
+      } else if (status === "DONE") {
         const email = String(item.email || "").trim();
         const deliverable = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         const token = deliverable ? createClaimFeedbackToken() : null;

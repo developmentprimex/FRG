@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildFeedbackDashboard, loadPxClaimFeedback, normalizeFeedbackFilters } from "../lib/claim-feedback-dashboard.js";
+import { buildFeedbackDashboard, loadClaimFeedback, loadPxClaimFeedback, normalizeFeedbackFilters } from "../lib/claim-feedback-dashboard.js";
 
 const invitation = (id, extra = {}) => ({
   id,
@@ -68,4 +68,23 @@ test("database query scopes feedback to 111 contracts", async () => {
   } };
   const result = await loadPxClaimFeedback(db, {});
   assert.equal(result.summary.answered, 0);
+});
+
+test("live feedback includes 670 responses and excludes PX contracts from its query", async () => {
+  const db = { $queryRaw: async (query) => {
+    assert.match(query.sql, /NOT LIKE '111%'/);
+    return [invitation("670", { contractNumber: "670123456" })];
+  } };
+  const result = await loadClaimFeedback(db, {});
+  assert.equal(result.summary.answered, 1);
+  assert.equal(result.rows[0].contractNumber, "670123456");
+});
+
+test("combined feedback includes both live and PX claims when access permits", async () => {
+  const db = { $queryRaw: async (query) => {
+    assert.match(query.sql, /WHERE TRUE/);
+    return [invitation("1"), invitation("2", { contractNumber: "670123456" })];
+  } };
+  const result = await loadClaimFeedback(db, {}, { includePx: true });
+  assert.equal(result.summary.answered, 2);
 });

@@ -278,7 +278,7 @@ const summaryGridStyle = {
 };
 
 const summaryCardStyle = {
-  borderRadius: 10,
+  borderRadius: 8,
   border: "1px solid rgba(143, 62, 44, 0.14)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,241,0.72))",
   padding: "14px 16px",

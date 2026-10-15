@@ -6,7 +6,6 @@ import { prisma as processingDb } from "../../../../lib/prisma";
 import { attachWorkProcessing } from "../../../../lib/work-processing";
 import { AdminWorkPanel } from "../../../../components/admin-work-panel";
 import { AdminClaimFeedback } from "../../../../components/admin-claim-feedback";
-import { isTestContractNumber } from "../../../../lib/order-kind";
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import {
   ActionLink,
@@ -188,9 +187,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
       processing: claim.processing, workType: claim.workType, emailDelivery: claim.emailDelivery };
   }
 
-  const feedback = isTestContractNumber(claim.contractNumber)
-    ? await prisma.claimFeedbackInvitation.findFirst({ where: { claimId: claim.id }, orderBy: { createdAt: "desc" } })
-    : null;
+  const feedback = await prisma.claimFeedbackInvitation.findFirst({ where: { claimId: claim.id }, orderBy: { createdAt: "desc" } });
 
   const rawUploadedAttachments = parseClaimAttachments(claim.attachmentsJson);
   const parsedProblemAreas = parseClaimProblemAreas(claim.problemAreasJson);
@@ -266,7 +263,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
 
           <div style={{ display: "grid", gap: 10 }}>
           <AdminWorkPanel item={claim} compact />
-          {submissions.length > 1 && <details style={{ border: "1px solid var(--app-border)", borderRadius: 12, padding: "12px 14px" }}>
+          {submissions.length > 1 && <details style={{ border: "1px solid var(--app-border)", borderRadius: 8, padding: "12px 14px" }}>
             <summary style={{ cursor: "pointer", fontSize: 14, fontWeight: 600 }}><AdminText i18nKey="claimsAdmin.submissionHistory" fallback="Submission history" /> ({submissions.length})</summary>
             <ol style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "grid", gap: 8 }}>
               {submissions.map((submission, index) => {
@@ -491,7 +488,7 @@ function ClaimRequestTypeText({ requestType }) {
 
 const deleteClaimButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.24)",
-  borderRadius: 10,
+  borderRadius: 8,
   minHeight: 32,
   padding: "6px 10px",
   background: "rgba(255,255,255,0.72)",
@@ -532,7 +529,7 @@ const selectedPartGroupStyle = {
   marginTop: 14,
   border: "1px solid var(--app-border)",
   borderLeft: "4px solid var(--app-accent)",
-  borderRadius: 12,
+  borderRadius: 8,
   overflow: "hidden",
   background: "#fff",
 };
@@ -606,7 +603,7 @@ const claimKitchenPreviewCardStyle = {
   maxWidth: 520,
   padding: 14,
   border: "1px solid var(--app-border)",
-  borderRadius: 16,
+  borderRadius: 8,
   background: "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,248,242,0.82))",
 };
 

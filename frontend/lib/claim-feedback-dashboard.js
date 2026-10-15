@@ -75,6 +75,10 @@ export function buildFeedbackDashboard(rows, filters) {
 }
 
 export async function loadPxClaimFeedback(db, params) {
+  return loadClaimFeedback(db, params, { pxOnly: true });
+}
+
+export async function loadClaimFeedback(db, params, { pxOnly = false, includePx = false } = {}) {
   const filters = normalizeFeedbackFilters(params);
   const rows = await db.$queryRaw(Prisma.sql`
     SELECT
@@ -83,7 +87,9 @@ export async function loadPxClaimFeedback(db, params) {
       sc."contractNumber", sc."claimSequence", sc."ticketNumber", sc."fullName", sc."email"
     FROM "ClaimFeedbackInvitation" fi
     INNER JOIN "ServiceClaim" sc ON sc."id" = fi."claimId"
-    WHERE REGEXP_REPLACE(COALESCE(sc."contractNumber", ''), '[[:space:]]+', '', 'g') LIKE '111%'
+    WHERE ${pxOnly
+      ? Prisma.sql`REGEXP_REPLACE(COALESCE(sc."contractNumber", ''), '[[:space:]]+', '', 'g') LIKE '111%'`
+      : includePx ? Prisma.sql`TRUE` : Prisma.sql`REGEXP_REPLACE(COALESCE(sc."contractNumber", ''), '[[:space:]]+', '', 'g') NOT LIKE '111%'`}
     ORDER BY fi."claimId", fi."completionVersion" DESC, fi."createdAt" DESC
   `);
   return { filters, ...buildFeedbackDashboard(rows, filters) };

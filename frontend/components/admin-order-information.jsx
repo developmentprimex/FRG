@@ -78,7 +78,7 @@ export function AdminOrderInformation({ order, itemCount, as400Saved = false, sh
     ]} />
     <style>{`
       .order-information-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:start; }
-      .order-information-card { min-width:0; border:1px solid var(--app-border); border-radius:18px; padding:20px; background:var(--app-surface); }
+      .order-information-card { min-width:0; border:1px solid var(--app-border); border-radius: 8px; padding:20px; background:var(--app-surface); }
       .order-information-card h3 { margin:0 0 14px; font-size:1.1rem; font-weight:800; }
       .order-information-card dl { margin:0; }
       .order-information-row { display:grid; grid-template-columns:minmax(110px,28%) minmax(0,1fr); gap:14px; align-items:start; padding:11px 0; border-bottom:1px solid var(--app-border); }

@@ -245,7 +245,7 @@ const profileItemStyle = {
   display: "grid",
   gap: 8,
   padding: "16px 18px",
-  borderRadius: 16,
+  borderRadius: 8,
   border: "1px solid var(--app-border)",
   background: "var(--app-surface-muted)",
 };

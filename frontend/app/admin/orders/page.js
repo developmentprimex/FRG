@@ -341,7 +341,7 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
               min-width: 0;
               padding: 14px 16px;
               border: 1px solid var(--summary-border, #e4dbd1);
-              border-radius: 12px;
+              border-radius: 8px;
               background: var(--summary-bg, #f7f3ee);
               color: var(--summary-color, #6b503b);
             }

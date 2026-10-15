@@ -36,8 +36,8 @@ export function AdminClaimsOverviewFilters({ selectedPeriod, selectedKitchenId, 
     <style jsx>{`
       .claims-overview-filters { display: flex; align-items: flex-end; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
       label { display: grid; gap: 6px; color: var(--app-text-muted); font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
-      select { min-height: 42px; min-width: 150px; border: 1px solid var(--app-border-strong); border-radius: 9px; padding: 9px 12px; background: var(--color-primary); color: var(--app-accent-contrast); font: inherit; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer; }
-      .claims-overview-filters :global(a) { min-height: 42px; display: inline-flex; align-items: center; border: 1px solid var(--app-border); border-radius: 9px; padding: 9px 14px; background: var(--app-surface); color: var(--app-text); text-decoration: none; font-size: 13px; font-weight: 700; }
+      select { min-height: 42px; min-width: 150px; border: 1px solid var(--app-border-strong); border-radius: 8px; padding: 9px 12px; background: var(--color-primary); color: var(--app-accent-contrast); font: inherit; font-size: 13px; font-weight: 700; letter-spacing: 0; text-transform: none; cursor: pointer; }
+      .claims-overview-filters :global(a) { min-height: 42px; display: inline-flex; align-items: center; border: 1px solid var(--app-border); border-radius: 8px; padding: 9px 14px; background: var(--app-surface); color: var(--app-text); text-decoration: none; font-size: 13px; font-weight: 700; }
       .claims-overview-filters :global(a.claims-list-link) { background: var(--color-primary); border-color: var(--color-primary); color: var(--app-accent-contrast); }
       @media (max-width: 700px) { .claims-overview-filters { justify-content: flex-start; }.claims-overview-filters label { flex: 1; min-width: 140px; }.claims-overview-filters select { width: 100%; min-width: 0; } }
     `}</style>

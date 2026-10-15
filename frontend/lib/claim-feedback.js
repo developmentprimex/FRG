@@ -1,7 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createSmtpTransport, resolveDefaultSmtpConfig, resolveInternalSmtpConfig } from "./email/contract-smtp.js";
 import { isLocalEmailEnvironment, resolveLocalEmailRecipient } from "./email/local-email-safety.js";
-import { isTestContractNumber } from "./order-kind.js";
 import { lockWorkProcessing } from "./work-processing.js";
 
 export const CLAIM_FEEDBACK_SENDER = "315primex.eu@gmail.com";
@@ -68,7 +67,7 @@ export async function dispatchClaimFeedbackInvitation({ db, deliveryDb = db, inv
     const invitation = await tx.claimFeedbackInvitation.findUnique({ where: { id: invitationId } });
     if (!invitation || invitation.tokenHash !== hashClaimFeedbackToken(token) || !["PENDING", "FAILED"].includes(invitation.status)) return "skipped";
     const claim = await tx.serviceClaim.findUnique({ where: { id: invitation.claimId }, select: { contractNumber: true } });
-    if (!claim || !isTestContractNumber(claim.contractNumber)) {
+    if (!claim) {
       await tx.claimFeedbackInvitation.update({ where: { id: invitationId }, data: { status: "CANCELLED" } });
       return "cancelled";
     }
@@ -128,7 +127,7 @@ export async function prepareClaimFeedbackRetry({ db, invitationId }) {
     const invitation = await tx.claimFeedbackInvitation.findUnique({ where: { id: invitationId } });
     if (!invitation || !["PENDING", "FAILED"].includes(invitation.status) || !invitation.recipientEmail) throw new Error("This feedback invitation cannot be retried.");
     const claim = await tx.serviceClaim.findUnique({ where: { id: invitation.claimId }, select: { contractNumber: true } });
-    if (!claim || !isTestContractNumber(claim.contractNumber)) throw new Error("Feedback email is only available for 111 contracts.");
+    if (!claim) throw new Error("Claim not found.");
     const processing = await tx.workProcessing.findUnique({ where: { workType_workId: { workType: "CLAIM", workId: invitation.claimId } } });
     if (processing?.status !== "DONE" || processing.version !== invitation.completionVersion) throw new Error("The claim is no longer completed.");
     const token = createClaimFeedbackToken();

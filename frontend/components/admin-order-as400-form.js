@@ -91,7 +91,7 @@ const as400HeaderFormStyle = {
   margin: "-4px 0 4px",
   padding: "8px 10px 8px 12px",
   border: "1px solid var(--app-border)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "rgba(255,255,255,0.62)",
   flexWrap: "wrap",
 };
@@ -109,7 +109,7 @@ const as400InputStyle = {
   width: 210,
   minWidth: 120,
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 9,
+  borderRadius: 8,
   background: "#fff",
   color: "var(--app-text)",
   padding: "8px 10px",
@@ -118,7 +118,7 @@ const as400InputStyle = {
 
 const as400SaveButtonStyle = {
   border: "1px solid var(--app-accent)",
-  borderRadius: 9,
+  borderRadius: 8,
   background: "var(--app-accent)",
   color: "#fff",
   padding: "8px 14px",

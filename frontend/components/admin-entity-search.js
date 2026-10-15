@@ -11,7 +11,7 @@ const OPEN_LINK_STYLE = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  borderRadius: 10,
+  borderRadius: 8,
   border: "1px solid var(--color-primary)",
   color: "#ffffff",
   textDecoration: "none",
@@ -437,7 +437,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
       <style jsx>{`
         .search-workspace {
           border: 1px solid var(--color-border);
-          border-radius: 18px;
+          border-radius: 8px;
           background: var(--color-card);
           box-shadow: var(--app-shadow-soft);
           padding: 18px;
@@ -446,7 +446,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
         }
 
         .search-workspace--compact {
-          border-radius: 10px;
+          border-radius: 8px;
           padding: 12px;
           gap: 10px;
         }
@@ -464,7 +464,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
         }
 
         .search-workspace--compact .search-input-wrap {
-          border-radius: 10px;
+          border-radius: 8px;
         }
 
         .search-workspace--compact .input-row {
@@ -528,7 +528,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
         .search-input-wrap {
           position: relative;
           border: 1px solid var(--color-border);
-          border-radius: 16px;
+          border-radius: 8px;
           background: var(--color-card);
         }
 
@@ -561,7 +561,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
         .search-button {
           min-height: 44px;
           border: 1px solid var(--color-primary);
-          border-radius: 12px;
+          border-radius: 8px;
           background: var(--color-primary);
           color: #ffffff;
           padding: 0 16px;
@@ -592,7 +592,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
 
         .state-card {
           border: 1px dashed var(--color-border);
-          border-radius: 14px;
+          border-radius: 8px;
           background: #fbfaf7;
           padding: 16px;
           display: grid;
@@ -613,7 +613,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
           width: fit-content;
           min-height: 38px;
           border: 1px solid var(--color-primary);
-          border-radius: 10px;
+          border-radius: 8px;
           background: var(--color-primary);
           color: #ffffff;
           padding: 0 14px;
@@ -623,7 +623,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
 
         .matches-panel {
           border: 1px solid var(--color-border);
-          border-radius: 16px;
+          border-radius: 8px;
           background: var(--color-card);
           padding: 14px;
           display: grid;
@@ -644,7 +644,7 @@ export function AdminEntitySearch({ period, kitchenId, status, compact = false, 
 
         .match-row {
           border: 1px solid var(--color-border);
-          border-radius: 14px;
+          border-radius: 8px;
           background: var(--color-card);
           padding: 12px;
           display: flex;

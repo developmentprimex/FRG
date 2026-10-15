@@ -269,7 +269,7 @@ const searchPanelStyle = {
   flexWrap: "wrap",
   padding: "16px 18px",
   border: "1px solid var(--app-border)",
-  borderRadius: 16,
+  borderRadius: 8,
   background: "var(--app-surface-muted)",
 };
 

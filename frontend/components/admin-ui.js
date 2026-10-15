@@ -4,7 +4,7 @@ export function PageHero({ eyebrow, title, description, actions, stats }) {
   return (
     <section
       style={{
-        borderRadius: 22,
+        borderRadius: "var(--admin-radius-card, 22px)",
         padding: "32px",
         background: "var(--app-hero-overlay), var(--app-hero-gradient)",
         color: "var(--app-accent-contrast)",
@@ -60,7 +60,7 @@ export function FlashMessage({ tone, message }) {
         color: palette.color,
         background: palette.background,
         border: `1px solid ${palette.border}`,
-        borderRadius: 16,
+        borderRadius: "var(--admin-radius-card, 16px)",
         padding: "14px 18px",
         boxShadow: "var(--app-shadow-soft)",
       }}
@@ -75,7 +75,7 @@ export function MetricCard({ label, value, detail }) {
     <div
       style={{
         padding: "18px 20px",
-        borderRadius: 18,
+        borderRadius: "var(--admin-radius-card, 18px)",
         background: "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))",
         border: "1px solid rgba(255,255,255,0.14)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
@@ -144,7 +144,7 @@ export const tableWrapStyle = {
   minWidth: 0,
   maxWidth: "100%",
   overflowX: "auto",
-  borderRadius: 18,
+  borderRadius: "var(--admin-radius-table, 18px)",
   border: "1px solid var(--app-border)",
   background: "var(--color-card)",
   boxShadow: "var(--app-shadow-soft)",
@@ -185,7 +185,7 @@ export const inputStyle = {
   textTransform: "none",
   width: "100%",
   minHeight: 52,
-  borderRadius: 14,
+  borderRadius: "var(--admin-radius-card, 14px)",
   border: "1px solid var(--app-border-strong)",
   background: "var(--color-card)",
   padding: "13px 15px",
@@ -195,7 +195,7 @@ export const inputStyle = {
 };
 export const textareaStyle = {
   width: "100%",
-  borderRadius: 14,
+  borderRadius: "var(--admin-radius-card, 14px)",
   border: "1px solid var(--app-border-strong)",
   background: "var(--color-card)",
   padding: "13px 15px",
@@ -206,7 +206,7 @@ export const textareaStyle = {
 };
 export const primaryButtonStyle = {
   border: "1px solid var(--color-primary)",
-  borderRadius: 14,
+  borderRadius: "var(--admin-radius-card, 14px)",
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--color-primary)",
@@ -218,7 +218,7 @@ export const primaryButtonStyle = {
 };
 export const secondaryButtonStyle = {
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 14,
+  borderRadius: "var(--admin-radius-card, 14px)",
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--color-card)",
@@ -230,7 +230,7 @@ export const secondaryButtonStyle = {
 };
 export const dangerButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.24)",
-  borderRadius: 14,
+  borderRadius: "var(--admin-radius-card, 14px)",
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--app-danger-bg)",
@@ -245,7 +245,7 @@ export const subMetaStyle = { display: "flex", gap: 10, flexWrap: "wrap", color:
 export const cardListStyle = { display: "grid", gap: 16 };
 export const itemCardStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: 18,
+  borderRadius: "var(--admin-radius-card, 18px)",
   padding: 20,
   background: "var(--color-card)",
   display: "grid",
@@ -274,7 +274,7 @@ export const codePillStyle = {
 const panelStyle = {
   minWidth: 0,
   gridTemplateColumns: "minmax(0, 1fr)",
-  borderRadius: 20,
+  borderRadius: "var(--admin-radius-card, 20px)",
   padding: 24,
   background: "var(--color-card)",
   border: "1px solid var(--app-border)",
@@ -319,7 +319,7 @@ const eyebrowStyle = {
 
 const linkButtonStyle = {
   textDecoration: "none",
-  borderRadius: 14,
+  borderRadius: "var(--admin-radius-card, 14px)",
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--color-card)",
@@ -333,7 +333,7 @@ const linkButtonStyle = {
 
 const secondaryLinkStyle = {
   textDecoration: "none",
-  borderRadius: 14,
+  borderRadius: "var(--admin-radius-card, 14px)",
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.1)",

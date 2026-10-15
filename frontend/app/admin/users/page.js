@@ -440,7 +440,7 @@ const filterPanelStyle = {
   display: "grid",
   gap: 14,
   padding: "18px 20px",
-  borderRadius: 18,
+  borderRadius: 8,
   border: "1px solid var(--app-border)",
   background: "var(--app-surface-muted)",
 };
@@ -481,7 +481,7 @@ const filterFieldStyle = {
 const filterInputStyle = {
   width: "100%",
   minHeight: 48,
-  borderRadius: 14,
+  borderRadius: 8,
   border: "1px solid var(--app-border-strong)",
   background: "var(--color-card)",
   padding: "12px 14px",
@@ -498,7 +498,7 @@ const filterActionsStyle = {
 
 const filterApplyButtonStyle = {
   border: "1px solid var(--color-primary)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 48,
   padding: "12px 16px",
   background: "var(--color-primary)",
@@ -509,7 +509,7 @@ const filterApplyButtonStyle = {
 
 const filterClearLinkStyle = {
   textDecoration: "none",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 48,
   padding: "12px 16px",
   background: "var(--color-card)",

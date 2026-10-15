@@ -207,7 +207,7 @@ const toggleCardStyle = {
   alignItems: "flex-start",
   gap: 14,
   border: "1px solid var(--app-border)",
-  borderRadius: 14,
+  borderRadius: 8,
   background: "var(--app-surface)",
   padding: 18,
   cursor: "pointer",

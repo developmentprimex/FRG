@@ -63,35 +63,37 @@ test("claim completion creates one invitation and cannot be reopened", async () 
   assert.equal(state.invitations[0].status, "PENDING");
 });
 
-test("only 111 contracts receive invitations; 670 processing continues without one", async () => {
+test("all claim contracts receive invitations on completion; missing email is recorded", async () => {
   const missing = memoryDb({ email: "" });
   const missingResult = await updateWorkProcessing({ db: missing.db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
   assert.equal(missingResult.feedbackInvitation, undefined);
   assert.equal(missing.state.invitations[0].status, "NO_EMAIL");
-  for (const contractNumber of ["670123", "222123"]) {
+  for (const contractNumber of ["111123", "670123", "222123"]) {
     const { db, state } = memoryDb({ contractNumber });
     const result = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
     assert.equal(result.status, "DONE");
-    assert.equal(result.feedbackInvitation, undefined);
-    assert.equal(state.invitations.length, 0);
+    assert.ok(result.feedbackInvitation.token);
+    assert.equal(state.invitations.length, 1);
+    assert.equal(state.invitations[0].status, "PENDING");
     assert.equal(state.events.length, 1);
   }
 });
 
-test("a legacy 670 invitation is cancelled before SMTP and cannot be retried", async () => {
+test("670 invitation sends, can retry failed delivery, and accepts one response", async () => {
   const { db, state } = memoryDb({ contractNumber: "670123" });
-  await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
-  const token = createClaimFeedbackToken();
-  const invitation = await db.claimFeedbackInvitation.create({ data: {
-    claimId: "claim-1", completionVersion: 1, recipientEmail: "customer@example.com",
-    tokenHash: hashClaimFeedbackToken(token), expiresAt: feedbackExpiry(), status: "PENDING",
-  } });
-  assert.equal(await dispatchClaimFeedbackInvitation({ db, invitationId: invitation.id, token, baseUrl: "https://fragmento.de", env,
-    createTransport: () => { throw new Error("670 must never send survey email"); },
-  }), "cancelled");
-  assert.equal(state.invitations[0].status, "CANCELLED");
+  const done = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  const invitation = done.feedbackInvitation;
+  assert.equal(await dispatchClaimFeedbackInvitation({ db, invitationId: invitation.id, token: invitation.token, baseUrl: "https://fragmento.de", env,
+    createTransport: () => ({ sendMail: async (mail) => ({ accepted: [mail.to] }) }),
+  }), "sent");
   state.invitations[0].status = "FAILED";
-  await assert.rejects(prepareClaimFeedbackRetry({ db, invitationId: invitation.id }), /only available for 111/);
+  const retry = await prepareClaimFeedbackRetry({ db, invitationId: invitation.id });
+  assert.notEqual(retry.token, invitation.token);
+  assert.equal(await dispatchClaimFeedbackInvitation({ db, invitationId: invitation.id, token: retry.token, baseUrl: "https://fragmento.de", env,
+    createTransport: () => ({ sendMail: async (mail) => ({ accepted: [mail.to] }) }),
+  }), "sent");
+  assert.equal(await submitClaimFeedback({ db, token: retry.token, data: answers }), true);
+  assert.equal(await submitClaimFeedback({ db, token: retry.token, data: answers }), false);
 });
 
 test("survey sender is exactly 315 and the form enforces complete answers", () => {
