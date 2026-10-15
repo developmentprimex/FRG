@@ -200,6 +200,16 @@
     "info": "Versandinfo"
   },
   "adminShellLogin": {
+    "sections": {
+      "operations": "Tagesgeschäft",
+      "management": "Stammdaten & Katalog",
+      "monitoring": "Auswertung",
+      "administration": "Verwaltung"
+    },
+    "allOrders": "Alle Bestellungen",
+    "allClaims": "Alle Reklamationen",
+    "kitchenSetup": "Küchenverwaltung",
+    "articles": "Artikel",
     "fragmentoAdmin": "Fragmento Admin",
     "modernEditorialOperationsForKitchensAndOrders": "Katalog- und Bestellverwaltung für Küchen.",
     "logout": "Abmelden",
@@ -212,6 +222,8 @@
     "orders": "Bestellungen",
     "orderCancellations": "Widerrufe",
     "reports": "Berichte",
+    "px": "PX",
+    "visitors": "Besucher",
     "contractAccess": "Vertragszugriffe",
     "claimActivity": "Reklamationsaktivität",
     "pxClaims": "PX-Reklamationen",
