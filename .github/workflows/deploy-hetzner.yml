@@ -81,6 +81,9 @@ jobs:
             # during a normal deploy because their dashboard edits are live data.
             sudo -u deploy env SEED_RECONCILE_EXISTING=false npm run prisma:seed
             sudo -u deploy npm run catalog:link
+            # Dependencies are freshly installed; discard cached absolute module
+            # paths from previous Next.js builds without removing the live output.
+            sudo -u deploy node -e 'require("node:fs").rmSync(".next/cache/webpack", { recursive: true, force: true })'
             sudo -u deploy npm run build
 
             # Install the daily report only on the hosted Hetzner server. The

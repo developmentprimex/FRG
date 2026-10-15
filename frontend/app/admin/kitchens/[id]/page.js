@@ -17,7 +17,6 @@ import {
   pageGridStyle,
   primaryButtonStyle,
   secondaryButtonStyle,
-  splitGridStyle,
   subMetaStyle,
   textareaStyle,
 } from "../../../../components/admin-ui";
@@ -592,75 +591,6 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
           <AdminApplianceSummary appliances={applianceInventories[id]} />
         </AdminSection>
 
-        <div style={contractNoticeStyle}>
-          <p style={contractNoticeTextStyle}>
-            <strong><AdminText i18nKey="kitchenDetailAdmin.contractNumbers" fallback="Contract numbers" /></strong>
-            <span><AdminText i18nKey="kitchenDetailAdmin.contractNumbersManagedInContracts" fallback="Contract numbers are managed in Contracts." /></span>
-          </p>
-          <ActionLink href={`/admin/contracts?kitchenId=${kitchen.id}`}><AdminText i18nKey="kitchenDetailAdmin.manageContracts" fallback="Manage contracts" /></ActionLink>
-        </div>
-
-        <details style={catalogDisclosureStyle}>
-          <summary style={catalogDisclosureSummaryStyle}>
-            <div style={{ display: "grid", gap: 6 }}>
-              <strong style={{ fontSize: "1.08rem", color: "var(--app-text)" }}>
-                <AdminText i18nKey="kitchenDetailAdmin.excelCatalog" fallback="Import / Export Catalog" />
-              </strong>
-              <span style={mutedTextStyle}>
-                <AdminText i18nKey="kitchenDetailAdmin.exportKitchenToExcelThenImportBack" fallback="Export this kitchen to Excel, update prices or other item fields, then import the file back to update matching kitchen items." />
-              </span>
-            </div>
-            <span style={catalogDisclosureButtonStyle}>
-              <AdminText i18nKey="kitchenDetailAdmin.showImportExport" fallback="Show import / export" />
-            </span>
-          </summary>
-          <div style={catalogDisclosureBodyStyle}>
-            <div style={splitGridStyle}>
-              <div style={catalogPanelStyle}>
-                <div style={{ display: "grid", gap: 8 }}>
-                  <strong style={{ fontSize: "1.05rem", color: "var(--app-text)" }}><AdminText i18nKey="kitchenDetailAdmin.exportCurrentKitchenData" fallback="Export current kitchen data" /></strong>
-                  <p style={mutedTextStyle}>
-                    <AdminText i18nKey="kitchenDetailAdmin.downloadAllCatalogRowsForKitchenIncludingCurrentPricesShownInAdmin" fallback="Download all catalog rows for this kitchen, including current prices shown in admin." />
-                  </p>
-                </div>
-                <a
-                  href={`/api/admin/kitchens/${kitchen.id}/catalog`}
-                  style={catalogDownloadLinkStyle}
-                >
-                  <AdminText i18nKey="kitchenDetailAdmin.exportExcel" fallback="Export Excel" />
-                </a>
-              </div>
-
-              <form
-                action={`/api/admin/kitchens/${kitchen.id}/catalog`}
-                method="post"
-                encType="multipart/form-data"
-                style={catalogPanelStyle}
-              >
-                <div style={{ display: "grid", gap: 8 }}>
-                  <strong style={{ fontSize: "1.05rem", color: "var(--app-text)" }}><AdminText i18nKey="kitchenDetailAdmin.importEditedFile" fallback="Import edited file" /></strong>
-                  <p style={mutedTextStyle}>
-                    <AdminText i18nKey="kitchenDetailAdmin.changePricesInExportedSheetThenUpload" fallback="Change prices in the exported sheet, save it, then upload it here. Matching items will be updated." />
-                  </p>
-                </div>
-                <FormField label={<AdminText i18nKey="kitchenDetailAdmin.catalogFile" fallback="Catalog file" />}>
-                  <input
-                    type="file"
-                    name="catalogFile"
-                    accept=".xlsx,.csv"
-                    style={inputStyle}
-                    required
-                  />
-                </FormField>
-                <div style={actionRowStyle}>
-                  <button type="submit" style={primaryButtonStyle}><AdminText i18nKey="kitchenDetailAdmin.importCatalog" fallback="Import catalog" /></button>
-                  <span style={catalogHelpTextStyle}><AdminText i18nKey="kitchenDetailAdmin.supportedFormatsXlsxAndCsv" fallback="Supported formats: .xlsx and .csv" /></span>
-                </div>
-              </form>
-            </div>
-          </div>
-        </details>
-
         <AdminSection
           title={<AdminText i18nKey="kitchenDetailAdmin.catalogItems" fallback="Catalog Items" />}
         >
@@ -736,6 +666,10 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
                           nameDe={item.catalogArticle?.nameDe || item.catalogService?.nameDe || item.nameDe}
                         />
                       </strong>
+                      <div style={articleNumberStyle}>
+                        <span style={articleNumberLabelStyle}><AdminText i18nKey="kitchenDetailAdmin.articleNo" fallback="Article No" />:</span>
+                        <strong>{item.articleNumber || "-"}</strong>
+                      </div>
                       <div className="kitchen-catalog-item-card__meta" style={subMetaStyle}>
                         <TypeBadge
                           label={(
@@ -746,7 +680,6 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
                           )}
                         />
                         <span><AdminText i18nKey="kitchenDetailAdmin.itemCode" fallback="Item code" />: {item.code}</span>
-                        <span><AdminText i18nKey="kitchenDetailAdmin.articleNo" fallback="Article No" />: {item.articleNumber || "-"}</span>
                         {item.blendeCode ? <span>Blende: {item.blendeCode}</span> : null}
                         <span>{formatCurrency(item.price)}</span>
                       </div>
@@ -1165,29 +1098,6 @@ const kitchenDetailsFormStyle = {
   gap: 12,
 };
 
-const contractNoticeStyle = {
-  border: "1px solid var(--app-border)",
-  borderRadius: 14,
-  background: "var(--color-card)",
-  padding: "12px 14px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-  flexWrap: "wrap",
-  boxShadow: "var(--app-shadow-soft)",
-};
-
-const contractNoticeTextStyle = {
-  margin: 0,
-  display: "flex",
-  gap: 10,
-  flexWrap: "wrap",
-  alignItems: "center",
-  color: "var(--app-text-muted)",
-  lineHeight: 1.5,
-};
-
 const catalogFiltersStyle = {
   display: "grid",
   gap: 12,
@@ -1412,55 +1322,6 @@ const productInfoNoticeWarningStyle = {
   fontWeight: 800,
 };
 
-const catalogPanelStyle = {
-  ...itemCardStyle,
-  gap: 14,
-  alignContent: "start",
-};
-
-const catalogDisclosureStyle = {
-  border: "1px solid var(--app-border)",
-  borderRadius: 16,
-  background: "var(--app-surface)",
-  boxShadow: "var(--app-shadow-soft)",
-  overflow: "hidden",
-};
-
-const catalogDisclosureSummaryStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 16,
-  padding: "16px 24px",
-  cursor: "pointer",
-  listStyle: "none",
-};
-
-const catalogDisclosureButtonStyle = {
-  ...secondaryButtonStyle,
-  flex: "0 0 auto",
-};
-
-const catalogDisclosureBodyStyle = {
-  borderTop: "1px solid var(--app-border)",
-  padding: 24,
-};
-
-const catalogDownloadLinkStyle = {
-  ...secondaryButtonStyle,
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  textDecoration: "none",
-  width: "fit-content",
-};
-
-const catalogHelpTextStyle = {
-  color: "var(--app-text-muted)",
-  fontSize: 13,
-  fontWeight: 700,
-};
-
 const highlightedCompactItemCardStyle = {
   ...compactItemCardStyle,
   border: "1px solid rgba(143, 62, 44, 0.28)",
@@ -1490,6 +1351,29 @@ const compactSummaryMainStyle = {
   display: "grid",
   gap: 6,
   minWidth: 0,
+};
+
+const articleNumberStyle = {
+  display: "flex",
+  alignItems: "baseline",
+  flexWrap: "wrap",
+  gap: "4px 8px",
+  width: "fit-content",
+  maxWidth: "100%",
+  padding: "5px 10px",
+  borderRadius: 8,
+  background: "var(--app-surface)",
+  border: "1px solid var(--app-border)",
+  color: "var(--app-text)",
+  fontSize: "0.95rem",
+  lineHeight: 1.4,
+  overflowWrap: "anywhere",
+};
+
+const articleNumberLabelStyle = {
+  color: "var(--app-accent)",
+  fontSize: "0.8rem",
+  fontWeight: 600,
 };
 
 const compactFormStyle = {
