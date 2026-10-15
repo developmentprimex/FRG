@@ -70,7 +70,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           title={pxOnly
             ? <AdminText i18nKey="pxClaimsAdmin.title" fallback="PX claims" />
             : <AdminText i18nKey="claimsAdmin.claims" fallback="Claims" />}
-          description={
+          description={pxOnly ? (
             <AdminPluralText
               count={pagination.totalItems}
               singularKey="claimsAdmin.claimMatchesCurrentFilters"
@@ -78,7 +78,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               singularFallback="{count} claim matches the current filters."
               pluralFallback="{count} claims match the current filters."
             />
-          }
+          ) : undefined}
           actions={pxOnly && allClaims.length ? <DeleteAllPxClaimsAction /> : null}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
