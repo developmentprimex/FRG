@@ -15,7 +15,7 @@ import {
   subMetaStyle,
   tableStyle,
   tableWrapStyle,
-  tdStyle,
+  tdStyle as baseTdStyle,
   thStyle,
   textareaStyle,
 } from "../../../components/admin-ui";
@@ -29,14 +29,11 @@ import { getFormMessage } from "../../../lib/admin-forms";
 import { filterAdminKitchens, normalizeKitchenSearchQuery } from "../../../lib/admin-kitchen-search";
 import { requireAdminPage } from "../../../lib/auth";
 import { paginateAdminItems } from "../../../lib/admin-pagination";
-import { loadKitchenApplianceInventories } from "../../../lib/contract-appliance-inventory";
-import AdminApplianceSummary from "../../../components/admin-appliance-summary";
 
 export const dynamic = "force-dynamic";
 
-function formatKitchenCode(kitchen) {
-  return kitchen.kitchenCode || "No code";
-}
+const tdStyle = { ...baseTdStyle, padding: "16px 12px", verticalAlign: "middle" };
+const numberCellStyle = { width: 64, textAlign: "center", whiteSpace: "nowrap", overflowWrap: "normal", fontVariantNumeric: "tabular-nums", color: "var(--app-text-muted)", fontSize: "var(--admin-text-label, 12px)", fontWeight: 500 };
 
 const KITCHEN_STATUS_OPTIONS = Object.values(KitchenStatus);
 
@@ -53,7 +50,7 @@ export default async function AdminKitchensPage({ searchParams }) {
   const filteredKitchens = filterAdminKitchens(allKitchens, kitchenSearchQuery);
   const pagination = paginateAdminItems(filteredKitchens, resolvedSearchParams.page);
   const kitchens = pagination.items;
-  const applianceInventories = await loadKitchenApplianceInventories(kitchens.map((kitchen) => kitchen.id));
+  const rowNumber = (index) => pagination.totalItems - (pagination.page - 1) * pagination.pageSize - index;
 
   return (
     <AdminShell adminEmail={admin.email}>
@@ -144,12 +141,13 @@ export default async function AdminKitchensPage({ searchParams }) {
             </p>
           ) : null}
 
-          <div className="admin-list-table" style={tableWrapStyle}>
-            <table style={tableStyle}>
+          <div className="admin-list-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
+            <table style={{ ...tableStyle, minWidth: 1050 }}>
+              <colgroup><col style={{ width: 64 }} />{Array.from({ length: 8 }, (_, index) => <col key={index} />)}</colgroup>
               <thead>
                 <tr>
+                  <th style={{ ...thStyle, ...numberCellStyle }}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
                   <th style={thStyle}><AdminText i18nKey="kitchensAdmin.kitchen" fallback="Kitchen" /></th>
-                  <th style={thStyle}><AdminText i18nKey="kitchensAdmin.kitchenCode" fallback="Kitchen code" /></th>
                   <th style={thStyle}><AdminText i18nKey="kitchensAdmin.programmId" fallback="Programm ID" /></th>
                   <th style={thStyle}><AdminText i18nKey="kitchensAdmin.status" fallback="Status" /></th>
                   <th style={thStyle}><AdminText i18nKey="kitchensAdmin.items" fallback="Items" /></th>
@@ -165,13 +163,10 @@ export default async function AdminKitchensPage({ searchParams }) {
                     <td style={tdStyle} colSpan={9}><AdminText i18nKey="kitchensAdmin.noKitchensFound" fallback="No kitchens found." /></td>
                   </tr>
                 ) : null}
-                {kitchens.map((kitchen) => (
+                {kitchens.map((kitchen, index) => (
                   <tr key={kitchen.id}>
+                    <td style={{ ...tdStyle, ...numberCellStyle }}>{rowNumber(index)}</td>
                     <td style={tdStyle}>
-                      <details style={{ marginBottom: 8 }}>
-                        <summary><AdminText i18nKey="contractDetailAdmin.appliances" fallback="Electrical appliances" /></summary>
-                        <AdminApplianceSummary appliances={applianceInventories[kitchen.id]} compact />
-                      </details>
                       <Link
                         href={`/admin/kitchens/${kitchen.id}`}
                         style={{ color: "var(--app-accent)", fontWeight: 800, textDecoration: "none" }}
@@ -179,7 +174,6 @@ export default async function AdminKitchensPage({ searchParams }) {
                         <AdminKitchenDisplayName slug={kitchen.slug} name={kitchen.name} />
                       </Link>
                     </td>
-                    <td style={tdStyle}>{formatKitchenCode(kitchen)}</td>
                     <td style={tdStyle}>{kitchen.programmId || "IP 2200"}</td>
                     <td style={tdStyle}><AdminStatusBadge status={kitchen.status} /></td>
                     <td style={tdStyle}>{kitchen._count.items}</td>
@@ -199,10 +193,11 @@ export default async function AdminKitchensPage({ searchParams }) {
 
           <div className="admin-list-cards" style={{ gap: cardListStyle.gap }}>
             {!kitchens.length ? <p style={{ margin: 0, color: "var(--app-text-muted)" }}><AdminText i18nKey="kitchensAdmin.noKitchensFound" fallback="No kitchens found." /></p> : null}
-            {kitchens.map((kitchen) => (
+            {kitchens.map((kitchen, index) => (
               <article key={kitchen.id} style={itemCardStyle}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                   <div style={{ display: "grid", gap: 6 }}>
+                    <div style={{ color: "var(--app-text-muted)", fontSize: 12 }}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /> {rowNumber(index)}</div>
                     <Link
                       href={`/admin/kitchens/${kitchen.id}`}
                       style={{ color: "var(--app-accent)", fontWeight: 800, textDecoration: "none" }}
@@ -210,7 +205,6 @@ export default async function AdminKitchensPage({ searchParams }) {
                       <AdminKitchenDisplayName slug={kitchen.slug} name={kitchen.name} />
                     </Link>
                     <div style={subMetaStyle}>
-                      <span>{formatKitchenCode(kitchen)}</span>
                       <span>{kitchen.programmId || "IP 2200"}</span>
                       <span><AdminDateTime value={kitchen.updatedAt.toISOString()} /></span>
                     </div>
@@ -269,7 +263,7 @@ const searchPanelStyle = {
   flexWrap: "wrap",
   padding: "16px 18px",
   border: "1px solid var(--app-border)",
-  borderRadius: 16,
+  borderRadius: 8,
   background: "var(--app-surface-muted)",
 };
 
