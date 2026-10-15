@@ -129,11 +129,11 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
             </div>
           </form>
 
-          <div className="admin-claims-table" style={tableWrapStyle}>
+          <div className="admin-claims-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th style={{ ...thStyle, width: 44 }}>Nr.</th>
+                  <th style={{ ...thStyle, width: 44, paddingLeft: 10, paddingRight: 10, whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal" }}>Nr.</th>
                   <th style={{ ...thStyle, width: 210 }}><AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.customer" fallback="Customer" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.issue" fallback="Issue" /></th>
@@ -152,7 +152,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                 ) : null}
                 {claims.map((claim, index) => (
                   <tr key={claim.id} className="claims-table-row">
-                    <td style={{ ...tdStyle, width: 44, color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{rowNumber(index)}</td>
+                    <td style={{ ...tdStyle, width: 44, paddingLeft: 10, paddingRight: 10, whiteSpace: "nowrap", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{rowNumber(index)}</td>
                     <td style={tdStyle}>
                       <strong style={{ whiteSpace: "nowrap" }}>{claim.contractNumber}</strong>
                       <div style={rowMetaStyle}><ClaimRequestTypeText requestType={claim.requestType} /></div>
@@ -168,7 +168,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                     <td style={{ ...tdStyle, width: 1 }}>
                       <div className="claims-actions" style={actionCellStyle}>
                         <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
-                          <AdminText i18nKey="claimsAdmin.openAction" fallback="Open" />
+                          <AdminText i18nKey="claimsAdmin.openAction" fallback="View" />
                         </Link>
                         <DeleteClaimAction claimId={claim.id} returnPath={basePath} />
                       </div>
@@ -204,7 +204,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   </div>
                   <div className="claims-actions" style={actionCellStyle}>
                     <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
-                      <AdminText i18nKey="claimsAdmin.openAction" fallback="Open" />
+                      <AdminText i18nKey="claimsAdmin.openAction" fallback="View" />
                     </Link>
                     <DeleteClaimAction claimId={claim.id} returnPath={basePath} compact />
                   </div>
