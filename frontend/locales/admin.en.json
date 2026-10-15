@@ -1635,7 +1635,7 @@
   "claimsAdmin": {
     "submissionHistory": "Submission history",
     "submissionCount": "{count} submissions",
-    "openAction": "Open",
+    "openAction": "View",
     "claims": "Claims",
     "claim": "Claim",
     "claimMatchesCurrentFilters": "{count} claim matches the current filters.",

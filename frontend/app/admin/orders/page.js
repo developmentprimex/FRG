@@ -19,7 +19,6 @@ import { attachOrderEmailDelivery } from "../../../lib/email/order-email-store";
 import { AdminPagination } from "../../../components/admin-pagination";
 import {
   AdminDateTime,
-  AdminKitchenDisplayName,
   AdminPluralText,
   AdminStatusBadge,
   AdminText,
@@ -47,28 +46,6 @@ function getArticleCodes(items = []) {
   return codes;
 }
 
-function formatOrdinal(value) {
-  const number = Number(value || 0);
-  if (!number) return "";
-  const mod100 = number % 100;
-  if (mod100 >= 11 && mod100 <= 13) return `${number}th`;
-  const suffix = number % 10 === 1 ? "st" : number % 10 === 2 ? "nd" : number % 10 === 3 ? "rd" : "th";
-  return `${number}${suffix}`;
-}
-
-function getContractOrderLabel(order) {
-  if (!order.contractOrderSequence) return "";
-  return formatOrdinal(order.contractOrderSequence);
-}
-
-function getContractOrderKey(sequence) {
-  const number = Number(sequence || 0);
-  if (number === 1) return "ordersAdmin.firstOrderForContract";
-  if (number === 2) return "ordersAdmin.secondOrderForContract";
-  if (number === 3) return "ordersAdmin.thirdOrderForContract";
-  return "ordersAdmin.nthOrderForContract";
-}
-
 function getOrderContractNumber(order) {
   return String(order?.contractNumber || order?.kitchenContract?.contractNumber || "").trim();
 }
@@ -76,17 +53,6 @@ function getOrderContractNumber(order) {
 function normalizeParam(value) {
   if (Array.isArray(value)) return value[0] || "";
   return value || "";
-}
-
-function getStatusHref(filters, status) {
-  const params = new URLSearchParams();
-  if (filters.q) params.set("q", filters.q);
-  if (filters.kitchenId) params.set("kitchenId", filters.kitchenId);
-  if (status) params.set("status", status);
-  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
-  if (filters.dateTo) params.set("dateTo", filters.dateTo);
-  const query = params.toString();
-  return query ? `/admin/orders?${query}` : "/admin/orders";
 }
 
 function ItemCount({ count }) {
@@ -136,22 +102,6 @@ function DeleteOrderAction({ orderId, compact = false }) {
   );
 }
 
-function DeleteAllOrdersAction() {
-  return (
-    <form action="/api/admin/orders" method="post" style={deleteFormStyle}>
-      <AdminConfirmSubmitButton
-        name="_intent"
-        value="delete-all"
-        style={deleteAllButtonStyle}
-        confirmKey="ordersAdmin.deleteAllConfirmMessage"
-        confirmFallback={"Delete all orders?\nThis removes every order and cannot be undone."}
-      >
-        <AdminText i18nKey="ordersAdmin.deleteAllOrders" fallback="Delete all orders" />
-      </AdminConfirmSubmitButton>
-    </form>
-  );
-}
-
 export default async function AdminOrdersPage({ searchParams = {} }) {
   const admin = await requireAdminPage();
   const resolvedSearchParams = (await searchParams) || {};
@@ -172,13 +122,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
   const summary = calculateOrderReportSummary(allOrders);
-  const statusFilters = [
-    { status: "", key: "ordersAdmin.all", fallback: "All" },
-    { status: "NEW", key: "dashboard.statusNew", fallback: "New" },
-    { status: "EMAILED", key: "dashboard.statusEmailed", fallback: "Emailed" },
-    { status: "CONFIRMED", key: "dashboard.statusConfirmed", fallback: "Confirmed" },
-    { status: "CANCELLED", key: "dashboard.statusCancelled", fallback: "Cancelled" },
-  ];
+  const rowNumber = (index) => pagination.totalItems - (pagination.page - 1) * pagination.pageSize - index;
 
   return (
     <AdminShell adminEmail={admin.email}>
@@ -194,13 +138,12 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
               pluralFallback="{count} orders match the current filters."
             />
           )}
-          actions={<DeleteAllOrdersAction />}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
           <div style={summaryPanelStyle}>
-            <dl style={summaryGridStyle}>
+            <dl className="orders-summary" style={summaryGridStyle}>
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.totalOrders" fallback="Total orders" /></dt><dd style={summaryValueStyle}>{summary.totalOrders}</dd></div>
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="dashboard.statusNew" fallback="New" /></dt><dd style={summaryValueStyle}>{summary.statusCounts.NEW}</dd></div>
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="dashboard.statusEmailed" fallback="Emailed" /></dt><dd style={summaryValueStyle}>{summary.statusCounts.EMAILED}</dd></div>
@@ -253,29 +196,12 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
             </div>
           </form>
 
-          <div style={statusFilterRowStyle}>
-            {statusFilters.map((filter) => {
-              const isActive = filters.status === filter.status;
-              return (
-                <Link
-                  key={filter.status || "all"}
-                  href={getStatusHref(filters, filter.status)}
-                  scroll={false}
-                  className="orders-status-filter"
-                  style={isActive ? statusFilterActiveStyle : statusFilterStyle}
-                >
-                  <AdminText i18nKey={filter.key} fallback={filter.fallback} />
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="admin-list-table" style={tableWrapStyle}>
+          <div className="admin-list-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={ordersTableStyle}>
               <colgroup>
+                <col style={{ width: "3%" }} />
                 <col style={{ width: "10%" }} />
                 <col style={{ width: "12%" }} />
-                <col style={{ width: "7%" }} />
                 <col style={{ width: "7%" }} />
                 <col style={{ width: "8%" }} />
                 <col style={{ width: "6%" }} />
@@ -283,13 +209,13 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                 <col className="orders-table-optional" style={{ width: "7%" }} />
                 <col className="orders-table-date" style={{ width: "8%" }} />
                 <col style={{ width: "8%" }} />
-                <col style={{ width: "8%" }} />
+                <col style={{ width: "11%" }} />
               </colgroup>
               <thead>
                 <tr>
+                  <th style={{ ...ordersThStyle, padding: "8px 6px" }}>Nr.</th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.order" fallback="Order" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
-                  <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.kitchen" fallback="Kitchen" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.items" fallback="Items" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></th>
                   <th style={ordersThStyle}><AdminText i18nKey="reportsAdmin.payment" fallback="Payment" /></th>
@@ -306,33 +232,21 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                     <td style={tdStyle} colSpan={11}><AdminText i18nKey="ordersAdmin.noOrdersFound" fallback="No orders found." /></td>
                   </tr>
                 ) : null}
-                {orders.map((order) => {
+                {orders.map((order, index) => {
                   const contractNumber = getOrderContractNumber(order);
                   const articleCodes = getArticleCodes(order.items);
                   return (
                   <tr key={order.id} className="orders-table-row" style={orderRowStyle}>
+                    <td style={{ ...ordersTdStyle, padding: "16px 6px", color: "var(--app-text-muted)" }}>{rowNumber(index)}</td>
                     <td style={ordersTdStyle}>
                       <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>
                         <strong>{order.orderNumber}</strong>
                       </Link>
-                      {order.contractOrderSequence ? (
-                        <div style={contractSequenceStyle}>
-                          <AdminText
-                            i18nKey={getContractOrderKey(order.contractOrderSequence)}
-                            fallback={`${getContractOrderLabel(order)} order for contract`}
-                            values={{
-                              number: String(order.contractOrderSequence),
-                              ordinal: getContractOrderLabel(order),
-                            }}
-                          />
-                        </div>
-                      ) : null}
                     </td>
                     <td style={ordersTdStyle}>
                       <div style={customerNameStyle}>{order.firstName} {order.lastName}</div>
                       <div style={customerEmailStyle}>{order.email}</div>
                     </td>
-                    <td style={ordersTdStyle}><AdminKitchenDisplayName slug={order.kitchen.slug} name={order.kitchen.name} /></td>
                     <td style={ordersTdStyle}>
                       <span style={articleCountStyle} title={articleCodes.join(", ")}>
                         <ItemCount count={order.items.length} />
@@ -348,7 +262,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                     <td className="orders-table-date" style={ordersTdStyle}><AdminDateTime value={order.createdAt} /></td>
                     <td style={ordersTdStyle}><AdminEmailDeliveryStatus delivery={order.confirmationEmailDelivery} /></td>
                     <td style={ordersActionTdStyle}>
-                      <div style={{ display: "grid", gap: 6 }}>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "nowrap" }}>
                         <Link href={`/admin/orders/${order.id}`} style={viewButtonStyle}>
                           <AdminText i18nKey="ordersAdmin.view" fallback="View" />
                         </Link>
@@ -365,7 +279,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
 
           <div className="admin-list-cards" style={{ gap: cardListStyle.gap }}>
             {!orders.length ? <p style={{ margin: 0, color: "var(--app-text-muted)" }}><AdminText i18nKey="ordersAdmin.noOrdersFound" fallback="No orders found." /></p> : null}
-            {orders.map((order) => {
+            {orders.map((order, index) => {
               const contractNumber = getOrderContractNumber(order);
               const articleCodes = getArticleCodes(order.items);
               return (
@@ -373,22 +287,11 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                 <div style={{ display: "grid", gap: 12 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
                     <div style={{ display: "grid", gap: 6 }}>
+                      <span style={mobileLabelStyle}>Nr. {rowNumber(index)}</span>
                       <span style={mobileLabelStyle}><AdminText i18nKey="ordersAdmin.mobileOrderNumber" fallback="Order number" /></span>
                       <Link href={`/admin/orders/${order.id}`} style={orderLinkStyle}>
                         <strong style={{ fontSize: "1.05rem" }}>{order.orderNumber}</strong>
                       </Link>
-                      {order.contractOrderSequence ? (
-                        <span style={contractSequenceStyle}>
-                          <AdminText
-                            i18nKey={getContractOrderKey(order.contractOrderSequence)}
-                            fallback={`${getContractOrderLabel(order)} order for contract`}
-                            values={{
-                              number: String(order.contractOrderSequence),
-                              ordinal: getContractOrderLabel(order),
-                            }}
-                          />
-                        </span>
-                      ) : null}
                     </div>
                     <div style={{ display: "grid", gap: 8, justifyItems: "end" }}>
                       <AdminStatusBadge status={order.status} />
@@ -408,8 +311,7 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
                       <span style={mobileMutedLineStyle}>{order.email}</span>
                     </div>
                     <div>
-                      <span style={mobileLabelStyle}><AdminText i18nKey="ordersAdmin.kitchen" fallback="Kitchen" /> + <AdminText i18nKey="contractAddressFields.city" fallback="City" /></span>
-                      <strong><AdminKitchenDisplayName slug={order.kitchen.slug} name={order.kitchen.name} /></strong>
+                      <span style={mobileLabelStyle}><AdminText i18nKey="contractAddressFields.city" fallback="City" /></span>
                       <span style={mobileMutedLineStyle}>{order.city || <AdminText i18nKey="orderDetailAdmin.notProvided" fallback="Not provided" />}</span>
                     </div>
                     <div>
@@ -439,6 +341,52 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
           <AdminPagination basePath="/admin/orders" searchParams={resolvedSearchParams} {...pagination} />
 
           <style>{`
+            .orders-summary > div {
+              min-width: 0;
+              padding: 14px 16px;
+              border: 1px solid var(--summary-border, #e4dbd1);
+              border-radius: 12px;
+              background: var(--summary-bg, #f7f3ee);
+              color: var(--summary-color, #6b503b);
+            }
+
+            .orders-summary > div:nth-child(2) {
+              --summary-bg: #eef5ff;
+              --summary-border: #d6e5fa;
+              --summary-color: #315e97;
+            }
+
+            .orders-summary > div:nth-child(3) {
+              --summary-bg: #f3effb;
+              --summary-border: #e3daf3;
+              --summary-color: #73539c;
+            }
+
+            .orders-summary > div:nth-child(4) {
+              --summary-bg: #edf7f0;
+              --summary-border: #d2e9d9;
+              --summary-color: #2d754b;
+            }
+
+            .orders-summary > div:nth-child(5) {
+              --summary-bg: #fff1ef;
+              --summary-border: #f3dcd7;
+              --summary-color: #ad5147;
+            }
+
+            .orders-summary > div:nth-child(6),
+            .orders-summary > div:nth-child(7) {
+              --summary-bg: #faf5e9;
+              --summary-border: #eee2c5;
+              --summary-color: #87682e;
+            }
+
+            .orders-summary > div:last-child {
+              --summary-bg: #6d503b;
+              --summary-border: #6d503b;
+              --summary-color: #fff;
+            }
+
             .admin-list-cards {
               display: none;
             }
@@ -449,7 +397,6 @@ export default async function AdminOrdersPage({ searchParams = {} }) {
 
             .orders-table-row a:focus-visible,
             .admin-list-cards a:focus-visible,
-            .orders-status-filter:focus-visible,
             button:focus-visible {
               outline: 3px solid rgba(143, 62, 44, 0.24);
               outline-offset: 2px;
@@ -584,20 +531,6 @@ const paymentStatusUnpaidStyle = {
   borderColor: "rgba(115, 80, 55, 0.12)",
 };
 
-const contractSequenceStyle = {
-  display: "inline-flex",
-  width: "fit-content",
-  marginTop: 8,
-  padding: "5px 8px",
-  borderRadius: 999,
-  background: "rgba(115, 80, 55, 0.07)",
-  color: "var(--app-text-muted)",
-  border: "1px solid rgba(115, 80, 55, 0.12)",
-  fontSize: 11,
-  fontWeight: 700,
-  letterSpacing: 0,
-};
-
 const deleteFormStyle = {
   margin: 0,
 };
@@ -614,14 +547,6 @@ const deleteButtonStyle = {
   fontWeight: 800,
   cursor: "pointer",
   whiteSpace: "nowrap",
-};
-
-const deleteAllButtonStyle = {
-  ...deleteButtonStyle,
-  minHeight: 42,
-  padding: "10px 14px",
-  background: "rgba(217, 92, 92, 0.1)",
-  borderColor: "rgba(217, 92, 92, 0.34)",
 };
 
 const cardActionRowStyle = {
@@ -682,49 +607,22 @@ const summaryPanelStyle = {
 const summaryGridStyle = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
-  gap: "12px 16px",
+  gap: 10,
   margin: 0,
 };
 
 const summaryLabelStyle = {
-  color: "var(--app-text-muted)",
+  color: "inherit",
   fontSize: 12,
-  marginBottom: 4,
+  opacity: 0.85,
+  marginBottom: 8,
 };
 
 const summaryValueStyle = {
   margin: 0,
-  fontSize: 18,
-  fontWeight: 600,
+  fontSize: 20,
+  fontWeight: 700,
   lineHeight: 1.2,
-};
-
-const statusFilterRowStyle = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-  alignItems: "center",
-};
-
-const statusFilterStyle = {
-  textDecoration: "none",
-  borderRadius: 999,
-  border: "1px solid var(--app-border)",
-  background: "rgba(255,255,255,0.82)",
-  color: "var(--app-text-muted)",
-  minHeight: 34,
-  display: "inline-flex",
-  alignItems: "center",
-  padding: "7px 12px",
-  fontSize: 13,
-  fontWeight: 800,
-};
-
-const statusFilterActiveStyle = {
-  ...statusFilterStyle,
-  border: "1px solid rgba(143, 62, 44, 0.22)",
-  background: "rgba(143, 62, 44, 0.11)",
-  color: "var(--app-accent)",
 };
 
 const mobileCardGridStyle = {

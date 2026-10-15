@@ -93,7 +93,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           title={pxOnly
             ? <AdminText i18nKey="pxClaimsAdmin.title" fallback="PX claims" />
             : <AdminText i18nKey="claimsAdmin.claims" fallback="Claims" />}
-          description={
+          description={pxOnly ? (
             <AdminPluralText
               count={pagination.totalItems}
               singularKey="claimsAdmin.claimMatchesCurrentFilters"
@@ -101,7 +101,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               singularFallback="{count} claim matches the current filters."
               pluralFallback="{count} claims match the current filters."
             />
-          }
+          ) : undefined}
           actions={pxOnly
             ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><ActionLink href="/admin/px-claims/feedback"><AdminText i18nKey="claimFeedbackList.viewFeedback" fallback="View customer feedback" /></ActionLink>{allClaims.length ? <DeleteAllPxClaimsAction /> : null}</div>
             : <ActionLink href="/admin/claims-overview"><AdminText i18nKey="claimOverview.title" fallback="Claims overview" /></ActionLink>}
@@ -169,11 +169,11 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
             </div>
           </form>
 
-          <div className="admin-claims-table" style={tableWrapStyle}>
+          <div className="admin-claims-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th style={{ ...thStyle, width: 44 }}>Nr.</th>
+                  <th style={{ ...thStyle, width: 44, paddingLeft: 10, paddingRight: 10, whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal" }}>Nr.</th>
                   <th style={{ ...thStyle, width: 210 }}><AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.customer" fallback="Customer" /></th>
                   <th style={{ ...thStyle, width: 150 }}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></th>
@@ -193,7 +193,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                 ) : null}
                 {claims.map((claim, index) => (
                   <tr key={claim.id} className="claims-table-row" style={workRowStyle(claim)}>
-                    <td style={{ ...tdStyle, width: 44, color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{rowNumber(index)}</td>
+                    <td style={{ ...tdStyle, width: 44, paddingLeft: 10, paddingRight: 10, whiteSpace: "nowrap", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{rowNumber(index)}</td>
                     <td style={tdStyle}>
                       <strong style={{ whiteSpace: "nowrap" }}>{formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber)}</strong>
 
@@ -212,7 +212,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                     <td style={{ ...tdStyle, width: 1 }}>
                       <div className="claims-actions" style={actionCellStyle}>
                         <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
-                          <AdminText i18nKey="claimsAdmin.openAction" fallback="Open" />
+                          <AdminText i18nKey="claimsAdmin.openAction" fallback="View" />
                         </Link>
 
                         <WorkActions item={workUiItem(claim)} compact />
@@ -251,7 +251,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   </div>
                   <div className="claims-actions" style={actionCellStyle}>
                     <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
-                      <AdminText i18nKey="claimsAdmin.openAction" fallback="Open" />
+                      <AdminText i18nKey="claimsAdmin.openAction" fallback="View" />
                     </Link>
 
                         <WorkActions item={workUiItem(claim)} compact />

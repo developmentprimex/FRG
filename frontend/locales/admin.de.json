@@ -1635,7 +1635,7 @@
   "claimsAdmin": {
     "submissionHistory": "Verlauf der Einreichungen",
     "submissionCount": "{count} Einreichungen",
-    "openAction": "Öffnen",
+    "openAction": "Ansehen",
     "claims": "Reklamationen",
     "claim": "Reklamation",
     "claimMatchesCurrentFilters": "{count} Reklamation entspricht den aktuellen Filtern.",
