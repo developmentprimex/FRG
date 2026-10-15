@@ -17,10 +17,10 @@ export function AdminEmailDeliveryStatus({ delivery, showExplanation = true }) {
   const partial = !sent && required.some((recipient) => recipient.status === "SENT");
   return (
     <div style={{ display: "grid", gap: 4, justifyItems: "start" }}>
-      <span style={{ padding: "4px 9px", borderRadius: 6, fontSize: 12, fontWeight: 700, whiteSpace: "nowrap", color: sent ? "#1f6f43" : "#b42318", background: sent ? "rgba(31, 111, 67, 0.09)" : "rgba(180, 35, 24, 0.09)" }}>
+      <span style={{ padding: "4px 9px", borderRadius: 6, fontSize: "var(--admin-text-label)", fontWeight: 700, whiteSpace: "nowrap", color: sent ? "#1f6f43" : "#b42318", background: sent ? "rgba(31, 111, 67, 0.09)" : "rgba(180, 35, 24, 0.09)" }}>
         <AdminText i18nKey={sent ? "orderEmailDelivery.status.SENT" : "orderEmailDelivery.notSent"} fallback={sent ? "Sent" : "Not sent"} />
       </span>
-      {showExplanation && (unverified || partial) ? <span style={{ fontSize: 11, color: "var(--app-text-muted)" }}>
+      {showExplanation && (unverified || partial) ? <span style={{ fontSize: "var(--admin-text-meta)", color: "var(--app-text-muted)" }}>
         <AdminText i18nKey={partial ? "orderEmailDelivery.partial" : "orderEmailDelivery.unverified"} fallback={partial ? "Not all recipients confirmed" : "Sending not verified"} />
       </span> : null}
     </div>
@@ -60,7 +60,7 @@ export function AdminOrderEmailDelivery({ delivery, compact = false, titleKey = 
   );
 
   if (compact) return (
-    <details style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5 }}>
+    <details style={{ marginTop: 8, fontSize: "var(--admin-text-label)", lineHeight: 1.5 }}>
       <summary style={{ cursor: "pointer", fontWeight: 700 }}>{summary}</summary>
       {content}
     </details>

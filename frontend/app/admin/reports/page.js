@@ -95,10 +95,10 @@ export default async function AdminReportsPage({ searchParams = {} }) {
             </label>
             <div style={filterActionsStyle}>
               <button type="submit" style={filterApplyButtonStyle}>
-                <AdminText i18nKey="dashboard.apply" fallback="Apply" />
+                <AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" />
               </button>
               <Link href="/admin/reports" scroll={false} style={filterClearLinkStyle}>
-                <AdminText i18nKey="dashboard.clearFilters" fallback="Clear filters" />
+                <AdminText i18nKey="contractsAdmin.clear" fallback="Clear" />
               </Link>
             </div>
           </form>
@@ -123,11 +123,11 @@ export default async function AdminReportsPage({ searchParams = {} }) {
         <AdminSection
           title={<AdminText i18nKey="reportsAdmin.activityRows" fallback="Orders and claims" />}
         >
-          <div className="admin-reports-table" style={tableWrapStyle}>
+          <div className="admin-reports-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={{ ...tableStyle, tableLayout: "auto", minWidth: 1000 }}>
               <thead>
                 <tr>
-                  <th scope="col" style={{ ...reportThStyle, width: 48, textAlign: "center" }}><AdminText i18nKey="reportsAdmin.rowNumber" fallback="Nr." /></th>
+                  <th scope="col" style={{ ...reportThStyle, width: 48, textAlign: "center" }}><AdminText i18nKey="reportsAdmin.rowNumber" fallback="No." /></th>
                   <th style={reportThStyle}><AdminText i18nKey="reportsAdmin.type" fallback="Type" /></th>
                   <th style={reportThStyle}><AdminText i18nKey="reportsAdmin.reference" fallback="Reference" /></th>
                   <th style={reportThStyle}><AdminText i18nKey="ordersAdmin.customer" fallback="Customer" /></th>
@@ -144,7 +144,7 @@ export default async function AdminReportsPage({ searchParams = {} }) {
                   const detailHref = row.href + "?returnTo=" + encodeURIComponent(returnToReports);
                   const reference = row.reference;
                   return <tr key={row.type + ":" + row.id}>
-                    <td style={{ ...reportTdStyle, textAlign: "center", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{index + 1}</td>
+                    <td style={{ ...reportTdStyle, textAlign: "center", color: "var(--app-text-muted)", fontSize: "var(--admin-text-label)", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>{index + 1}</td>
                     <td style={reportTdStyle}>
                       <span style={{ ...reportTypeBadgeStyle, ...(row.type === "ORDER" ? reportOrderBadgeStyle : reportClaimBadgeStyle) }}>
                         <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
@@ -157,11 +157,11 @@ export default async function AdminReportsPage({ searchParams = {} }) {
                     {!claimsOnly && <td style={reportTdStyle}>{row.type === "ORDER" ? <AdminStatusBadge status={row.status} /> : "—"}</td>}
                     {showIssue && <td style={{ ...reportTdStyle, whiteSpace: "normal", minWidth: 200, maxWidth: 300 }} title={row.type === "CLAIM" ? row.issue : undefined}>
                       {row.type === "CLAIM"
-                        ? <AdminClaimLocalizedText text={row.issueSummary || row.issue || "—"} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.5, fontSize: 13 }} />
+                        ? <AdminClaimLocalizedText text={row.issueSummary || row.issue || "—"} style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere", lineHeight: 1.5, fontSize: "var(--admin-text-body)" }} />
                         : "—"}
                     </td>}
                     {!claimsOnly && <td style={{ ...reportTdStyle, textAlign: "right", fontWeight: 700 }}>{row.gross === null ? "—" : formatCurrency(row.gross)}</td>}
-                    <td style={reportTdStyle}><Link href={detailHref} style={{ color: "var(--app-accent)", textDecoration: "none", fontWeight: 600, fontSize: 13 }}><AdminText i18nKey="reportsAdmin.viewDetails" fallback="View details" /> →</Link></td>
+                    <td style={reportTdStyle}><Link href={detailHref} style={viewButtonStyle}><AdminText i18nKey="ordersAdmin.view" fallback="View" /></Link></td>
                   </tr>;
                 })}
               </tbody>
@@ -185,11 +185,12 @@ const filterPanelStyle = {
 };
 
 const filterFieldStyle = {
+  minWidth: 0,
   display: "grid",
   gap: 6,
   color: "var(--app-text-muted)",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
 };
@@ -200,7 +201,7 @@ const filterInputStyle = {
   borderRadius: 8,
   padding: "9px 11px",
   background: "rgba(255,255,255,0.94)",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
   boxShadow: "none",
 };
 
@@ -208,7 +209,7 @@ const filterActionsStyle = {
   display: "flex",
   gap: 8,
   alignItems: "end",
-  flexWrap: "nowrap",
+  flexWrap: "wrap",
 };
 
 const filterApplyButtonStyle = {
@@ -216,7 +217,8 @@ const filterApplyButtonStyle = {
   minHeight: 42,
   borderRadius: 8,
   padding: "9px 14px",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
+  fontWeight: 600,
   whiteSpace: "nowrap",
   boxShadow: "0 10px 20px rgba(143, 62, 44, 0.16)",
 };
@@ -229,8 +231,8 @@ const filterClearLinkStyle = {
   background: "rgba(255,255,255,0.88)",
   color: "var(--app-accent)",
   border: "1px solid rgba(143, 62, 44, 0.14)",
-  fontWeight: 800,
-  fontSize: "0.92rem",
+  fontWeight: 600,
+  fontSize: "var(--admin-text-body)",
   display: "inline-flex",
   alignItems: "center",
   whiteSpace: "nowrap",
@@ -238,6 +240,8 @@ const filterClearLinkStyle = {
 
 const exportButtonStyle = {
   ...primaryButtonStyle,
+  fontSize: "var(--admin-text-body)",
+  fontWeight: 600,
   minHeight: 42,
   borderRadius: 8,
   padding: "10px 14px",
@@ -261,25 +265,41 @@ const orderSummaryGridStyle = {
 
 const summaryLabelStyle = {
   color: "var(--app-text-muted)",
-  fontSize: 12,
+  fontSize: "var(--admin-text-label)",
   marginBottom: 4,
 };
 
 const summaryValueStyle = {
   margin: 0,
-  fontSize: 18,
-  fontWeight: 600,
+  fontSize: "var(--admin-text-metric)",
+  fontWeight: 700,
   lineHeight: 1.2,
 };
 
 const orderLinkStyle = {
   color: "var(--app-text)",
   textDecoration: "none",
-  fontWeight: 900,
+  fontWeight: 600,
 };
 
-const reportThStyle = { ...thStyle, padding: "11px 14px", whiteSpace: "nowrap" };
-const reportTdStyle = { ...tdStyle, padding: "10px 14px", verticalAlign: "middle", whiteSpace: "nowrap", fontSize: 14 };
+const reportThStyle = { ...thStyle, padding: "16px 20px", whiteSpace: "nowrap" };
+const reportTdStyle = { ...tdStyle, padding: "16px 12px", verticalAlign: "middle", whiteSpace: "nowrap", fontSize: "var(--admin-text-body)" };
+
+const viewButtonStyle = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 38,
+  padding: "9px 12px",
+  border: "1px solid var(--app-border)",
+  borderRadius: 8,
+  background: "var(--app-surface)",
+  color: "var(--app-accent)",
+  fontSize: "var(--admin-text-meta)",
+  fontWeight: 600,
+  textDecoration: "none",
+  whiteSpace: "nowrap",
+};
 
 const reportTypeBadgeStyle = {
   display: "inline-flex",
@@ -289,8 +309,8 @@ const reportTypeBadgeStyle = {
   padding: "5px 10px",
   border: "1px solid",
   borderRadius: 999,
-  fontSize: 12,
-  fontWeight: 700,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   lineHeight: 1.4,
   whiteSpace: "nowrap",
 };

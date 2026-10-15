@@ -1,3 +1,77 @@
+/* Admin type scale: table data stays readable at a compact dashboard density.
+   Use these tokens for new admin screens instead of page-specific sizes. */
+.admin-shell {
+  --admin-text-title: 1.5rem;
+  --admin-text-metric: 1.25rem;
+  --admin-text-body: 0.875rem;
+  --admin-text-meta: 0.8125rem;
+  --admin-text-label: 0.75rem;
+}
+
+.admin-shell__topbar .admin-language-switcher {
+  display: inline-flex !important;
+  min-height: 38px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.admin-shell__topbar .admin-language-switcher__label {
+  display: none;
+}
+
+/* Override legacy inline sizes only in the shared topbar. */
+.admin-shell__topbar .admin-language-switcher__trigger,
+.admin-shell__topbar a[href="/admin/account"],
+.admin-shell__topbar .admin-shell__logout-button {
+  min-height: 38px !important;
+  padding: 6px 12px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  box-sizing: border-box;
+  box-shadow: none !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-shell__topbar .admin-language-switcher__trigger {
+  min-width: 134px !important;
+  justify-content: space-between;
+  gap: 10px !important;
+}
+
+.admin-shell__topbar .admin-shell__email {
+  font-size: 13px;
+  font-weight: 400 !important;
+}
+
+@media (max-width: 640px) {
+  .admin-shell__topbar .admin-language-switcher__trigger {
+    min-width: 54px !important;
+  }
+}
+
+.admin-shell :is(button, input, select, textarea) {
+  font-family: inherit;
+}
+
+.admin-shell :is(td, article) strong {
+  font-weight: 600;
+}
+
+/* Keep form controls at 16px on touch screens to avoid focus zoom. */
+@media (max-width: 760px) {
+  .admin-shell :is(input, select, textarea) {
+    font-size: 1rem !important;
+  }
+}
+
 @media (max-width: 960px) {
   .admin-shell__mobile-nav {
     display: flex !important;

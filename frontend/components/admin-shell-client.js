@@ -16,25 +16,14 @@ const navSections = [
   {
     id: "operations", labelKey: "adminShellLogin.sections.operations", fallback: "Daily work",
     items: [
-      {
-        id: "orders", labelKey: "adminShellLogin.orders", fallback: "Orders", icon: OrdersIcon, badge: "cancellations",
-        children: [
-          { href: "/admin/orders", labelKey: "adminShellLogin.allOrders", fallback: "All orders", icon: OrdersIcon },
-          { href: "/admin/order-cancellations", labelKey: "adminShellLogin.orderCancellations", fallback: "Withdrawals", icon: WithdrawalIcon, badge: "cancellations" },
-        ],
-      },
-      {
-        id: "claims", labelKey: "adminShellLogin.claims", fallback: "Claims", icon: ClaimsIcon, requiresClaimsNav: true,
-        children: [
-          { href: "/admin/claims-overview", labelKey: "claimOverview.title", fallback: "Claims overview", icon: ClaimsIcon },
-          { href: "/admin/claims", labelKey: "adminShellLogin.allClaims", fallback: "All claims", icon: ClaimsIcon },
-        ],
-      },
+      { href: "/admin/orders", labelKey: "adminShellLogin.orders", fallback: "Orders", icon: OrdersIcon },
+      { href: "/admin/order-cancellations", labelKey: "adminShellLogin.orderCancellations", fallback: "Cancellations", icon: WithdrawalIcon, badge: "cancellations" },
+      { href: "/admin/claims", labelKey: "adminShellLogin.claims", fallback: "Claims", icon: ClaimsIcon, requiresClaimsNav: true },
       {
         id: "px", labelKey: "adminShellLogin.px", fallback: "PX", icon: OrdersIcon, requiresPxAdmin: true,
         children: [
-          { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon },
           { href: "/admin/px-claims/feedback", labelKey: "claimFeedbackList.title", fallback: "Customer feedback", icon: ClaimsIcon, requiresClaimsNav: true },
+          { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon },
           { href: "/admin/px-claims", labelKey: "adminShellLogin.pxClaims", fallback: "PX claims", icon: ClaimsIcon, requiresClaimsNav: true },
         ],
       },
@@ -222,7 +211,9 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
         isolation: "isolate",
         background: "var(--app-bg)",
         color: "var(--app-text)",
-        fontFamily: "Manrope, sans-serif",
+        fontFamily: "inherit",
+        fontSize: "var(--admin-text-body)",
+        lineHeight: 1.5,
       }}
     >
       {pendingHref ? <div className="admin-navigation-progress" aria-label={translate("adminShellLogin.loading", "Loading")} /> : null}
@@ -436,7 +427,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               alt="Primex Agentic AI"
               style={{
                 display: "block",
-                width: 76,
+                width: 104,
                 height: "auto",
                 objectFit: "contain",
               }}

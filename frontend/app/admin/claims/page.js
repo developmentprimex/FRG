@@ -19,7 +19,7 @@ import { AdminShell } from "../../../components/admin-shell";
 import { AdminEmailDeliveryStatus } from "../../../components/admin-order-email-delivery";
 import { attachClaimEmailDelivery } from "../../../lib/email/claim-email-store";
 import { AdminPagination } from "../../../components/admin-pagination";
-import { AdminDateTime, AdminPluralText, AdminText, AdminTranslatedInput } from "../../../components/admin-i18n";
+import { AdminDateTime, AdminText, AdminTranslatedInput } from "../../../components/admin-i18n";
 import AdminSelect from "../../../components/admin-select";
 import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-button";
 import { AdminClaimLocalizedText } from "../../../components/admin-claim-localized-text";
@@ -93,15 +93,6 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           title={pxOnly
             ? <AdminText i18nKey="pxClaimsAdmin.title" fallback="PX claims" />
             : <AdminText i18nKey="claimsAdmin.claims" fallback="Claims" />}
-          description={pxOnly ? (
-            <AdminPluralText
-              count={pagination.totalItems}
-              singularKey="claimsAdmin.claimMatchesCurrentFilters"
-              pluralKey="claimsAdmin.claimsMatchCurrentFilters"
-              singularFallback="{count} claim matches the current filters."
-              pluralFallback="{count} claims match the current filters."
-            />
-          ) : undefined}
           actions={pxOnly
             ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><ActionLink href="/admin/px-claims/feedback"><AdminText i18nKey="claimFeedbackList.viewFeedback" fallback="View customer feedback" /></ActionLink>{allClaims.length ? <DeleteAllPxClaimsAction /> : null}</div>
             : <ActionLink href="/admin/claims-overview"><AdminText i18nKey="claimOverview.title" fallback="Claims overview" /></ActionLink>}
@@ -117,15 +108,6 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               <AdminText i18nKey={filters.contactKey ? "claimOverview.contactScope" : "claimOverview.contractScope"} fallback={filters.contactKey ? "Showing claims for contact" : "Showing claims for contract"} />: <strong>{filters.contactKey ? filters.contactKey.slice(filters.contactKey.indexOf(":") + 1) : filters.contractNumber}</strong>{" "}
               <Link href={clearExactHref}><AdminText i18nKey="claimOverview.clearExactFilter" fallback="Clear this filter" /></Link>
             </div> : null}
-            <div style={filterHeaderStyle}>
-              <span style={filterEyebrowStyle}><AdminText i18nKey="contractsAdmin.filters" fallback="Filters" /></span>
-              <span style={filterHintStyle}>
-                <AdminText
-                  i18nKey="claimsAdmin.filterClaimsByContractNameContactIssueAndDate"
-                  fallback="Filter by customer, contract, product, issue, status, or date."
-                />
-              </span>
-            </div>
             <div style={filterGridStyle}>
               <WorkFilter value={processingFilter} />
               <label style={filterFieldStyle}>
@@ -173,7 +155,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
             <table style={tableStyle}>
               <thead>
                 <tr>
-                  <th style={{ ...thStyle, width: 44, paddingLeft: 10, paddingRight: 10, whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal" }}>Nr.</th>
+                  <th style={{ ...thStyle, width: 64, boxSizing: "border-box", textAlign: "center", letterSpacing: "0.04em", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal" }}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
                   <th style={{ ...thStyle, width: 210 }}><AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.customer" fallback="Customer" /></th>
                   <th style={{ ...thStyle, width: 150 }}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></th>
@@ -186,17 +168,16 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               <tbody>
                 {!claims.length ? (
                   <tr>
-                    <td style={tdStyle} colSpan={8}>
+                    <td style={tdStyle} colSpan={7}>
                       <AdminText i18nKey="claimsAdmin.noClaimsFound" fallback="No claims found." />
                     </td>
                   </tr>
                 ) : null}
                 {claims.map((claim, index) => (
                   <tr key={claim.id} className="claims-table-row" style={workRowStyle(claim)}>
-                    <td style={{ ...tdStyle, width: 44, paddingLeft: 10, paddingRight: 10, whiteSpace: "nowrap", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums" }}>{rowNumber(index)}</td>
+                    <td style={{ ...tdStyle, width: 64, boxSizing: "border-box", textAlign: "center", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums", fontSize: "var(--admin-text-label)", fontWeight: 500 }}>{rowNumber(index)}</td>
                     <td style={tdStyle}>
                       <strong style={{ whiteSpace: "nowrap" }}>{formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber)}</strong>
-
                       <div style={rowMetaStyle}><ClaimRequestTypeText requestType={claim.requestType} /></div>
                       {claim.submissionCount > 1 ? <div style={rowMetaStyle}><AdminText i18nKey="claimsAdmin.submissionCount" fallback="{count} submissions" values={{ count: claim.submissionCount }} /></div> : null}
                     </td>
@@ -231,7 +212,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               <article key={claim.id} style={{ ...itemCardStyle, ...workRowStyle(claim) }}>
                 <div style={{ display: "grid", gap: 10 }}>
                   <div>
-                    <div style={rowMetaStyle}>Nr. {rowNumber(index)}</div>
+                    <div style={rowMetaStyle}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /> {rowNumber(index)}</div>
                     <strong>
                       <AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /> {formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber)}
                     </strong>
@@ -273,12 +254,22 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
             .admin-claims-table td {
               padding: 10px 12px !important;
               vertical-align: middle !important;
-              font-size: 13px;
+              font-size: var(--admin-text-body);
               line-height: 1.4;
             }
 
             .admin-claims-table th {
-              font-size: 11px;
+              padding: 16px 20px !important;
+              font-size: var(--admin-text-label);
+              line-height: 1.5;
+              white-space: nowrap;
+              overflow-wrap: normal;
+              word-break: normal;
+            }
+
+            .admin-claims-table th:first-child {
+              padding-left: 10px !important;
+              padding-right: 10px !important;
             }
 
             .claims-actions > * {
@@ -290,7 +281,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
             .claims-actions button {
               min-height: 34px !important;
               padding: 7px 10px !important;
-              font-size: 12px !important;
+              font-size: var(--admin-text-meta) !important;
               line-height: 1.3 !important;
               box-sizing: border-box;
             }
@@ -393,7 +384,7 @@ function DeleteAllPxClaimsAction() {
 const rowMetaStyle = {
   marginTop: 3,
   color: "var(--app-text-muted)",
-  fontSize: 12,
+  fontSize: "var(--admin-text-meta)",
   lineHeight: 1.4,
 };
 
@@ -403,13 +394,13 @@ const detailsLinkStyle = {
   background: "var(--app-surface)",
   color: "var(--app-accent)",
   textDecoration: "none",
-  fontWeight: 800,
+  fontWeight: 600,
   minHeight: 38,
   padding: "9px 12px",
   display: "inline-flex",
   alignItems: "center",
   whiteSpace: "nowrap",
-  fontSize: 13,
+  fontSize: "var(--admin-text-meta)",
 };
 
 const actionCellStyle = {
@@ -430,8 +421,8 @@ const deleteButtonStyle = {
   color: "var(--app-danger-text)",
   minHeight: 38,
   padding: "9px 12px",
-  fontSize: 13,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-meta)",
+  fontWeight: 600,
   cursor: "pointer",
   boxShadow: "none",
   whiteSpace: "nowrap",
@@ -449,7 +440,7 @@ const deleteAllButtonStyle = {
 };
 
 const customerNameStyle = {
-  fontWeight: 800,
+  fontWeight: 600,
 };
 
 const issueClampStyle = {
@@ -493,15 +484,15 @@ const filterEyebrowStyle = {
   background: "rgba(143, 62, 44, 0.1)",
   border: "1px solid rgba(143, 62, 44, 0.14)",
   color: "var(--app-accent)",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
 };
 
 const filterHintStyle = {
   color: "var(--app-text-muted)",
-  fontSize: 13,
+  fontSize: "var(--admin-text-meta)",
   fontWeight: 700,
 };
 
@@ -509,8 +500,8 @@ const filterFieldStyle = {
   display: "grid",
   gap: 6,
   color: "var(--app-text-muted)",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
 };
@@ -521,7 +512,7 @@ const filterInputStyle = {
   borderRadius: 8,
   padding: "9px 11px",
   background: "rgba(255,255,255,0.94)",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
   boxShadow: "none",
 };
 
@@ -539,8 +530,8 @@ const filterApplyButtonStyle = {
   padding: "9px 14px",
   background: "var(--color-primary)",
   color: "var(--app-accent-contrast)",
-  fontWeight: 800,
-  fontSize: "0.92rem",
+  fontWeight: 600,
+  fontSize: "var(--admin-text-body)",
   cursor: "pointer",
   whiteSpace: "nowrap",
   boxShadow: "0 10px 20px rgba(143, 62, 44, 0.16)",
@@ -554,8 +545,8 @@ const filterClearLinkStyle = {
   background: "rgba(255,255,255,0.88)",
   color: "var(--app-accent)",
   border: "1px solid rgba(143, 62, 44, 0.14)",
-  fontWeight: 800,
-  fontSize: "0.92rem",
+  fontWeight: 600,
+  fontSize: "var(--admin-text-body)",
   display: "inline-flex",
   alignItems: "center",
   whiteSpace: "nowrap",

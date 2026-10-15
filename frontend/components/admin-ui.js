@@ -36,7 +36,7 @@ export function AdminSection({ title, description, actions, children }) {
       {(title || description || actions) ? (
         <div style={sectionHeaderStyle}>
           <div style={{ display: "grid", gap: 6 }}>
-            {title ? <h2 style={{ margin: 0, fontSize: "1.55rem", color: "var(--app-text)", letterSpacing: "-0.02em" }}>{title}</h2> : null}
+            {title ? <h2 style={{ margin: 0, fontSize: "var(--admin-text-title, 1.5rem)", lineHeight: 1.3, fontWeight: 700, color: "var(--app-text)", letterSpacing: "-0.02em" }}>{title}</h2> : null}
             {description ? <p style={mutedTextStyle}>{description}</p> : null}
           </div>
           {actions ? <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>{actions}</div> : null}
@@ -82,11 +82,11 @@ export function MetricCard({ label, value, detail }) {
         backdropFilter: "blur(6px)",
       }}
     >
-      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.68)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 700 }}>
+      <div style={{ fontSize: "var(--admin-text-label, 0.75rem)", color: "rgba(255,255,255,0.68)", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 700 }}>
         {label}
       </div>
       <strong style={{ fontSize: "2.3rem", lineHeight: 1, letterSpacing: "-0.03em" }}>{value}</strong>
-      {detail ? <div style={{ marginTop: 8, fontSize: 13, color: "rgba(255,255,255,0.72)" }}>{detail}</div> : null}
+      {detail ? <div style={{ marginTop: 8, fontSize: "var(--admin-text-meta, 0.8125rem)", color: "rgba(255,255,255,0.72)" }}>{detail}</div> : null}
     </div>
   );
 }
@@ -158,7 +158,7 @@ export const tableStyle = {
 export const thStyle = {
   textAlign: "left",
   padding: "16px 20px",
-  fontSize: 12,
+  fontSize: "var(--admin-text-label, 0.75rem)",
   color: "var(--app-text-muted)",
   textTransform: "uppercase",
   letterSpacing: "0.12em",
@@ -168,6 +168,9 @@ export const thStyle = {
   overflowWrap: "anywhere",
 };
 export const tdStyle = {
+  fontSize: "var(--admin-text-body, 0.875rem)",
+  lineHeight: 1.5,
+  fontVariantNumeric: "tabular-nums",
   padding: "20px",
   borderBottom: "1px solid var(--app-border)",
   color: "var(--app-text)",
@@ -175,6 +178,11 @@ export const tdStyle = {
   overflowWrap: "anywhere",
 };
 export const inputStyle = {
+  fontFamily: "inherit",
+  fontWeight: 400,
+  lineHeight: 1.5,
+  letterSpacing: "normal",
+  textTransform: "none",
   width: "100%",
   minHeight: 52,
   borderRadius: 14,
@@ -182,7 +190,7 @@ export const inputStyle = {
   background: "var(--color-card)",
   padding: "13px 15px",
   color: "var(--app-text)",
-  fontSize: "0.98rem",
+  fontSize: "var(--admin-text-body, 0.875rem)",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
 };
 export const textareaStyle = {
@@ -192,7 +200,7 @@ export const textareaStyle = {
   background: "var(--color-card)",
   padding: "13px 15px",
   color: "var(--app-text)",
-  fontSize: "0.98rem",
+  fontSize: "var(--admin-text-body, 0.875rem)",
   resize: "vertical",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
 };
@@ -204,7 +212,7 @@ export const primaryButtonStyle = {
   background: "var(--color-primary)",
   color: "var(--app-accent-contrast)",
   fontWeight: 700,
-  fontSize: "0.98rem",
+  fontSize: "var(--admin-text-body, 0.875rem)",
   cursor: "pointer",
   boxShadow: "0 12px 24px rgba(84, 59, 40, 0.14)",
 };
@@ -216,7 +224,7 @@ export const secondaryButtonStyle = {
   background: "var(--color-card)",
   color: "var(--app-accent)",
   fontWeight: 700,
-  fontSize: "0.98rem",
+  fontSize: "var(--admin-text-body, 0.875rem)",
   cursor: "pointer",
   boxShadow: "var(--app-shadow-soft)",
 };
@@ -228,12 +236,12 @@ export const dangerButtonStyle = {
   background: "var(--app-danger-bg)",
   color: "var(--app-danger-text)",
   fontWeight: 700,
-  fontSize: "0.98rem",
+  fontSize: "var(--admin-text-body, 0.875rem)",
   cursor: "pointer",
   boxShadow: "var(--app-shadow-soft)",
 };
-export const mutedTextStyle = { margin: 0, color: "var(--app-text-muted)", lineHeight: 1.6 };
-export const subMetaStyle = { display: "flex", gap: 10, flexWrap: "wrap", color: "var(--app-text-muted)", fontSize: 14 };
+export const mutedTextStyle = { fontSize: "var(--admin-text-body, 0.875rem)", margin: 0, color: "var(--app-text-muted)", lineHeight: 1.6 };
+export const subMetaStyle = { display: "flex", gap: 10, flexWrap: "wrap", color: "var(--app-text-muted)", fontSize: "var(--admin-text-body, 0.875rem)" };
 export const cardListStyle = { display: "grid", gap: 16 };
 export const itemCardStyle = {
   border: "1px solid var(--app-border)",
@@ -258,7 +266,7 @@ export const codePillStyle = {
   borderRadius: 999,
   background: "var(--app-accent-soft)",
   color: "var(--app-accent)",
-  fontSize: 13,
+  fontSize: "var(--admin-text-meta, 0.8125rem)",
   fontWeight: 700,
   border: "1px solid rgba(107, 79, 58, 0.14)",
 };
@@ -303,7 +311,7 @@ const eyebrowStyle = {
   borderRadius: 999,
   background: "rgba(255,255,255,0.14)",
   color: "rgba(255,248,242,0.84)",
-  fontSize: 12,
+  fontSize: "var(--admin-text-label, 0.75rem)",
   fontWeight: 700,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
@@ -341,7 +349,7 @@ function statusPill(status) {
     display: "inline-flex",
     padding: "8px 12px",
     borderRadius: 999,
-    fontSize: 12,
+    fontSize: "var(--admin-text-label, 0.75rem)",
     fontWeight: 700,
     letterSpacing: "0.06em",
     whiteSpace: "nowrap",
@@ -370,7 +378,7 @@ const typePillStyle = {
   color: "var(--app-accent)",
   borderRadius: 999,
   padding: "7px 12px",
-  fontSize: 12,
+  fontSize: "var(--admin-text-label, 0.75rem)",
   fontWeight: 700,
   border: "1px solid rgba(91, 141, 239, 0.16)",
 };

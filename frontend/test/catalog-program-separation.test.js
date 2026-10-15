@@ -27,7 +27,7 @@ test("admin catalog separates records and prices by selected program", () => {
   assert.match(exportRoute, /getSheetName\("Articles"/);
   assert.match(exportRoute, /appendCatalogSheets/);
   assert.match(exportRoute, /appendCombinedProgramSheet/);
-  assert.match(exportRoute, /\["Nr", "Type", "Program", "Article number", "Code"/);
+  assert.match(exportRoute, /\["No\.", "Type", "Program", "Article number", "Code"/);
   assert.match(page, /includeAllPrograms=true/);
   assert.match(articleRoute, /catalogArticleProgramPrice\.upsert/);
   assert.match(articleRoute, /syncCatalogProgramKitchenItemPrices/);

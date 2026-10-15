@@ -212,7 +212,7 @@ export default async function AdminUsersPage({ searchParams }) {
               <thead>
                 <tr>
                   <th style={{ ...thStyle, width: 72 }}>
-                    <AdminText i18nKey="usersAdmin.orderNr" fallback="Nr" />
+                    <AdminText i18nKey="usersAdmin.orderNr" fallback="No." />
                   </th>
                   <th style={thStyle}>
                     <AdminText i18nKey="usersAdmin.email" fallback="Email" />
