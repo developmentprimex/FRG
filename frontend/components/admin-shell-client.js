@@ -145,11 +145,18 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   const visibleNavItems = visibleNavSections.flatMap((section) => section.items);
   const activeNavItem = visibleNavItems.flatMap((item) => item.children ?? [item]).sort((a, b) => b.href.length - a.href.length).find((item) => isActivePath(pathname, item.href)) ?? visibleNavItems[0];
   const activeGroupId = visibleNavItems.find((item) => item.children?.some((child) => child.href === activeNavItem.href))?.id ?? "";
-  const [expandedGroupId, setExpandedGroupId] = useState(activeGroupId);
+  const [expandedGroupIds, setExpandedGroupIds] = useState(() => activeGroupId ? [activeGroupId] : []);
 
   useEffect(() => {
-    setExpandedGroupId(activeGroupId);
+    if (!activeGroupId) return;
+    setExpandedGroupIds((current) => current.includes(activeGroupId) ? current : [...current, activeGroupId]);
   }, [pathname, activeGroupId]);
+
+  function toggleNavGroup(groupId) {
+    setExpandedGroupIds((current) => current.includes(groupId)
+      ? current.filter((id) => id !== groupId)
+      : [...current, groupId]);
+  }
 
   function renderNavigation(mobile = false) {
     return visibleNavSections.map((section) => (
@@ -166,7 +173,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   function renderNavItem(item, mobile = false, nested = false) {
     if (item.children) {
       return (
-        <SidebarNavGroup key={item.id} item={item} activeHref={activeNavItem.href} mobile={mobile} translate={translate} isOpen={expandedGroupId === item.id} onToggle={() => setExpandedGroupId((current) => current === item.id ? "" : item.id)} badgeCount={getNavBadgeCount(item, { openCancellationCount })}>
+        <SidebarNavGroup key={item.id} item={item} activeHref={activeNavItem.href} mobile={mobile} translate={translate} isOpen={expandedGroupIds.includes(item.id)} onToggle={() => toggleNavGroup(item.id)} badgeCount={getNavBadgeCount(item, { openCancellationCount })}>
           {item.children.map((child) => renderNavItem(child, mobile, true))}
         </SidebarNavGroup>
       );
