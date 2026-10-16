@@ -1,6 +1,7 @@
 import { KitchenStatus, ItemType, OrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import { getAdminPagination } from "./admin-pagination.js";
+import { filterAdminKitchens } from "./admin-kitchen-search.js";
 import { getPriceBreakdown } from "./price-utils.js";
 import { ORDER_KIND_LIVE, ORDER_KIND_TEST, getOrderDelegate } from "./order-kind.js";
 import { applyDueScheduledCatalogPriceListImports } from "./catalog-price-list-import.js";
@@ -466,6 +467,30 @@ export async function listKitchensForAdmin() {
   });
 }
 
+export async function listKitchensPageForAdmin(query = "", requestedPage = 1) {
+  // Keep the existing accent/spacing-insensitive search, but count relations
+  // only for the visible rows. The unfiltered list uses database pagination.
+  let ids = null;
+  if (query.trim()) {
+    const candidates = await prisma.kitchen.findMany({
+      select: { id: true, name: true, kitchenCode: true, slug: true, programmId: true, description: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    ids = filterAdminKitchens(candidates, query).map((row) => row.id);
+  }
+  const pagination = getAdminPagination(ids ? ids.length : await prisma.kitchen.count(), requestedPage);
+  const offset = (pagination.page - 1) * pagination.pageSize;
+  const items = await prisma.kitchen.findMany({
+    ...(ids ? { where: { id: { in: ids.slice(offset, offset + pagination.pageSize) } } } : { skip: offset, take: pagination.pageSize }),
+    select: {
+      id: true, name: true, slug: true, programmId: true, status: true, updatedAt: true,
+      _count: { select: { items: true, orders: true, contracts: true } },
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+  });
+  return { ...pagination, items };
+}
+
 export async function listKitchenItemCodeOptionsForAdmin() {
   return [
     { code: "CAB-WALL-600-01", label: "COMPONENT - Wall cabinet 600 mm. Use -02, -03 for repeats." },
@@ -800,7 +825,7 @@ export async function listProjectsForAdmin(filters = {}) {
   }));
 }
 
-export async function listKitchenContractsForAdmin(filters = {}) {
+export async function listKitchenContractsForAdmin(filters = {}, requestedPage = null) {
   const whereParts = [];
   const havingParts = [];
   if (filters.contractId) whereParts.push(Prisma.sql`kc."id" = ${filters.contractId}`);
@@ -837,6 +862,24 @@ export async function listKitchenContractsForAdmin(filters = {}) {
 
   const whereSql = whereParts.length ? Prisma.sql`WHERE ${Prisma.join(whereParts, " AND ")}` : Prisma.empty;
   const havingSql = havingParts.length ? Prisma.sql`HAVING ${Prisma.join(havingParts, " AND ")}` : Prisma.empty;
+  let pagination = null;
+  if (requestedPage !== null) {
+    const [count] = await prisma.$queryRaw`
+      SELECT COUNT(*) AS "total" FROM (
+        SELECT kc."id"
+        FROM "KitchenContract" kc
+        JOIN "Kitchen" k ON k."id" = kc."kitchenId"
+        LEFT JOIN "Project" prj ON prj."id" = kc."projectId"
+        LEFT JOIN "PropertyObject" pobj ON pobj."id" = prj."propertyObjectId"
+        LEFT JOIN "HousingCompany" hc ON hc."id" = prj."housingCompanyId"
+        LEFT JOIN "Order" o ON o."kitchenContractId" = kc."id"
+        ${whereSql}
+        GROUP BY kc."id"
+        ${havingSql}
+      ) matching_contracts
+    `;
+    pagination = getAdminPagination(Number(count.total), requestedPage);
+  }
   const rows = await prisma.$queryRaw`
     SELECT
       kc."id",
@@ -927,7 +970,8 @@ export async function listKitchenContractsForAdmin(filters = {}) {
       latest_order."country",
       latest_order."createdAt"
     ${havingSql}
-    ORDER BY kc."createdAt" DESC, kc."contractNumber" ASC
+    ORDER BY kc."createdAt" DESC, kc."contractNumber" ASC, kc."id" ASC
+    ${pagination ? Prisma.sql`LIMIT ${pagination.pageSize} OFFSET ${(pagination.page - 1) * pagination.pageSize}` : Prisma.empty}
   `;
 
   const contracts = rows.map((row) => ({
@@ -1042,7 +1086,8 @@ export async function listKitchenContractsForAdmin(filters = {}) {
     _count: { orders: Number(row.orderCount || 0) },
   }));
 
-  return attachOrdersToContracts(await attachRegistrationsToContracts(contracts));
+  const items = await attachOrdersToContracts(await attachRegistrationsToContracts(contracts));
+  return pagination ? { ...pagination, items } : items;
 }
 
 export async function getKitchenContractForAdmin(id) {

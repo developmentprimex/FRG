@@ -4,6 +4,8 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { getAdminPagination } from "../lib/admin-pagination.js";
 import { getPriceBreakdown } from "../lib/price-utils.js";
+import { filterAdminKitchens } from "../lib/admin-kitchen-search.js";
+import { Prisma } from "@prisma/client";
 
 function loadFunctions(file, names, dependencies) {
   const source = readFileSync(new URL(file, import.meta.url), "utf8");
@@ -88,4 +90,81 @@ test("empty and invalid pagination cannot produce a negative database offset", (
     assert.equal(result.page, 1);
     assert.equal(result.totalPages, 1);
   }
+});
+
+test("kitchen search preserves normalization and hydrates only the matching page", async () => {
+  let query;
+  const candidates = Array.from({ length: 25 }, (_, index) => ({ id: String(index), name: "Küche 105 807" }));
+  const api = loadFunctions("../lib/catalog.js", ["listKitchensPageForAdmin"], {
+    getAdminPagination, filterAdminKitchens,
+    prisma: { kitchen: { findMany: async (args) => {
+      if (args.select.description) return candidates;
+      query = args;
+      return [];
+    } } },
+  });
+  const result = await api.listKitchensPageForAdmin("kuche105807", 2);
+  assert.equal(result.totalItems, 25);
+  assert.equal(query.where.id.in.length, 5);
+  assert.equal(query.where.id.in[0], "20");
+  await api.listKitchensPageForAdmin("missing", 999);
+  assert.equal(query.where.id.in.length, 0);
+});
+
+test("unfiltered kitchens use bounded database reads", async () => {
+  let query;
+  const api = loadFunctions("../lib/catalog.js", ["listKitchensPageForAdmin"], {
+    getAdminPagination, filterAdminKitchens,
+    prisma: { kitchen: { count: async () => 41, findMany: async (args) => { query = args; return []; } } },
+  });
+  assert.equal((await api.listKitchensPageForAdmin("", 999)).page, 3);
+  assert.equal(query.skip, 40);
+  assert.equal(query.take, 20);
+});
+
+test("contracts apply usage/search filters to both count and bounded detail query", async () => {
+  const queries = [];
+  const api = loadFunctions("../lib/catalog.js", ["listKitchenContractsForAdmin"], {
+    Prisma, getAdminPagination,
+    attachOrdersToContracts: async rows => rows,
+    attachRegistrationsToContracts: async rows => rows,
+    prisma: { $queryRaw: async (strings, ...values) => {
+      const query = Prisma.sql(strings, ...values);
+      queries.push(query);
+      return query.text.includes('matching_contracts') ? [{ total: 41n }] : [];
+    } },
+  });
+  const result = await api.listKitchenContractsForAdmin({ usage: "multiple", query: "Berlin", status: "active" }, 999);
+  assert.equal(result.page, 3);
+  assert.equal(result.totalItems, 41);
+  for (const query of queries) {
+    assert.match(query.text, /HAVING COUNT\(o\."id"\) >= 2/);
+    assert.ok(query.values.includes('%Berlin%'));
+    assert.match(query.text, /kc\."isActive" = true/);
+  }
+  assert.deepEqual(queries[1].values.slice(-2), [20, 40]);
+  queries.length = 0;
+  await api.listKitchenContractsForAdmin({ contractId: "detail" });
+  assert.equal(queries.length, 1);
+  assert.doesNotMatch(queries[0].text, /OFFSET/);
+});
+
+test("contract database pagination agrees with the full filtered list", {
+  skip: process.env.ADMIN_PERFORMANCE_DB_TEST !== "1",
+}, async () => {
+  const { prisma } = await import("../lib/prisma.js");
+  const api = loadFunctions("../lib/catalog.js", ["listKitchenContractsForAdmin"], {
+    Prisma, prisma, getAdminPagination,
+    attachOrdersToContracts: async rows => rows,
+    attachRegistrationsToContracts: async rows => rows,
+  });
+  try {
+    for (const filters of [{}, { usage: "unused" }, { usage: "multiple" }, { status: "active" }, { query: "105" }]) {
+      const all = await api.listKitchenContractsForAdmin(filters);
+      const page = await api.listKitchenContractsForAdmin(filters, 2);
+      assert.equal(page.totalItems, all.length);
+      const offset = (page.page - 1) * page.pageSize;
+      assert.deepEqual(page.items.map(row => row.id), all.slice(offset, offset + page.pageSize).map(row => row.id));
+    }
+  } finally { await prisma.$disconnect(); }
 });

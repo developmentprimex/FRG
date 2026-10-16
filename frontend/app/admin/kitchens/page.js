@@ -23,12 +23,11 @@ import { AdminShell } from "../../../components/admin-shell";
 import { AdminPagination } from "../../../components/admin-pagination";
 import { AdminDateTime, AdminKitchenDisplayName, AdminPluralText, AdminStatusBadge, AdminText, AdminTranslatedInput, AdminTranslatedTextarea } from "../../../components/admin-i18n";
 import AdminSelect from "../../../components/admin-select";
-import { listKitchensForAdmin } from "../../../lib/catalog";
+import { listKitchensPageForAdmin } from "../../../lib/catalog";
 import { listCatalogPrograms } from "../../../lib/catalog-programs";
 import { getFormMessage } from "../../../lib/admin-forms";
-import { filterAdminKitchens, normalizeKitchenSearchQuery } from "../../../lib/admin-kitchen-search";
+import { normalizeKitchenSearchQuery } from "../../../lib/admin-kitchen-search";
 import { requireAdminPage } from "../../../lib/auth";
-import { paginateAdminItems } from "../../../lib/admin-pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -42,13 +41,11 @@ export default async function AdminKitchensPage({ searchParams }) {
   const resolvedSearchParams = (await searchParams) || {};
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
-  const [allKitchens, programs] = await Promise.all([
-    listKitchensForAdmin(),
+  const kitchenSearchQuery = normalizeKitchenSearchQuery(resolvedSearchParams.q);
+  const [pagination, programs] = await Promise.all([
+    listKitchensPageForAdmin(kitchenSearchQuery, resolvedSearchParams.page),
     listCatalogPrograms(),
   ]);
-  const kitchenSearchQuery = normalizeKitchenSearchQuery(resolvedSearchParams.q);
-  const filteredKitchens = filterAdminKitchens(allKitchens, kitchenSearchQuery);
-  const pagination = paginateAdminItems(filteredKitchens, resolvedSearchParams.page);
   const kitchens = pagination.items;
   const rowNumber = (index) => pagination.totalItems - (pagination.page - 1) * pagination.pageSize - index;
 

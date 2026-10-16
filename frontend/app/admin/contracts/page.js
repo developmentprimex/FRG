@@ -18,7 +18,6 @@ import { AdminDateTime, AdminKitchenDisplayName, AdminStatusBadge, AdminText } f
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminPage } from "../../../lib/auth";
 import { listKitchenContractsForAdmin, listKitchensForAdmin, listProjectsForAdmin, listPropertyOwnersForAdmin } from "../../../lib/catalog";
-import { paginateAdminItems } from "../../../lib/admin-pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -253,13 +252,12 @@ export default async function AdminContractsPage({ searchParams = {} }) {
   };
   const returnTo = `/admin/contracts?${new URLSearchParams(Object.entries(filters).filter(([, value]) => value)).toString()}`;
 
-  const [kitchens, owners, projects, allContracts] = await Promise.all([
+  const [kitchens, owners, projects, pagination] = await Promise.all([
     listKitchensForAdmin(),
     listPropertyOwnersForAdmin(),
     listProjectsForAdmin(),
-    listKitchenContractsForAdmin(filters),
+    listKitchenContractsForAdmin(filters, resolvedSearchParams.page || 1),
   ]);
-  const pagination = paginateAdminItems(allContracts, resolvedSearchParams.page);
   const contracts = pagination.items;
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
