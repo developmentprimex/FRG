@@ -63,8 +63,27 @@ test("report filters trim values and only accept known statuses", () => {
       dateFrom: "2026-07-01",
       dateTo: "2026-07-31",
       status: "CONFIRMED",
+      contractType: "",
     },
   );
 
   assert.equal(normalizeOrderReportFilters({ status: "paid" }).status, "");
+});
+
+
+test("order report contract type filters query the related contract", async () => {
+  const { prisma } = await import("../lib/prisma.js");
+  const { loadOrderReportData } = await import("../lib/admin-order-reports.js");
+  const original = prisma.order.findMany;
+  try {
+    for (const contractType of ["ARC", "FRG"]) {
+      prisma.order.findMany = async ({ where }) => {
+        assert.deepEqual(where.kitchenContract, { is: { contractType } });
+        return [];
+      };
+      await loadOrderReportData({ contractType: contractType.toLowerCase() });
+    }
+  } finally {
+    prisma.order.findMany = original;
+  }
 });

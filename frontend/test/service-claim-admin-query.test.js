@@ -212,3 +212,25 @@ test("queryServiceClaimsList excludes PX claims from the live claims page", asyn
 
   assert.match(queries[1], /REGEXP_REPLACE\(COALESCE\(sc\."contractNumber", ''\), '\[\[:space:\]\]\+', '', 'g'\) NOT LIKE '111%'/);
 });
+
+
+test("claim contract type constrains both the count and page query", async () => {
+  for (const contractType of ["ARC", "FRG"]) {
+    resetServiceClaimQueryColumnSupportCache();
+    const queries = [];
+    const client = { $queryRaw: async (strings, ...values) => {
+      const sql = renderSqlTemplate(strings, values);
+      if (sql.includes("information_schema")) return [];
+      queries.push(sql);
+      return sql.includes('COUNT(*) AS "total"') ? [{ total: 1n }] : [{ id: "claim" }];
+    } };
+    await queryServiceClaimsPage(client, { contractType, claimType: "live", city: "Berlin" });
+    assert.equal(queries.length, 2);
+    for (const sql of queries) {
+      assert.ok(sql.includes('ct."contractNumber" = sc."contractNumber"'));
+      assert.ok(sql.includes('ct."contractType" = ' + contractType));
+      assert.ok(sql.includes("NOT LIKE '111%'"));
+      assert.ok(sql.includes("Berlin"));
+    }
+  }
+});

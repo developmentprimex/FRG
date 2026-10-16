@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { normalizeContractTypeFilter } from "./contract-type-filter.js";
 import { getAdminPagination } from "./admin-pagination.js";
 
 const OPTIONAL_SERVICE_CLAIM_COLUMNS = [
@@ -137,6 +138,14 @@ export function buildServiceClaimListWhere(filters, {
   const claim = Prisma.raw(claimAlias);
   const kitchen = Prisma.raw(kitchenAlias);
   const conditions = [];
+  const contractType = normalizeContractTypeFilter(filters.contractType);
+  if (contractType) {
+    conditions.push(Prisma.sql`EXISTS (
+      SELECT 1 FROM "KitchenContract" ct
+      WHERE ct."contractNumber" = ${claim}."contractNumber"
+        AND ct."contractType" = ${contractType}
+    )`);
+  }
 
   if (filters.q) {
     const query = `%${filters.q}%`;

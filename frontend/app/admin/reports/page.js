@@ -77,6 +77,14 @@ export default async function AdminReportsPage({ searchParams = {} }) {
               <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
             </label>
             <label style={filterFieldStyle}>
+              <span><AdminText i18nKey="contractsAdmin.contractType" fallback="Contract type" /></span>
+              <AdminSelect name="contractType" defaultValue={filters.contractType} style={filterInputStyle}>
+                <option value=""><AdminText i18nKey="contractsAdmin.allContractTypes" fallback="All contract types" /></option>
+                <option value="ARC">ARC</option>
+                <option value="FRG">FRG</option>
+              </AdminSelect>
+            </label>
+            <label style={filterFieldStyle}>
               <span><AdminText i18nKey="reportsAdmin.type" fallback="Type" /></span>
               <AdminSelect name="type" defaultValue={filters.type} style={filterInputStyle}>
                 <option value=""><AdminText i18nKey="reportsAdmin.allTypes" fallback="Orders and claims" /></option>

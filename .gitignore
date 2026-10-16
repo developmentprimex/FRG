@@ -6,6 +6,9 @@
 node_modules
 frontend/.next
 frontend/.next-dev
+frontend/.next-dev-backup-*/
+/tmp/claims-next-dev.*.log
+/tmp/admin-performance-main/
 frontend/node_modules
 frontend/.prisma-preflight-client
 frontend/data/service-claim-uploads

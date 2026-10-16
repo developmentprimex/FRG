@@ -1,0 +1,344 @@
+[
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/claims-overview",
+    "round": 1,
+    "status": 404,
+    "total_s": 0.215
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/px-claims/feedback",
+    "round": 1,
+    "status": 404,
+    "total_s": 0.239
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/work-reminders",
+    "round": 1,
+    "status": 404,
+    "total_s": 0.207
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/orders/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.338,
+    "bytes": 131443,
+    "total_s": 0.462,
+    "final_path": "/admin/orders/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/px-orders/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.343,
+    "bytes": 164044,
+    "total_s": 0.508,
+    "final_path": "/admin/px-orders/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/claims/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.29,
+    "bytes": 103654,
+    "total_s": 0.4,
+    "final_path": "/admin/claims/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/contracts/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.321,
+    "bytes": 149496,
+    "total_s": 0.442,
+    "final_path": "/admin/contracts/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/kitchens/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.345,
+    "bytes": 300676,
+    "total_s": 0.521,
+    "final_path": "/admin/kitchens/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/property-owners/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.377,
+    "bytes": 130642,
+    "total_s": 0.492,
+    "final_path": "/admin/property-owners/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/claims-overview",
+    "round": 2,
+    "status": 404,
+    "total_s": 0.242
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/px-claims/feedback",
+    "round": 2,
+    "status": 404,
+    "total_s": 0.222
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/work-reminders",
+    "round": 2,
+    "status": 404,
+    "total_s": 0.228
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/orders/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.328,
+    "bytes": 131443,
+    "total_s": 0.452,
+    "final_path": "/admin/orders/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/px-orders/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.31,
+    "bytes": 164044,
+    "total_s": 0.446,
+    "final_path": "/admin/px-orders/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/claims/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.302,
+    "bytes": 103654,
+    "total_s": 0.407,
+    "final_path": "/admin/claims/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/contracts/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.321,
+    "bytes": 149496,
+    "total_s": 0.433,
+    "final_path": "/admin/contracts/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/kitchens/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.329,
+    "bytes": 300676,
+    "total_s": 0.516,
+    "final_path": "/admin/kitchens/[record-id]"
+  },
+  {
+    "base": "https://fragmento.de",
+    "path": "/admin/property-owners/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.285,
+    "bytes": 130642,
+    "total_s": 0.396,
+    "final_path": "/admin/property-owners/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/claims-overview",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.269,
+    "bytes": 134494,
+    "total_s": 0.274,
+    "final_path": "/admin/claims-overview"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/px-claims/feedback",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.176,
+    "bytes": 119158,
+    "total_s": 0.182,
+    "final_path": "/admin/px-claims/feedback"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/work-reminders",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 0.178,
+    "bytes": 104160,
+    "total_s": 0.183,
+    "final_path": "/admin/work-reminders"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/orders/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 10.48,
+    "bytes": 599083,
+    "total_s": 10.5,
+    "final_path": "/admin/orders/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/px-orders/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 2.967,
+    "bytes": 616207,
+    "total_s": 3.004,
+    "final_path": "/admin/px-orders/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/claims/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 5.672,
+    "bytes": 159100,
+    "total_s": 5.684,
+    "final_path": "/admin/claims/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/contracts/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 3.041,
+    "bytes": 261425,
+    "total_s": 3.063,
+    "final_path": "/admin/contracts/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/kitchens/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 4.424,
+    "bytes": 548144,
+    "total_s": 4.491,
+    "final_path": "/admin/kitchens/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/property-owners/[record-id]",
+    "round": 1,
+    "status": 200,
+    "ttfb_s": 2.853,
+    "bytes": 235799,
+    "total_s": 2.887,
+    "final_path": "/admin/property-owners/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/claims-overview",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.454,
+    "bytes": 134495,
+    "total_s": 0.459,
+    "final_path": "/admin/claims-overview"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/px-claims/feedback",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.218,
+    "bytes": 119155,
+    "total_s": 0.225,
+    "final_path": "/admin/px-claims/feedback"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/work-reminders",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.213,
+    "bytes": 104161,
+    "total_s": 0.219,
+    "final_path": "/admin/work-reminders"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/orders/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.348,
+    "bytes": 599068,
+    "total_s": 0.374,
+    "final_path": "/admin/orders/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/px-orders/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.408,
+    "bytes": 276626,
+    "total_s": 0.44,
+    "final_path": "/admin/px-orders/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/claims/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.415,
+    "bytes": 159082,
+    "total_s": 0.431,
+    "final_path": "/admin/claims/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/contracts/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.684,
+    "bytes": 261428,
+    "total_s": 0.739,
+    "final_path": "/admin/contracts/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/kitchens/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.797,
+    "bytes": 548143,
+    "total_s": 0.885,
+    "final_path": "/admin/kitchens/[record-id]"
+  },
+  {
+    "base": "http://localhost:3001",
+    "path": "/admin/property-owners/[record-id]",
+    "round": 2,
+    "status": 200,
+    "ttfb_s": 0.365,
+    "bytes": 235797,
+    "total_s": 0.392,
+    "final_path": "/admin/property-owners/[record-id]"
+  }
+]

@@ -1,4 +1,5 @@
 import { prisma } from "./prisma.js";
+import { normalizeContractTypeFilter } from "./contract-type-filter.js";
 import { getPriceBreakdown } from "./price-utils.js";
 
 export const ORDER_REPORT_STATUSES = ["NEW", "EMAILED", "CONFIRMED", "CANCELLED"];
@@ -12,6 +13,7 @@ export function normalizeOrderReportFilters(input = {}) {
 
   return {
     dateFrom: String(getSingleValue(input.dateFrom)).trim(),
+    contractType: normalizeContractTypeFilter(input.contractType),
     dateTo: String(getSingleValue(input.dateTo)).trim(),
     status: ORDER_REPORT_STATUSES.includes(status) ? status : "",
   };
@@ -22,6 +24,8 @@ export function buildOrderReportQuery(filters = {}) {
   if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
   if (filters.dateTo) params.set("dateTo", filters.dateTo);
   if (filters.status) params.set("status", filters.status);
+  const contractType = normalizeContractTypeFilter(filters.contractType);
+  if (contractType) params.set("contractType", contractType);
   return params.toString();
 }
 
@@ -29,6 +33,7 @@ function getOrderReportWhere(filters = {}) {
   const where = {};
 
   if (filters.status) where.status = filters.status;
+  if (filters.contractType) where.kitchenContract = { is: { contractType: filters.contractType } };
 
   if (filters.dateFrom || filters.dateTo) {
     where.createdAt = {};

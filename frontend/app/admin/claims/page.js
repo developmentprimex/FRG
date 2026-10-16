@@ -21,6 +21,7 @@ import { AdminClaimLocalizedText } from "../../../components/admin-claim-localiz
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminClaimsPage } from "../../../lib/admin-claims-access";
 import { prisma } from "../../../lib/prisma";
+import { normalizeContractTypeFilter } from "../../../lib/contract-type-filter";
 import { queryServiceClaimsPage } from "../../../lib/service-claim-admin-query";
 
 export const dynamic = "force-dynamic";
@@ -47,6 +48,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
   const filters = {
     q: normalizeParam(resolvedSearchParams.q).trim(),
     city: normalizeParam(resolvedSearchParams.city).trim(),
+    contractType: normalizeContractTypeFilter(resolvedSearchParams.contractType),
     claimType: pxOnly ? "px" : "live",
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
@@ -84,6 +86,14 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   placeholderFallback="Search by contract, name, phone, email, issue..."
                   style={filterInputStyle}
                 />
+              </label>
+              <label style={filterFieldStyle}>
+                <span><AdminText i18nKey="contractsAdmin.contractType" fallback="Contract type" /></span>
+                <AdminSelect name="contractType" defaultValue={filters.contractType} style={filterInputStyle}>
+                  <option value=""><AdminText i18nKey="contractsAdmin.allContractTypes" fallback="All contract types" /></option>
+                  <option value="ARC">ARC</option>
+                  <option value="FRG">FRG</option>
+                </AdminSelect>
               </label>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="claimsAdmin.city" fallback="City" /></span>
