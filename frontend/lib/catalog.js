@@ -1,5 +1,7 @@
 import { KitchenStatus, ItemType, OrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
+import { getAdminPagination } from "./admin-pagination.js";
+import { getPriceBreakdown } from "./price-utils.js";
 import { ORDER_KIND_LIVE, ORDER_KIND_TEST, getOrderDelegate } from "./order-kind.js";
 import { applyDueScheduledCatalogPriceListImports } from "./catalog-price-list-import.js";
 import { isMissingKitchenRegistrationTableError } from "./kitchen-registration-db.js";
@@ -1490,7 +1492,7 @@ export async function getTestOrdersForAdmin(filters = {}) {
   return getOrdersForAdminByKind(filters, ORDER_KIND_TEST);
 }
 
-async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE) {
+function getAdminOrderWhere(filters = {}) {
   const where = {};
 
   if (filters.kitchenId) where.kitchenId = filters.kitchenId;
@@ -1511,8 +1513,37 @@ async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE
     where.OR = buildOrderAdminSearch(query);
   }
 
+  return where;
+}
+
+export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, orderKind = ORDER_KIND_LIVE) {
+  const where = getAdminOrderWhere(filters);
+  const delegate = getOrderDelegate(prisma, orderKind);
+  const groups = await delegate.groupBy({
+    by: ["status"], where, _count: { _all: true }, _sum: { totalPrice: true },
+  });
+  const statusCounts = { NEW: 0, EMAILED: 0, CONFIRMED: 0, CANCELLED: 0 };
+  let totalOrders = 0;
+  let confirmedGross = 0;
+  for (const group of groups) {
+    totalOrders += group._count._all;
+    statusCounts[group.status] = group._count._all;
+    if (group.status === "CONFIRMED") confirmedGross = Number(group._sum.totalPrice || 0);
+  }
+  const pagination = getAdminPagination(totalOrders, requestedPage);
+  const items = await getOrdersForAdminByKind(filters, orderKind, pagination);
+  const breakdown = getPriceBreakdown(confirmedGross);
+  return {
+    pagination: { ...pagination, items },
+    summary: { totalOrders, statusCounts, confirmedGross, confirmedNet: breakdown.net, confirmedVat: breakdown.vat },
+  };
+}
+
+async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE, pagination = null) {
+  const where = getAdminOrderWhere(filters);
   const orders = await getOrderDelegate(prisma, orderKind).findMany({
     where,
+    ...(pagination ? { skip: (pagination.page - 1) * pagination.pageSize, take: pagination.pageSize } : {}),
     include: {
       kitchen: {
         select: { id: true, slug: true, name: true },
@@ -1520,7 +1551,7 @@ async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE
       kitchenContract: { select: { id: true, contractNumber: true } },
       items: { select: { id: true, code: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
   const serializableOrders = orders.map((order) => ({

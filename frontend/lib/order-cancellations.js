@@ -1,5 +1,6 @@
 import { randomBytes } from "crypto";
 import { prisma } from "./prisma";
+import { getAdminPagination } from "./admin-pagination";
 import { cancelOrderPayment } from "./stripe-payments";
 import {
   sendCancellationDecisionEmail,
@@ -263,6 +264,35 @@ export async function countOpenCancellationRequests() {
   return prisma.orderCancellationRequest.count({
     where: { status: OrderCancellationRequestStatus.RECEIVED },
   });
+}
+
+export async function getCancellationRequestForAdmin(id) {
+  return prisma.orderCancellationRequest.findUnique({
+    where: { id }, include: { order: { select: ADMIN_ORDER_SELECT } },
+  });
+}
+
+export async function getCancellationRequestsPage({ status = "RECEIVED", q = "", page = 1 } = {}) {
+  const where = q ? { OR: [
+    ...["referenceNumber", "consumerName", "confirmationEmail", "submittedContractNumber"].map((field) => ({
+      [field]: { contains: q, mode: "insensitive" },
+    })),
+    { order: { orderNumber: { contains: q, mode: "insensitive" } } },
+  ] } : {};
+  const groups = await prisma.orderCancellationRequest.groupBy({
+    by: ["status"], where, _count: { _all: true },
+  });
+  const counts = { RECEIVED: 0, APPROVED: 0, REJECTED: 0 };
+  for (const group of groups) counts[group.status] = group._count._all;
+  const totalMatching = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const pagination = getAdminPagination(status === "ALL" ? totalMatching : counts[status] || 0, page);
+  const requests = await prisma.orderCancellationRequest.findMany({
+    where: { ...where, ...(status === "ALL" ? {} : { status }) },
+    orderBy: [{ receivedAt: "desc" }, { id: "desc" }],
+    skip: (pagination.page - 1) * pagination.pageSize, take: pagination.pageSize,
+    include: { order: { select: ADMIN_ORDER_SELECT } },
+  });
+  return { requests, counts, totalMatching, pagination };
 }
 
 export function cancellationEmailNeedsAttention(request) {

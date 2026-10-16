@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { getAdminPagination } from "./admin-pagination.js";
 
 const OPTIONAL_SERVICE_CLAIM_COLUMNS = [
   "attachmentsJson",
@@ -250,7 +251,7 @@ async function queryServiceClaims(prisma, queryBuilder) {
   }
 }
 
-export async function queryServiceClaimsList(prisma, filters) {
+export async function queryServiceClaimsList(prisma, filters, pagination = null) {
   return queryServiceClaims(prisma, async (options) => {
     const where = buildServiceClaimListWhere(filters, {
       includeAttachmentsJsonInSearch: options.includeAttachmentsJson,
@@ -266,8 +267,30 @@ export async function queryServiceClaimsList(prisma, filters) {
       LEFT JOIN "KitchenContract" kc ON kc."contractNumber" = sc."contractNumber"
       LEFT JOIN "Kitchen" k ON k."id" = kc."kitchenId"
       ${where}
-      ORDER BY sc."createdAt" DESC
+      ORDER BY sc."createdAt" DESC, sc."id" DESC
+      ${pagination ? Prisma.sql`LIMIT ${pagination.pageSize} OFFSET ${(pagination.page - 1) * pagination.pageSize}` : Prisma.empty}
     `;
+  });
+}
+
+export async function queryServiceClaimsPage(prisma, filters, requestedPage = 1) {
+  return queryServiceClaims(prisma, async (options) => {
+    const where = buildServiceClaimListWhere(filters, {
+      includeAttachmentsJsonInSearch: options.includeAttachmentsJson,
+      includeProblemAreasJsonInSearch: options.includeProblemAreasJson,
+      includeLandlordCompanyPhoneInSearch: options.includeLandlordCompanyPhone,
+      includeLandlordCompanyEmailInSearch: options.includeLandlordCompanyEmail,
+    });
+    const [row] = await prisma.$queryRaw`
+      SELECT COUNT(*) AS "total"
+      FROM "ServiceClaim" sc
+      LEFT JOIN "KitchenContract" kc ON kc."contractNumber" = sc."contractNumber"
+      LEFT JOIN "Kitchen" k ON k."id" = kc."kitchenId"
+      ${where}
+    `;
+    const pagination = getAdminPagination(Number(row.total), requestedPage);
+    const items = await queryServiceClaimsList(prisma, filters, pagination);
+    return { ...pagination, items };
   });
 }
 

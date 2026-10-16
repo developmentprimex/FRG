@@ -11,7 +11,9 @@ import { AdminText, AdminTranslatedInput } from "../../../components/admin-i18n"
 import { CancellationRequestsTable } from "../../../components/admin-order-cancellation-panel";
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminPage } from "../../../lib/auth";
-import { listCancellationRequestsForAdmin } from "../../../lib/order-cancellations";
+import { getCancellationRequestsPage } from "../../../lib/order-cancellations";
+import { AdminPagination } from "../../../components/admin-pagination";
+import { buildAdminPageHref } from "../../../lib/admin-pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -41,19 +43,9 @@ export default async function AdminOrderCancellationsPage({ searchParams = {} })
   const activeStatus = ["RECEIVED", "APPROVED", "REJECTED", "ALL"].includes(requestedStatus) ? requestedStatus : "RECEIVED";
   const q = normalizeParam(resolvedSearchParams.q).trim();
 
-  const allRequests = await listCancellationRequestsForAdmin();
-  const matchingRequests = allRequests.filter((request) => !q || [request.referenceNumber, request.consumerName, request.confirmationEmail, request.submittedContractNumber, request.order?.orderNumber].some((value) => String(value || "").toLocaleLowerCase().includes(q.toLocaleLowerCase())));
-  const counts = matchingRequests.reduce(
-    (summary, request) => {
-      const status = String(request.status).toUpperCase();
-      if (Object.prototype.hasOwnProperty.call(summary, status)) summary[status] += 1;
-      return summary;
-    },
-    { RECEIVED: 0, APPROVED: 0, REJECTED: 0 },
-  );
-  const requests = activeStatus === "ALL"
-    ? matchingRequests
-    : matchingRequests.filter((request) => String(request.status).toUpperCase() === activeStatus);
+  const { requests, counts, totalMatching, pagination } = await getCancellationRequestsPage({
+    status: activeStatus, q, page: resolvedSearchParams.page,
+  });
 
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
@@ -88,13 +80,14 @@ export default async function AdminOrderCancellationsPage({ searchParams = {} })
                   style={isActive ? filterActiveStyle : filterStyle}
                 >
                   <AdminText i18nKey={filter.key} fallback={filter.fallback} />
-                  <span style={filterCountStyle}>{filter.status === "ALL" ? matchingRequests.length : counts[filter.status]}</span>
+                  <span style={filterCountStyle}>{filter.status === "ALL" ? totalMatching : counts[filter.status]}</span>
                 </Link>
               );
             })}
           </div>
 
-          <CancellationRequestsTable requests={requests} returnPath={getFilterHref(activeStatus, q)} />
+          <CancellationRequestsTable requests={requests} returnPath={buildAdminPageHref("/admin/order-cancellations", { status: activeStatus, q }, pagination.page)} />
+          <AdminPagination basePath="/admin/order-cancellations" searchParams={{ status: activeStatus, q }} {...pagination} />
         </AdminSection>
       </div>
     </AdminShell>

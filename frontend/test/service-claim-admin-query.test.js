@@ -4,7 +4,28 @@ import {
   resetServiceClaimQueryColumnSupportCache,
   queryServiceClaimById,
   queryServiceClaimsList,
+  queryServiceClaimsPage,
 } from "../lib/service-claim-admin-query.js";
+
+test("claim page clamps out-of-range requests and counts with the same filters", async () => {
+  resetServiceClaimQueryColumnSupportCache();
+  const queries = [];
+  const client = { $queryRaw: async (strings, ...values) => {
+    const sql = renderSqlTemplate(strings, values);
+    if (sql.includes('information_schema')) return [];
+    queries.push(sql);
+    return sql.includes('COUNT(*) AS "total"') ? [{ total: 41n }] : [{ id: "last" }];
+  } };
+  const result = await queryServiceClaimsPage(client, { claimType: "px", city: "Berlin" }, 999);
+  assert.equal(result.page, 3);
+  assert.equal(result.totalItems, 41);
+  assert.equal(result.items[0].id, "last");
+  assert.match(queries[1], /LIMIT 20 OFFSET 40/);
+  for (const sql of queries) {
+    assert.match(sql, /Berlin/);
+    assert.match(sql, /LIKE '111%'/);
+  }
+});
 
 function renderSqlTemplate(strings, values) {
   let output = "";

@@ -21,8 +21,7 @@ import { AdminClaimLocalizedText } from "../../../components/admin-claim-localiz
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminClaimsPage } from "../../../lib/admin-claims-access";
 import { prisma } from "../../../lib/prisma";
-import { queryServiceClaimsList } from "../../../lib/service-claim-admin-query";
-import { paginateAdminItems } from "../../../lib/admin-pagination";
+import { queryServiceClaimsPage } from "../../../lib/service-claim-admin-query";
 
 export const dynamic = "force-dynamic";
 
@@ -55,11 +54,10 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
 
-  const [allClaims, cityOptions] = await Promise.all([
-    queryServiceClaimsList(prisma, filters),
+  const [pagination, cityOptions] = await Promise.all([
+    queryServiceClaimsPage(prisma, filters, resolvedSearchParams.page),
     listClaimCities(),
   ]);
-  const pagination = paginateAdminItems(allClaims, resolvedSearchParams.page);
   const claims = await attachClaimEmailDelivery(pagination.items);
   const rowNumber = (index) => pagination.totalItems - (pagination.page - 1) * pagination.pageSize - index;
 
@@ -70,7 +68,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           title={pxOnly
             ? <AdminText i18nKey="pxClaimsAdmin.title" fallback="PX claims" />
             : <AdminText i18nKey="claimsAdmin.claims" fallback="Claims" />}
-          actions={pxOnly && allClaims.length ? <DeleteAllPxClaimsAction /> : null}
+          actions={pxOnly && pagination.totalItems ? <DeleteAllPxClaimsAction /> : null}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}

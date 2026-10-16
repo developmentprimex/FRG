@@ -1,4 +1,3 @@
-import { calculateOrderReportSummary } from "../../../lib/admin-order-reports";
 import Link from "next/link";
 import {
   AdminSection,
@@ -27,9 +26,8 @@ import {
 import AdminSelect from "../../../components/admin-select";
 import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-button";
 import { getFormMessage } from "../../../lib/admin-forms";
-import { getOrdersForAdmin, getTestOrdersForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
+import { getOrdersPageForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
 import { requireAdminPage } from "../../../lib/auth";
-import { paginateAdminItems } from "../../../lib/admin-pagination";
 
 export const dynamic = "force-dynamic";
 
@@ -121,15 +119,13 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
   };
-  const [allOrders, kitchens] = await Promise.all([
-    pxOnly ? getTestOrdersForAdmin(filters) : getOrdersForAdmin(filters),
+  const [{ pagination, summary }, kitchens] = await Promise.all([
+    getOrdersPageForAdmin(filters, resolvedSearchParams.page, pxOnly ? "test" : "live"),
     pxOnly ? listKitchensForAdmin() : Promise.resolve([]),
   ]);
-  const pagination = paginateAdminItems(allOrders, resolvedSearchParams.page);
   const orders = await attachOrderEmailDelivery(pagination.items, pxOnly ? "test" : "live");
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
-  const summary = calculateOrderReportSummary(allOrders);
   const rowNumber = (index) => pagination.totalItems - (pagination.page - 1) * pagination.pageSize - index;
 
   return (

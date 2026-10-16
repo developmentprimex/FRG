@@ -7,13 +7,16 @@ export function normalizeAdminPage(value) {
 }
 
 export function paginateAdminItems(items = [], requestedPage = 1, pageSize = ADMIN_PAGE_SIZE) {
-  const totalItems = items.length;
+  const pagination = getAdminPagination(items.length, requestedPage, pageSize);
+  const start = (pagination.page - 1) * pageSize;
+  return { ...pagination, items: items.slice(start, start + pageSize) };
+}
+
+export function getAdminPagination(totalItems, requestedPage = 1, pageSize = ADMIN_PAGE_SIZE) {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const page = Math.min(normalizeAdminPage(requestedPage), totalPages);
-  const start = (page - 1) * pageSize;
 
   return {
-    items: items.slice(start, start + pageSize),
     page,
     pageSize,
     totalItems,
