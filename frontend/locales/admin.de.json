@@ -313,6 +313,10 @@
   },
   "settingsAdmin": {
     "settings": "Einstellungen",
+    "setting": "Einstellung",
+    "value": "Wert",
+    "action": "Aktion",
+    "enabled": "Aktiviert",
     "orderConfirmationDescription": "Steuern Sie, wie öffentliche Küchenbestellungen bestätigt werden.",
     "directOrderConfirmation": "Bestellbestätigungen automatisch senden",
     "directOrderConfirmationHelp": "Wenn diese Option aktiv ist, wird die Kunden-E-Mail direkt nach dem öffentlichen Checkout gesendet und die Bestellung nach erfolgreichem E-Mail-Versand als bestätigt markiert. Der Agent-Webhook läuft weiterhin.",
@@ -404,6 +408,7 @@
     "creatingUser": "Benutzer wird erstellt...",
     "role": "Rolle",
     "roleGuide": "Rollenübersicht",
+    "actionRestrictions": "Eingeschränkte Aktionen",
     "roleGuideDescription": "Detaillierte Berechtigungen folgen später. Vorerst können alle Rollen die bestehenden Admin-Workflows nutzen.",
     "roleDescription": {
       "SUPERADMIN": "Voller Zugriff, einschließlich Benutzerverwaltung.",

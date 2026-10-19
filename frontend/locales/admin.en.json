@@ -313,6 +313,10 @@
   },
   "settingsAdmin": {
     "settings": "Settings",
+    "setting": "Setting",
+    "value": "Value",
+    "action": "Action",
+    "enabled": "Enabled",
     "orderConfirmationDescription": "Control how public kitchen orders are confirmed.",
     "directOrderConfirmation": "Send order confirmations automatically",
     "directOrderConfirmationHelp": "When enabled, the customer confirmation email is sent immediately after public checkout and the order is marked confirmed after the email succeeds. The agent webhook still runs.",
@@ -404,6 +408,7 @@
     "creatingUser": "Creating user...",
     "role": "Role",
     "roleGuide": "Role guide",
+    "actionRestrictions": "Action restrictions",
     "roleGuideDescription": "Detailed permissions will be added later. For now, all roles can use the existing admin workflows.",
     "roleDescription": {
       "SUPERADMIN": "Full access, including user management.",
