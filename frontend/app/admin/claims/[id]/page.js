@@ -286,7 +286,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
             sentAt: feedback.sentAt?.toISOString() || null, submittedAt: feedback.submittedAt?.toISOString() || null,
             resolved: feedback.resolved, speedRating: feedback.speedRating,
             communicationRating: feedback.communicationRating, overallRating: feedback.overallRating,
-            comment: feedback.comment,
+            comment: feedback.comment, unresolvedComment: feedback.unresolvedComment,
           } : null} />
           <AdminOrderEmailDelivery delivery={claim.emailDelivery} compact titleKey="orderEmailDelivery.claimTitle" titleFallback="Claim email" />
           </div>

@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createSmtpTransport, resolveDefaultSmtpConfig, resolveInternalSmtpConfig } from "./email/contract-smtp.js";
 import { isLocalEmailEnvironment, resolveLocalEmailRecipient } from "./email/local-email-safety.js";
+import { formatServiceClaimReference } from "./service-claim-email-subject.js";
 import { lockWorkProcessing } from "./work-processing.js";
 
 export const CLAIM_FEEDBACK_SENDER = "315primex.eu@gmail.com";
@@ -41,15 +42,22 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
 }
 
-export function buildClaimFeedbackMessage({ recipientEmail, token, baseUrl }) {
+export function buildClaimFeedbackMessage({ recipientEmail, token, baseUrl, reference = "" }) {
   const link = `${baseUrl}/claim-feedback/${encodeURIComponent(token)}`;
   const safeLink = escapeHtml(link);
+  const customerReference = String(reference || "").trim();
+  const referenceText = customerReference ? `\n\nReklamation: ${customerReference}` : "";
+  const referenceHtml = customerReference ? `<p style="font-size:12px;color:#665b52">Reklamation: ${escapeHtml(customerReference)}</p>` : "";
   return {
     from: `"Fragmento" <${CLAIM_FEEDBACK_SENDER}>`,
     to: recipientEmail,
-    subject: "Wie zufrieden waren Sie mit unserem Service?",
-    text: `Guten Tag,\n\nIhre Reklamation wurde abgeschlossen. Bitte nehmen Sie sich etwa eine Minute Zeit, um unseren Service zu bewerten:\n\n${link}\n\nDer Link ist 30 Tage gültig. Vielen Dank für Ihr Feedback.\n\nMit freundlichen Grüßen\nIhr Kundenservice`,
-    html: `<div lang="de" style="font-family:Arial,sans-serif;line-height:1.6;color:#222"><p>Guten Tag,</p><p>Ihre Reklamation wurde abgeschlossen. Bitte nehmen Sie sich etwa eine Minute Zeit, um unseren Service zu bewerten.</p><p><a href="${safeLink}" style="display:inline-block;padding:12px 18px;background:#76543c;color:#fff;text-decoration:none;border-radius:8px">Service bewerten</a></p><p>Der Link ist 30 Tage gültig. Vielen Dank für Ihr Feedback.</p><p>Mit freundlichen Grüßen<br>Ihr Kundenservice</p></div>`,
+    subject: "Wie zufrieden waren Sie mit unserem Kundenservice?",
+    text: `Guten Tag,\n\nIhre Rückmeldung ist uns wichtig!\n\nWir möchten gerne wissen, wie zufrieden Sie mit der Bearbeitung Ihrer Reklamation waren.\n\nNehmen Sie sich bitte eine Minute Zeit, um unseren Service zu bewerten.\n\nJetzt Feedback geben: ${link}\n\nDer Link ist 30 Tage gültig.${referenceText}\n\nVielen Dank, dass Sie uns helfen, unseren Service zu verbessern!\n\nMit freundlichen Grüßen\n\nIhr Fragmento Kundenservice`,
+    html: `<div lang="de" style="font-family:Arial,sans-serif;line-height:1.6;color:#222;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%"><p>Guten Tag,</p><p>Ihre Rückmeldung ist uns wichtig!</p><p>Wir möchten gerne wissen, wie zufrieden Sie mit der Bearbeitung Ihrer Reklamation waren.</p><p>Nehmen Sie sich bitte eine Minute Zeit, um unseren Service zu bewerten.</p>
+<div style="margin:20px 0">
+<!--[if mso]><v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="${safeLink}" style="height:46px;v-text-anchor:middle;width:210px" arcsize="18%" strokecolor="#76543c" fillcolor="#76543c"><w:anchorlock/><center style="font-family:Arial,sans-serif;font-size:16px;color:#ffffff">Jetzt Feedback geben</center></v:roundrect><![endif]-->
+<!--[if !mso]><!--><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td align="center" bgcolor="#76543c" style="border-radius:8px"><a href="${safeLink}" style="display:inline-block;padding:12px 18px;background:#76543c;color:#ffffff;text-decoration:none;border-radius:8px;font-size:16px;line-height:22px;text-align:center">Jetzt Feedback geben</a></td></tr></table><!--<![endif]-->
+</div><p>Der Link ist 30 Tage gültig.</p>${referenceHtml}<p>Vielen Dank, dass Sie uns helfen, unseren Service zu verbessern!</p><p>Mit freundlichen Grüßen</p><p>Ihr Fragmento Kundenservice</p></div>`,
   };
 }
 
@@ -66,7 +74,7 @@ export async function dispatchClaimFeedbackInvitation({ db, deliveryDb = db, inv
     await lockWorkProcessing(tx);
     const invitation = await tx.claimFeedbackInvitation.findUnique({ where: { id: invitationId } });
     if (!invitation || invitation.tokenHash !== hashClaimFeedbackToken(token) || !["PENDING", "FAILED"].includes(invitation.status)) return "skipped";
-    const claim = await tx.serviceClaim.findUnique({ where: { id: invitation.claimId }, select: { contractNumber: true } });
+    const claim = await tx.serviceClaim.findUnique({ where: { id: invitation.claimId }, select: { contractNumber: true, claimSequence: true, ticketNumber: true } });
     if (!claim) {
       await tx.claimFeedbackInvitation.update({ where: { id: invitationId }, data: { status: "CANCELLED" } });
       return "cancelled";
@@ -77,7 +85,7 @@ export async function dispatchClaimFeedbackInvitation({ db, deliveryDb = db, inv
       return "cancelled";
     }
     const config = resolveClaimFeedbackSmtp(env);
-    const message = buildClaimFeedbackMessage({ recipientEmail: invitation.recipientEmail, token, baseUrl });
+    const message = buildClaimFeedbackMessage({ recipientEmail: invitation.recipientEmail, token, baseUrl, reference: formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber) });
     // Persist the attempt on a separate connection before SMTP submission. A
     // process crash leaves SENDING for an administrator to review, never a
     // silently retryable PENDING invitation.
@@ -138,25 +146,34 @@ export async function prepareClaimFeedbackRetry({ db, invitationId }) {
 
 export function validateClaimFeedback(data) {
   const ratings = [data?.speedRating, data?.communicationRating, data?.overallRating];
-  if (!ratings.every((value) => Number.isInteger(value) && value >= 1 && value <= 5)) throw new Error("Please answer each rating question.");
-  if (!["YES", "PARTLY", "NO"].includes(data?.resolved)) throw new Error("Please say whether the issue was resolved.");
-  const comment = String(data?.comment || "").trim();
-  if (comment.length > 1000) throw new Error("The comment must be under 1000 characters.");
-  return { speedRating: data.speedRating, communicationRating: data.communicationRating, overallRating: data.overallRating, resolved: data.resolved, comment: comment || null };
+  if (!ratings.every((value) => Number.isInteger(value) && value >= 1 && value <= 5)) throw new Error("Bitte beantworten Sie alle Bewertungsfragen mit einer Zahl von 1 bis 5.");
+  if (!["YES", "PARTLY", "NO"].includes(data?.resolved)) throw new Error("Bitte geben Sie an, ob Ihr Problem gelöst ist.");
+  const readComment = (value) => {
+    if (value != null && typeof value !== "string") throw new Error("Bitte geben Sie Ihren Kommentar als Text ein.");
+    const comment = (value || "").trim();
+    if (comment.length > 1000) throw new Error("Ein Kommentar darf höchstens 1.000 Zeichen enthalten.");
+    return comment || null;
+  };
+  const comment = readComment(data?.comment);
+  // Ignore stale or manipulated hidden fields on both the client and server.
+  const unresolvedComment = data.resolved === "YES" ? null : readComment(data?.unresolvedComment);
+  return { speedRating: data.speedRating, communicationRating: data.communicationRating, overallRating: data.overallRating, resolved: data.resolved, comment, unresolvedComment };
 }
 
-export async function submitClaimFeedback({ db, token, data, now = new Date() }) {
+export async function submitClaimFeedback({ db, token, data, now }) {
   if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return false;
   const answers = validateClaimFeedback(data);
   return db.$transaction(async (tx) => {
+    await lockWorkProcessing(tx);
+    const submittedAt = now ?? new Date();
     const invitation = await tx.claimFeedbackInvitation.findUnique({ where: { tokenHash: hashClaimFeedbackToken(token) } });
-    if (!invitation || !["SENT", "UNKNOWN", "SENDING"].includes(invitation.status) || !invitation.expiresAt || invitation.expiresAt <= now) return false;
+    if (!invitation || !["SENT", "UNKNOWN", "SENDING"].includes(invitation.status) || !invitation.expiresAt || invitation.expiresAt <= submittedAt) return false;
     const processing = await tx.workProcessing.findUnique({ where: { workType_workId: { workType: "CLAIM", workId: invitation.claimId } } });
     if (processing?.status !== "DONE" || processing.version !== invitation.completionVersion) return false;
     const result = await tx.claimFeedbackInvitation.updateMany({
       where: { id: invitation.id, status: { in: ["SENT", "UNKNOWN", "SENDING"] }, submittedAt: null },
-      data: { ...answers, status: "ANSWERED", submittedAt: now },
+      data: { ...answers, status: "ANSWERED", submittedAt },
     });
     return result.count === 1;
-  });
+  }, { maxWait: 10000, timeout: 45000 });
 }

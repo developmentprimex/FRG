@@ -46,6 +46,7 @@ export function AdminClaimFeedback({ feedback }) {
   return <section className="claim-feedback-panel" data-tone={answered ? needsAttention ? "attention" : "positive" : "pending"} aria-label={t("title", "Customer feedback")}>
     <div className="feedback-top"><div><h2>{t("title", "Customer feedback")}</h2><p>{statusText}{statusDate ? <> · <AdminDateTime value={statusDate} /></> : null}</p></div>{canRetry ? <button type="button" disabled={pending} onClick={retry}>{pending ? t("retrying", "Sending…") : t("retry", "Retry email")}</button> : null}</div>
     {feedback.status === "ANSWERED" ? <>
+      {feedback.resolved === "NO" ? <p className="service-review" role="status">{t("serviceReview", "Customer service review required")}</p> : null}
       <div className="score-grid">
         <div data-tone={feedback.resolved === "YES" ? "positive" : feedback.resolved === "PARTLY" ? "neutral" : "negative"}>
           <span>{t("resolved", "Issue resolved")}</span>
@@ -57,6 +58,7 @@ export function AdminClaimFeedback({ feedback }) {
           <div className="rating-marks" aria-hidden="true">{[1, 2, 3, 4, 5].map((number) => <i key={number} data-filled={number <= score.value} />)}</div>
         </div>)}
       </div>
+      {feedback.unresolvedComment ? <p className="comment"><b>{t("unresolvedComment", "Still unresolved")}:</b> {feedback.unresolvedComment}</p> : null}
       {feedback.comment ? <p className="comment"><b>{t("comment", "Customer comment")}:</b> {feedback.comment}</p> : null}
     </> : null}
     {canReview ? <div className="delivery-review"><p>{t("unknownDetail", "Check the sending mailbox and decide whether the email was delivered.")}</p><button type="button" disabled={pending} onClick={() => review("DELIVERED")}>{t("markDelivered", "Email was delivered")}</button><button type="button" disabled={pending} onClick={() => review("NOT_DELIVERED")}>{t("markNotDelivered", "Email was not delivered")}</button></div> : null}
@@ -83,6 +85,7 @@ export function AdminClaimFeedback({ feedback }) {
       .comment { margin-top: 16px; padding: 12px 14px; border: 1px solid var(--app-border); border-radius: 8px; background: var(--app-surface-muted); color: var(--app-text); white-space: pre-wrap; overflow-wrap: anywhere; }
       .comment b { display: block; margin-bottom: 4px; font-weight: 600; }
       small { display: block; margin-top: 12px; color: var(--app-text-muted); }.error { color: var(--app-danger-text); }
+      .service-review { display: inline-block; padding: 7px 10px; border: 1px solid var(--app-danger-text); border-radius: 7px; color: var(--app-danger-text); font-weight: 700; }
       .delivery-review { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; }.delivery-review p { flex-basis: 100%; }
       @media(max-width:650px) { .score-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
     `}</style>

@@ -36,6 +36,7 @@ const navSections = [
         id: "kitchens", labelKey: "adminShellLogin.kitchenSetup", fallback: "Kitchen setup", icon: KitchenIcon,
         children: [
           { href: "/admin/kitchens", labelKey: "adminShellLogin.kitchens", fallback: "Kitchens", icon: KitchenIcon },
+          { href: "/admin/ab-imports", labelKey: "abImportsAdmin.title", fallback: "AB imports", icon: ContractsIcon, requiresSuperAdmin: true },
           { href: "/admin/contracts", labelKey: "adminShellLogin.contracts", fallback: "Contract numbers", icon: ContractsIcon },
           { href: "/admin/property-owners", labelKey: "adminShellLogin.owners", fallback: "Housing Companies", icon: OwnersIcon },
         ],

@@ -41,6 +41,8 @@ import { loadKitchenSvgMarkup } from "../../../../lib/load-kitchen-svg";
 import { prisma } from "../../../../lib/prisma";
 import { loadKitchenApplianceInventories } from "../../../../lib/contract-appliance-inventory";
 import AdminApplianceSummary from "../../../../components/admin-appliance-summary";
+import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
+import { loadOrderKitchenSpecifications } from "../../../../lib/kitchen-ab-runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -586,6 +588,10 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
               <AdminStatusBadge status={kitchen.status} />
             </div>
           </form>
+        </AdminSection>
+
+        <AdminSection title={<AdminText i18nKey="kitchenSpecificationsAdmin.title" fallback="Kitchen specifications" />}>
+          <AdminOrderKitchenSpecifications details={await loadOrderKitchenSpecifications({ kitchen })} referenceOnly />
         </AdminSection>
 
         <AdminSection title={<AdminText i18nKey="contractDetailAdmin.appliances" fallback="Electrical appliances" />} description={<AdminText i18nKey="contractDetailAdmin.kitchenAppliancesHelp" fallback="Included kitchen appliances. Contract details also include confirmed optional appliances and installed-brand overrides." />}>

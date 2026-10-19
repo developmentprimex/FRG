@@ -16,7 +16,7 @@ function memoryDb({ email = "customer@example.com", contractNumber = "111123" } 
   let nextId = 1;
   const db = {
     $queryRaw: async () => [{ alive: 1 }],
-    serviceClaim: { findUnique: async () => ({ id: "claim-1", email, contractNumber, createdAt: new Date() }) },
+    serviceClaim: { findUnique: async () => ({ id: "claim-1", email, contractNumber, claimSequence: 2, ticketNumber: 1109, createdAt: new Date() }) },
     workProcessing: {
       findUnique: async () => state.processing,
       upsert: async ({ create, update }) => {
@@ -105,8 +105,8 @@ test("survey sender is exactly 315 and the form enforces complete answers", () =
   const mail = buildClaimFeedbackMessage({ recipientEmail: "customer@example.com", token: createClaimFeedbackToken(), baseUrl: "https://fragmento.de" });
   assert.match(mail.from, /315primex\.eu@gmail\.com/);
   assert.match(mail.text, /https:\/\/fragmento.de\/claim-feedback\//);
-  assert.deepEqual(validateClaimFeedback(answers), answers);
-  assert.throws(() => validateClaimFeedback({ ...answers, overallRating: 6 }), /rating/);
+  assert.deepEqual(validateClaimFeedback(answers), { ...answers, unresolvedComment: null });
+  assert.throws(() => validateClaimFeedback({ ...answers, overallRating: 6 }), /Bewertungsfragen/);
 });
 
 test("a sent invitation accepts one answer only while claim is done and link is valid", async () => {
@@ -190,4 +190,61 @@ test("allowlisted local feedback reaches only the selected test customer address
   });
   assert.equal(result, "sent");
   assert.equal(state.invitations[0].status, "SENT");
+});
+
+
+test("invitation email carries the customer reference safely in HTML and plain text", () => {
+  const message = buildClaimFeedbackMessage({ recipientEmail: "customer@example.com", token: "a".repeat(43), baseUrl: "https://fragmento.de", reference: "#1109 111105805 KD 02" });
+  assert.equal(message.subject, "Wie zufrieden waren Sie mit unserem Kundenservice?");
+  assert.match(message.text, /Reklamation: #1109 111105805 KD 02/);
+  assert.match(message.html, /Reklamation: #1109 111105805 KD 02/);
+  assert.match(message.html, /Jetzt Feedback geben/);
+  assert.match(message.html, /bgcolor="#76543c"/);
+  assert.match(message.html, /https:\/\/fragmento.de\/claim-feedback\/a{43}/);
+  assert.match(message.text, /Ihr Fragmento Kundenservice/);
+  const escaped = buildClaimFeedbackMessage({ recipientEmail: "customer@example.com", token: "a".repeat(43), baseUrl: "https://fragmento.de", reference: '<img src=x onerror="alert(1)">' });
+  assert.ok(!escaped.html.includes('<img src=x'));
+  const noReference = buildClaimFeedbackMessage({ recipientEmail: "customer@example.com", token: "a".repeat(43), baseUrl: "https://fragmento.de" });
+  assert.ok(!noReference.html.includes("Reklamation:</"));
+});
+
+test("dispatch includes the existing customer-facing complaint reference", async () => {
+  const { db } = memoryDb();
+  const done = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  let message;
+  const result = await dispatchClaimFeedbackInvitation({ db, invitationId: done.feedbackInvitation.id, token: done.feedbackInvitation.token, baseUrl: "https://fragmento.de", env,
+    createTransport: () => ({ sendMail: async (mail) => { message = mail; return { accepted: [mail.to] }; } }),
+  });
+  assert.equal(result, "sent");
+  assert.match(message.text, /#1109 111123 KD 02/);
+  assert.ok(!message.text.includes("claim-1"));
+});
+
+test("conditional comments are trimmed and kept separately only for unresolved issues", () => {
+  for (const resolved of ["PARTLY", "NO"]) {
+    const result = validateClaimFeedback({ ...answers, resolved, unresolvedComment: "  The drawer still sticks.  " });
+    assert.equal(result.unresolvedComment, "The drawer still sticks.");
+    assert.equal(result.comment, "Please call before visiting.");
+    assert.equal(validateClaimFeedback({ ...answers, resolved }).unresolvedComment, null);
+    assert.throws(() => validateClaimFeedback({ ...answers, resolved, unresolvedComment: "x".repeat(1001) }));
+    assert.throws(() => validateClaimFeedback({ ...answers, resolved, unresolvedComment: { text: "invalid" } }));
+  }
+  const hidden = validateClaimFeedback({ ...answers, resolved: "YES", unresolvedComment: "x".repeat(1001) });
+  assert.equal(hidden.unresolvedComment, null);
+  assert.equal(validateClaimFeedback({ ...answers, unresolvedComment: "  " }).unresolvedComment, null);
+});
+
+test("negative feedback saves open issues without reopening or creating a complaint", async () => {
+  const { db, state } = memoryDb();
+  const done = await updateWorkProcessing({ db, workType: "CLAIM", workId: "claim-1", actor: "admin@example.com", status: "DONE", expectedVersion: 0 });
+  state.invitations[0].status = "SENT";
+  const input = { ...answers, resolved: "NO", unresolvedComment: "Replacement has not arrived." };
+  assert.equal(await submitClaimFeedback({ db, token: done.feedbackInvitation.token, data: input }), true);
+  assert.equal(state.invitations[0].unresolvedComment, "Replacement has not arrived.");
+  assert.equal(state.invitations[0].comment, "Please call before visiting.");
+  assert.equal(state.processing.status, "DONE");
+  assert.equal(state.events.length, 1);
+  assert.equal(state.invitations.length, 1);
+  assert.equal(await submitClaimFeedback({ db, token: done.feedbackInvitation.token, data: { ...input, unresolvedComment: "Overwrite" } }), false);
+  assert.equal(state.invitations[0].unresolvedComment, "Replacement has not arrived.");
 });

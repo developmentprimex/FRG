@@ -1,3 +1,5 @@
+import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
+import { loadOrderKitchenSpecifications } from "../../../../lib/kitchen-ab-runtime";
 import { AdminOrderInformation } from "../../../../components/admin-order-information";
 import Link from "next/link";
 import { OrderStatus } from "@prisma/client";
@@ -205,6 +207,10 @@ export default async function AdminPxOrderDetailPage({ params, searchParams }) {
           </form>
 
           <AdminOrderInformation order={order} itemCount={displayItems.length} showAs400={false} />
+        </AdminSection>
+
+        <AdminSection title={<AdminText i18nKey="kitchenSpecificationsAdmin.title" fallback="Kitchen specifications" />}>
+          <AdminOrderKitchenSpecifications details={await loadOrderKitchenSpecifications(order)} />
         </AdminSection>
 
         <AdminSection title={<AdminText i18nKey="pxOrdersAdmin.orderItems" fallback="PX order items" />}>
