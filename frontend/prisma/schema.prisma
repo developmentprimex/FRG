@@ -401,6 +401,7 @@ model Order {
   @@index([kitchenContractId, createdAt])
   @@index([status, createdAt])
   @@index([createdAt])
+  @@index([kitchenId])
 }
 
 // Independent audit records: deliberately no relation/foreign key to orders.
@@ -485,6 +486,7 @@ model TestOrder {
   @@index([kitchenContractId, createdAt])
   @@index([status, createdAt])
   @@index([createdAt])
+  @@index([kitchenId])
 }
 
 model KitchenContract {
@@ -641,6 +643,7 @@ model OrderItem {
   createdAt             DateTime     @default(now())
 
   @@index([orderId])
+  @@index([kitchenItemId])
 }
 
 model TestOrderItem {
@@ -659,6 +662,7 @@ model TestOrderItem {
   createdAt             DateTime     @default(now())
 
   @@index([orderId])
+  @@index([kitchenItemId])
 }
 
 // Independent delivery log; no foreign key or update to ServiceClaim.
