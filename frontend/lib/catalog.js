@@ -1472,8 +1472,62 @@ export function serializeKitchenForLegacy(kitchen) {
   };
 }
 
-function buildOrderAdminSearch(query) {
+const ORDER_SEARCH_MAX_RELATION_IDS = 2000;
+
+async function buildOrderAdminSearch(query) {
   const contains = { contains: query, mode: "insensitive" };
+  const kitchenWhere = { name: contains };
+  const contractWhere = {
+    OR: [
+      { contractNumber: contains },
+      {
+        project: {
+          is: {
+            OR: [
+              { name: contains },
+              { projectCode: contains },
+              { status: contains },
+              { description: contains },
+              { managerName: contains },
+              {
+                propertyObject: {
+                  is: {
+                    OR: [
+                      { name: contains },
+                      { city: contains },
+                      { country: contains },
+                      { postalCode: contains },
+                      { address1: contains },
+                      { address2: contains },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    ],
+  };
+
+  // Resolve the related tables with small standalone queries so the order query
+  // only filters on its own columns and id lists instead of nested subqueries.
+  const [kitchens, contracts] = await Promise.all([
+    prisma.kitchen.findMany({ where: kitchenWhere, select: { id: true }, take: ORDER_SEARCH_MAX_RELATION_IDS + 1 }),
+    prisma.kitchenContract.findMany({ where: contractWhere, select: { id: true }, take: ORDER_SEARCH_MAX_RELATION_IDS + 1 }),
+  ]);
+
+  const relationTerms = [];
+  if (kitchens.length > ORDER_SEARCH_MAX_RELATION_IDS) {
+    relationTerms.push({ kitchen: kitchenWhere });
+  } else if (kitchens.length) {
+    relationTerms.push({ kitchenId: { in: kitchens.map((kitchen) => kitchen.id) } });
+  }
+  if (contracts.length > ORDER_SEARCH_MAX_RELATION_IDS) {
+    relationTerms.push({ kitchenContract: { is: contractWhere } });
+  } else if (contracts.length) {
+    relationTerms.push({ kitchenContractId: { in: contracts.map((contract) => contract.id) } });
+  }
 
   return [
     { orderNumber: contains },
@@ -1485,47 +1539,7 @@ function buildOrderAdminSearch(query) {
     { country: contains },
     { address1: contains },
     { address2: contains },
-    {
-      kitchen: {
-        name: contains,
-      },
-    },
-    {
-      kitchenContract: {
-        is: {
-          OR: [
-            { contractNumber: contains },
-            {
-              project: {
-                is: {
-                  OR: [
-                    { name: contains },
-                    { projectCode: contains },
-                    { status: contains },
-                    { description: contains },
-                    { managerName: contains },
-                    {
-                      propertyObject: {
-                        is: {
-                          OR: [
-                            { name: contains },
-                            { city: contains },
-                            { country: contains },
-                            { postalCode: contains },
-                            { address1: contains },
-                            { address2: contains },
-                          ],
-                        },
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          ],
-        },
-      },
-    },
+    ...relationTerms,
   ];
 }
 
@@ -1537,7 +1551,7 @@ export async function getTestOrdersForAdmin(filters = {}) {
   return getOrdersForAdminByKind(filters, ORDER_KIND_TEST);
 }
 
-function getAdminOrderWhere(filters = {}) {
+async function getAdminOrderWhere(filters = {}) {
   const where = {};
 
   if (filters.kitchenId) where.kitchenId = filters.kitchenId;
@@ -1555,14 +1569,14 @@ function getAdminOrderWhere(filters = {}) {
 
   const query = String(filters.q || "").trim();
   if (query) {
-    where.OR = buildOrderAdminSearch(query);
+    where.OR = await buildOrderAdminSearch(query);
   }
 
   return where;
 }
 
 export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, orderKind = ORDER_KIND_LIVE) {
-  const where = getAdminOrderWhere(filters);
+  const where = await getAdminOrderWhere(filters);
   const delegate = getOrderDelegate(prisma, orderKind);
   const groups = await delegate.groupBy({
     by: ["status"], where, _count: { _all: true }, _sum: { totalPrice: true },
@@ -1576,7 +1590,7 @@ export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, ord
     if (group.status === "CONFIRMED") confirmedGross = Number(group._sum.totalPrice || 0);
   }
   const pagination = getAdminPagination(totalOrders, requestedPage);
-  const items = await getOrdersForAdminByKind(filters, orderKind, pagination);
+  const items = await getOrdersForAdminByKind(filters, orderKind, pagination, where);
   const breakdown = getPriceBreakdown(confirmedGross);
   return {
     pagination: { ...pagination, items },
@@ -1584,8 +1598,8 @@ export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, ord
   };
 }
 
-async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE, pagination = null) {
-  const where = getAdminOrderWhere(filters);
+async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE, pagination = null, resolvedWhere = null) {
+  const where = resolvedWhere || await getAdminOrderWhere(filters);
   const orders = await getOrderDelegate(prisma, orderKind).findMany({
     where,
     ...(pagination ? { skip: (pagination.page - 1) * pagination.pageSize, take: pagination.pageSize } : {}),
