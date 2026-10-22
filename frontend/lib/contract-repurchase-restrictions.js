@@ -1,5 +1,5 @@
 export const REPURCHASE_UNAVAILABLE_CODE = "REPURCHASE_UNAVAILABLE";
-export const REPURCHASE_UNAVAILABLE_MESSAGE = "Diese Küche ist nicht für einen Nachkauf vorgesehen.";
+export const REPURCHASE_UNAVAILABLE_MESSAGE = "Diese Küche ist nicht für einen digitalen Nachkauf vorgesehen. Bitte kontaktieren Sie Ihren Vermieter über die alternativen Nachkaufmöglichkeiten.";
 
 // These contracts remain eligible for service; only additional purchases are excluded.
 const CONTRACTS_WITHOUT_REPURCHASE = new Set(["670105650"]);

@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
-import { getContractOrderState, getKitchenContractForAccess } from "../../../lib/kitchen-contracts";
+import { CONTRACT_ERRORS, getContractOrderState, getKitchenContractForAccess } from "../../../lib/kitchen-contracts";
 import { getOrderKindForContractNumber, ORDER_KIND_TEST } from "../../../lib/order-kind";
 import { prisma } from "../../../lib/prisma";
 import {
   PUBLIC_VISIT_EVENT_TYPES,
   safelyTrackPublicVisitEvent,
 } from "../../../lib/public-visit-tracking";
-import { assertContractAllowsRepurchase } from "../../../lib/contract-repurchase-restrictions";
+import {
+  assertContractAllowsRepurchase,
+  REPURCHASE_UNAVAILABLE_CODE,
+  REPURCHASE_UNAVAILABLE_MESSAGE,
+} from "../../../lib/contract-repurchase-restrictions";
 
 export async function POST(request) {
   let submittedContractNumber = "";
@@ -63,8 +67,16 @@ export async function POST(request) {
       ...trackingContext,
     });
 
+    const kitchenUnavailable = error.message === CONTRACT_ERRORS.NOT_FOUND
+      || error.message === CONTRACT_ERRORS.KITCHEN_UNAVAILABLE;
+    const code = kitchenUnavailable ? REPURCHASE_UNAVAILABLE_CODE : error.code;
+
     return NextResponse.json(
-      { ok: false, error: error.message || "Contract access failed.", ...(error.code ? { code: error.code } : {}) },
+      {
+        ok: false,
+        error: kitchenUnavailable ? REPURCHASE_UNAVAILABLE_MESSAGE : error.message || "Contract access failed.",
+        ...(code ? { code } : {}),
+      },
       { status: error.status || 400 },
     );
   }

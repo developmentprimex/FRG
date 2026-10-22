@@ -68,7 +68,7 @@ function getLegalReturnEntryState() {
 const SCREEN_TEXT = {
   de: {
     repurchaseNoticeTitle: "Wichtiger Hinweis!",
-    repurchaseNoticeMessage: "Diese Küche ist nicht für einen Nachkauf vorgesehen.",
+    repurchaseNoticeMessage: "Diese Küche ist nicht für einen digitalen Nachkauf vorgesehen. Bitte kontaktieren Sie Ihren Vermieter über die alternativen Nachkaufmöglichkeiten.",
     repurchaseNoticeDismiss: "Verstanden",
     languageTitle: "Wähle deine Sprache",
     modeTitle: "Wie möchtest du die Anweisungen erhalten?",
@@ -89,7 +89,7 @@ const SCREEN_TEXT = {
   },
   en: {
     repurchaseNoticeTitle: "Important notice!",
-    repurchaseNoticeMessage: "This kitchen is not intended for additional purchases.",
+    repurchaseNoticeMessage: "This kitchen is not eligible for digital additional purchases. Please contact your landlord to discuss alternative purchasing options.",
     repurchaseNoticeDismiss: "Understood",
     languageTitle: "Select your language",
     modeTitle: "How would you like instructions?",
@@ -110,7 +110,7 @@ const SCREEN_TEXT = {
   },
   tr: {
     repurchaseNoticeTitle: "Önemli bilgilendirme!",
-    repurchaseNoticeMessage: "Bu mutfak için sonradan ek ürün satın alınması öngörülmemiştir.",
+    repurchaseNoticeMessage: "Bu mutfak, dijital ortamda ek ürün satın alımına uygun değildir. Alternatif satın alma seçeneklerini görüşmek için lütfen ev sahibinizle iletişime geçin.",
     repurchaseNoticeDismiss: "Anladım",
     languageTitle: "Dilini seç",
     modeTitle: "Talimatları nasıl almak istersiniz?",
@@ -131,7 +131,7 @@ const SCREEN_TEXT = {
   },
   es: {
     repurchaseNoticeTitle: "¡Aviso importante!",
-    repurchaseNoticeMessage: "No está previsto realizar compras adicionales para esta cocina.",
+    repurchaseNoticeMessage: "Esta cocina no es apta para compras adicionales por vía digital. Póngase en contacto con su arrendador para consultar otras opciones de compra.",
     repurchaseNoticeDismiss: "Entendido",
     languageTitle: "Elige tu idioma",
     modeTitle: "¿Cómo quieres recibir las instrucciones?",
@@ -152,7 +152,7 @@ const SCREEN_TEXT = {
   },
   fr: {
     repurchaseNoticeTitle: "Information importante !",
-    repurchaseNoticeMessage: "Aucun achat complémentaire n’est prévu pour cette cuisine.",
+    repurchaseNoticeMessage: "Cette cuisine n’est pas éligible aux achats complémentaires en ligne. Veuillez contacter votre bailleur pour discuter des autres possibilités d’achat.",
     repurchaseNoticeDismiss: "Compris",
     languageTitle: "Choisis ta langue",
     modeTitle: "Comment souhaitez-vous recevoir les instructions ?",
@@ -173,7 +173,7 @@ const SCREEN_TEXT = {
   },
   ru: {
     repurchaseNoticeTitle: "Важная информация!",
-    repurchaseNoticeMessage: "Для этой кухни не предусмотрена покупка дополнительных элементов.",
+    repurchaseNoticeMessage: "Для этой кухни недоступна покупка дополнительных элементов онлайн. Пожалуйста, свяжитесь с вашим арендодателем, чтобы обсудить другие варианты покупки.",
     repurchaseNoticeDismiss: "Понятно",
     languageTitle: "Выберите язык",
     modeTitle: "Как вы хотите получить инструкции?",
