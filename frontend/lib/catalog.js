@@ -471,14 +471,17 @@ export async function listKitchensPageForAdmin(query = "", requestedPage = 1) {
   // Keep the existing accent/spacing-insensitive search, but count relations
   // only for the visible rows. The unfiltered list uses database pagination.
   let ids = null;
+  let totalKitchens;
   if (query.trim()) {
     const candidates = await prisma.kitchen.findMany({
       select: { id: true, name: true, kitchenCode: true, slug: true, programmId: true, description: true },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     });
+    totalKitchens = candidates.length;
     ids = filterAdminKitchens(candidates, query).map((row) => row.id);
   }
-  const pagination = getAdminPagination(ids ? ids.length : await prisma.kitchen.count(), requestedPage);
+  totalKitchens ??= await prisma.kitchen.count();
+  const pagination = getAdminPagination(ids ? ids.length : totalKitchens, requestedPage);
   const offset = (pagination.page - 1) * pagination.pageSize;
   const items = await prisma.kitchen.findMany({
     ...(ids ? { where: { id: { in: ids.slice(offset, offset + pagination.pageSize) } } } : { skip: offset, take: pagination.pageSize }),
@@ -488,7 +491,7 @@ export async function listKitchensPageForAdmin(query = "", requestedPage = 1) {
     },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
-  return { ...pagination, items };
+  return { ...pagination, items, totalKitchens };
 }
 
 export async function listKitchenItemCodeOptionsForAdmin() {

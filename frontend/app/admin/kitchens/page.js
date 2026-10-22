@@ -133,7 +133,7 @@ export default async function AdminKitchensPage({ searchParams }) {
               <AdminText
                 i18nKey="kitchensAdmin.searchResults"
                 fallback="{shown} of {total} kitchens found"
-                values={{ shown: String(filteredKitchens.length), total: String(allKitchens.length) }}
+                values={{ shown: String(pagination.totalItems), total: String(pagination.totalKitchens) }}
               />
             </p>
           ) : null}
@@ -221,7 +221,7 @@ export default async function AdminKitchensPage({ searchParams }) {
                     />
                   </span>
                 </div>
-                <div>
+                <div style={actionRowStyle}>
                   <ActionLink href={`/admin/kitchens/${kitchen.id}`}>
                     <AdminText i18nKey="kitchensAdmin.manage" fallback="Manage" />
                   </ActionLink>

@@ -98,16 +98,19 @@ test("kitchen search preserves normalization and hydrates only the matching page
   const api = loadFunctions("../lib/catalog.js", ["listKitchensPageForAdmin"], {
     getAdminPagination, filterAdminKitchens,
     prisma: { kitchen: { findMany: async (args) => {
-      if (args.select.description) return candidates;
+      if (args.select.description) return [...candidates, { id: "other", name: "Other kitchen" }];
       query = args;
       return [];
     } } },
   });
   const result = await api.listKitchensPageForAdmin("kuche105807", 2);
   assert.equal(result.totalItems, 25);
+  assert.equal(result.totalKitchens, 26);
   assert.equal(query.where.id.in.length, 5);
   assert.equal(query.where.id.in[0], "20");
-  await api.listKitchensPageForAdmin("missing", 999);
+  const emptyResult = await api.listKitchensPageForAdmin("missing", 999);
+  assert.equal(emptyResult.totalItems, 0);
+  assert.equal(emptyResult.totalKitchens, 26);
   assert.equal(query.where.id.in.length, 0);
 });
 

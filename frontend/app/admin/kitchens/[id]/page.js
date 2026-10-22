@@ -28,6 +28,7 @@ import { AdminIconKeySelect } from "../../../../components/admin-icon-key-select
 import { AdminProductInfoPdfManager } from "../../../../components/admin-product-info-pdf-manager";
 import burgerCindyArticleCodes from "../../../../lib/burger-cindy-article-codes.cjs";
 import AdminSelect from "../../../../components/admin-select";
+import AdminKitchenDeleteForm from "../../../../components/admin-kitchen-delete-form";
 import { getFormMessage } from "../../../../lib/admin-forms";
 import { requireAdminPage } from "../../../../lib/auth";
 import { buildKitchenPreviewSvgMarkup } from "../../../../lib/claim-kitchen-preview";
@@ -541,6 +542,7 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
                 <AdminText i18nKey="kitchenDetailAdmin.backToKitchens" fallback="Back to kitchens" />
               </ActionLink>
               <ActionLink href={`/kitchens/${kitchen.slug}`}><AdminText i18nKey="kitchenDetailAdmin.openPublicPage" fallback="Open public page" /></ActionLink>
+              <AdminKitchenDeleteForm kitchen={kitchen} />
             </div>
           }
         >

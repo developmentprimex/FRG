@@ -474,6 +474,8 @@
     "searchButton": "Suchen",
     "clearSearch": "Zurücksetzen",
     "searchResults": "{shown} von {total} Küchen gefunden",
+    "delete": "Löschen",
+    "deleteConfirm": "Küche {name} und ihre Artikel endgültig löschen? Küchen mit verknüpften Bestellungen oder Verträgen können nicht gelöscht werden.",
     "noKitchensFound": "Keine Küchen gefunden.",
     "noDescription": "Keine Beschreibung",
     "itemCount": "Artikel",

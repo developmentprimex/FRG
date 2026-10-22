@@ -474,6 +474,8 @@
     "searchButton": "Search",
     "clearSearch": "Clear",
     "searchResults": "{shown} of {total} kitchens found",
+    "delete": "Delete",
+    "deleteConfirm": "Delete kitchen {name} and its items permanently? Kitchens with linked orders or contracts cannot be deleted.",
     "noKitchensFound": "No kitchens found.",
     "noDescription": "No description",
     "itemCount": "item(s)",

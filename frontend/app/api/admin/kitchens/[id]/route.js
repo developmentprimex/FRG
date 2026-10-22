@@ -4,6 +4,7 @@ import { mapAdminMutationError, redirectWithFlash, validateKitchenInput } from "
 import { requireAdminApi } from "../../../../../lib/auth";
 import { getKitchenById } from "../../../../../lib/catalog";
 import { prisma } from "../../../../../lib/prisma";
+import { deleteKitchenForAdmin } from "../../../../../lib/admin-kitchen-delete";
 
 export async function GET(_request, { params }) {
   await requireAdminApi();
@@ -20,6 +21,17 @@ export async function POST(request, { params }) {
   const { id } = await params;
   try {
     const formData = await request.formData();
+    if (formData.get("intent") === "delete") {
+      try {
+        await deleteKitchenForAdmin(prisma, id);
+        return redirectWithFlash(request, "/admin/kitchens", "success", "Kitchen deleted.");
+      } catch (error) {
+        const message = error.code === "P2003"
+          ? "Kitchen cannot be deleted because it has linked records."
+          : mapAdminMutationError(error, "Kitchen");
+        return redirectWithFlash(request, "/admin/kitchens", "error", message);
+      }
+    }
     const existingKitchen = await prisma.kitchen.findUnique({
       where: { id },
       select: { slug: true, programmId: true },
