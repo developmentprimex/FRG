@@ -30,6 +30,7 @@ import { prisma } from "../../../lib/prisma";
 import { listKitchensForAdmin } from "../../../lib/catalog";
 import { queryServiceClaimsList } from "../../../lib/service-claim-admin-query";
 import { paginateAdminItems } from "../../../lib/admin-pagination";
+import { normalizeContractTypeFilter } from "../../../lib/contract-type-filter";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +59,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
     kitchenId: normalizeParam(resolvedSearchParams.kitchenId).trim(),
     contactKey: normalizeParam(resolvedSearchParams.contactKey).trim(),
     contractNumber: normalizeParam(resolvedSearchParams.contractNumber).trim(),
+    contractType: normalizeContractTypeFilter(resolvedSearchParams.contractType),
     claimType: pxOnly ? "px" : "live",
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
@@ -75,6 +77,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
   const clearExactHref = `${basePath}?${new URLSearchParams({
     ...(filters.q ? { q: filters.q } : {}),
     ...(filters.city ? { city: filters.city } : {}),
+    ...(filters.contractType ? { contractType: filters.contractType } : {}),
     ...(filters.kitchenId ? { kitchenId: filters.kitchenId } : {}),
     ...(filters.dateFrom ? { dateFrom: filters.dateFrom } : {}),
     ...(filters.dateTo ? { dateTo: filters.dateTo } : {}),
@@ -119,6 +122,14 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   placeholderFallback="Search by contract, name, phone, email, issue..."
                   style={filterInputStyle}
                 />
+              </label>
+              <label style={filterFieldStyle}>
+                <span><AdminText i18nKey="contractsAdmin.contractType" fallback="Contract type" /></span>
+                <AdminSelect name="contractType" defaultValue={filters.contractType} style={filterInputStyle}>
+                  <option value=""><AdminText i18nKey="contractsAdmin.allContractTypes" fallback="All contract types" /></option>
+                  <option value="ARC">ARC</option>
+                  <option value="FRG">FRG</option>
+                </AdminSelect>
               </label>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="claimsAdmin.city" fallback="City" /></span>

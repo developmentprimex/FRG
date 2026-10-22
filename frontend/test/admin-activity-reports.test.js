@@ -60,11 +60,11 @@ test("date filters are forwarded and claims exclude PX test records", async () =
   });
   assert.equal(passedOrders.dateFrom, "2026-10-01");
   assert.equal(passedOrders.dateTo, "2026-10-14");
-  assert.deepEqual(passedClaims, { dateFrom: "2026-10-01", dateTo: "2026-10-14", claimType: "live" });
+  assert.deepEqual(passedClaims, { dateFrom: "2026-10-01", dateTo: "2026-10-14", contractType: "", claimType: "live" });
 });
 
 test("filter query preserves type and status and rejects invalid dates", () => {
-  assert.deepEqual(normalizeActivityReportFilters({ type: [" claim "], status: "received", dateFrom: "2026-02-30", dateTo: "bad" }), { type: "CLAIM", status: "RECEIVED", dateFrom: "", dateTo: "" });
+  assert.deepEqual(normalizeActivityReportFilters({ type: [" claim "], status: "received", dateFrom: "2026-02-30", dateTo: "bad" }), { type: "CLAIM", status: "RECEIVED", dateFrom: "", dateTo: "", contractType: "" });
   const query = new URLSearchParams(buildActivityReportQuery({ type: "CLAIM", status: "RECEIVED", dateFrom: "2026-10-01" }));
   assert.equal(query.get("type"), "CLAIM");
   assert.equal(query.get("status"), "RECEIVED");
@@ -79,4 +79,16 @@ test("claim reports use the same persisted ticket reference as notification emai
   assert(formatServiceClaimEmailSubject(claims[0].contractNumber, claims[0].claimSequence, claims[0].ticketNumber).startsWith(row.reference));
   assert.equal(row.href, "/admin/claims/c1");
   assert.equal(buildActivityReportRows([], [{ ...claims[0], ticketNumber: null }])[0].reference, "6701 KD 02");
+});
+
+test("contract type survives report links and reaches both data sources", async () => {
+  for (const contractType of ["ARC", "FRG"]) {
+    const query = new URLSearchParams(buildActivityReportQuery({ contractType: contractType.toLowerCase() }));
+    assert.equal(query.get("contractType"), contractType);
+    await loadActivityReportData({ contractType }, {
+      loadOrders: async filters => { assert.equal(filters.contractType, contractType); return { orders: [], summary: {} }; },
+      loadClaims: async filters => { assert.equal(filters.contractType, contractType); return []; },
+    });
+  }
+  assert.equal(normalizeActivityReportFilters({ contractType: "invalid" }).contractType, "");
 });

@@ -4,7 +4,28 @@ import {
   resetServiceClaimQueryColumnSupportCache,
   queryServiceClaimById,
   queryServiceClaimsList,
+  queryServiceClaimsPage,
 } from "../lib/service-claim-admin-query.js";
+
+test("claim page clamps out-of-range requests and counts with the same filters", async () => {
+  resetServiceClaimQueryColumnSupportCache();
+  const queries = [];
+  const client = { $queryRaw: async (strings, ...values) => {
+    const sql = renderSqlTemplate(strings, values);
+    if (sql.includes('information_schema')) return [];
+    queries.push(sql);
+    return sql.includes('COUNT(*) AS "total"') ? [{ total: 41n }] : [{ id: "last" }];
+  } };
+  const result = await queryServiceClaimsPage(client, { claimType: "px", city: "Berlin" }, 999);
+  assert.equal(result.page, 3);
+  assert.equal(result.totalItems, 41);
+  assert.equal(result.items[0].id, "last");
+  assert.match(queries[1], /LIMIT 20 OFFSET 40/);
+  for (const sql of queries) {
+    assert.match(sql, /Berlin/);
+    assert.match(sql, /LIKE '111%'/);
+  }
+});
 
 function renderSqlTemplate(strings, values) {
   let output = "";
@@ -250,4 +271,25 @@ test("overview drilldowns filter exact contracts and normalized contacts", async
   assert.match(queries[1], /LOWER\(REGEXP_REPLACE\(BTRIM\(COALESCE\(sc\."email", ''\)\), '\[\[:space:\]\]\+', ' ', 'g'\)\) = alex@example\.com/);
   assert.match(queries[2], /NULLIF\(BTRIM\(COALESCE\(sc\."email", ''\)\), ''\) IS NULL/);
   assert.match(queries[2], /REGEXP_REPLACE\(REGEXP_REPLACE\(COALESCE\(sc\."phone", ''\), '\[\^0-9\]', '', 'g'\), '\^00', ''\) = 49123456/);
+});
+
+test("claim contract type constrains both the count and page query", async () => {
+  for (const contractType of ["ARC", "FRG"]) {
+    resetServiceClaimQueryColumnSupportCache();
+    const queries = [];
+    const client = { $queryRaw: async (strings, ...values) => {
+      const sql = renderSqlTemplate(strings, values);
+      if (sql.includes("information_schema")) return [];
+      queries.push(sql);
+      return sql.includes('COUNT(*) AS "total"') ? [{ total: 1n }] : [{ id: "claim" }];
+    } };
+    await queryServiceClaimsPage(client, { contractType, claimType: "live", city: "Berlin" });
+    assert.equal(queries.length, 2);
+    for (const sql of queries) {
+      assert.ok(sql.includes('ct."contractNumber" = sc."contractNumber"'));
+      assert.ok(sql.includes('ct."contractType" = ' + contractType));
+      assert.ok(sql.includes("NOT LIKE '111%'"));
+      assert.ok(sql.includes("Berlin"));
+    }
+  }
 });

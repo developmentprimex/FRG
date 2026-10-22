@@ -1,6 +1,7 @@
 import { formatServiceClaimReference } from "./service-claim-email-subject.js";
 import { getOrderReportDetails, getPurchasedReportItems, getClaimReportIssueSummary } from "./report-details.js";
 import { prisma } from "./prisma.js";
+import { normalizeContractTypeFilter } from "./contract-type-filter.js";
 import { ORDER_REPORT_STATUSES, loadOrderReportData, getOrderReportExportRows, calculateOrderReportSummary } from "./admin-order-reports.js";
 import { queryServiceClaimsList } from "./service-claim-admin-query.js";
 
@@ -17,6 +18,7 @@ export function normalizeActivityReportFilters(input = {}) {
   const status = String(single(input.status)).trim().toUpperCase();
   return {
     dateFrom: dateValue(input.dateFrom),
+    contractType: normalizeContractTypeFilter(input.contractType),
     dateTo: dateValue(input.dateTo),
     type: ["ORDER", "CLAIM"].includes(type) ? type : "",
     status: ACTIVITY_REPORT_STATUSES.includes(status) ? status : "",
@@ -79,7 +81,7 @@ export async function loadActivityReportData(filters = {}, dependencies = {}) {
   const includeClaims = normalized.type !== "ORDER" && (!normalized.status || normalized.status === "RECEIVED");
   const [orderData, claims] = await Promise.all([
     includeOrders ? loadOrders(normalized) : { orders: [], summary: calculateOrderReportSummary([]) },
-    includeClaims ? loadClaims({ dateFrom: normalized.dateFrom, dateTo: normalized.dateTo, claimType: "live" }) : [],
+    includeClaims ? loadClaims({ dateFrom: normalized.dateFrom, dateTo: normalized.dateTo, contractType: normalized.contractType, claimType: "live" }) : [],
   ]);
   return {
     filters: normalized,

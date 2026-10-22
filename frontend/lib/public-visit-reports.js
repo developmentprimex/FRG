@@ -1,4 +1,5 @@
 import { prisma } from "./prisma.js";
+import { Prisma } from "@prisma/client";
 import {
   PUBLIC_VISIT_EVENT_TYPES,
   SERVICE_PAGE_PATH,
@@ -240,33 +241,31 @@ export async function loadContractAccessPageData(filters = {}, requestedPage = 1
   return { events, page, total, totalPages };
 }
 
-async function purgeJunkServiceClaimVisitEvents() {
-  const junkLast4 = [...SERVICE_CLAIM_JUNK_CONTRACT_LAST4];
-  if (!junkLast4.length) return;
-
-  try {
-    await prisma.publicVisitEvent.deleteMany({
-      where: {
-        kitchenContractId: null,
-        contractNumberLast4: { in: junkLast4 },
-        eventType: { in: SERVICE_VISIT_FUNNEL_EVENT_TYPES },
-      },
-    });
-  } catch (error) {
-    console.warn("Junk claim-activity cleanup failed:", error?.message || error);
-  }
+function serviceVisitSqlWhere(filters = {}) {
+  const date = getVisitReportWhere(filters).createdAt;
+  return Prisma.sql`
+    (NULLIF("kitchenContractId", '') IS NOT NULL OR
+      LOWER(BTRIM(COALESCE("contractNumberLast4", ''))) NOT IN (${Prisma.join([...SERVICE_CLAIM_JUNK_CONTRACT_LAST4])}))
+    ${date?.gte ? Prisma.sql`AND "createdAt" >= ${date.gte}` : Prisma.empty}
+    ${date?.lte ? Prisma.sql`AND "createdAt" <= ${date.lte}` : Prisma.empty}
+  `;
 }
 
 export async function loadRecentServiceVisitData(filters = {}) {
-  await purgeJunkServiceClaimVisitEvents();
-
+  // Filter before LIMIT, so old placeholder events cannot consume visible rows.
+  // Reading a report must not run a database cleanup on every navigation.
+  const ids = await prisma.$queryRaw`
+    SELECT "id" FROM "PublicVisitEvent"
+    WHERE ${serviceVisitSqlWhere(filters)}
+      AND "eventType" IN (${Prisma.join(SERVICE_VISIT_TABLE_EVENT_TYPES)})
+    ORDER BY "createdAt" DESC, "id" DESC LIMIT 100
+  `;
   const events = await prisma.publicVisitEvent.findMany({
     where: {
-      ...getVisitReportWhere(filters),
-      eventType: { in: SERVICE_VISIT_TABLE_EVENT_TYPES },
+      id: { in: ids.map((row) => row.id) },
     },
     include: kitchenContractInclude,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 100,
   });
 
@@ -274,35 +273,26 @@ export async function loadRecentServiceVisitData(filters = {}) {
 }
 
 export async function loadServiceVisitSummary(filters = {}) {
-  await purgeJunkServiceClaimVisitEvents();
-
-  const dateWhere = getVisitReportWhere(filters);
-  const events = await prisma.publicVisitEvent.findMany({
-    where: {
-      ...dateWhere,
-      OR: [
-        {
-          eventType: PUBLIC_VISIT_EVENT_TYPES.PAGE_OPENED,
-          path: SERVICE_PAGE_PATH,
-        },
-        {
-          eventType: { in: SERVICE_VISIT_FUNNEL_EVENT_TYPES },
-        },
-      ],
-    },
-    select: {
-      eventType: true,
-      path: true,
-      visitorKey: true,
-      ipHash: true,
-      userAgentHash: true,
-      metadata: true,
-      kitchenContractId: true,
-      contractNumberLast4: true,
-    },
-  });
-
-  return calculateServiceVisitSummary(events);
+  const types = PUBLIC_VISIT_EVENT_TYPES;
+  const [summary] = await prisma.$queryRaw`
+    SELECT
+      COUNT(DISTINCT NULLIF(COALESCE(NULLIF("visitorKey", ''),
+        CONCAT_WS(':', NULLIF("ipHash", ''), NULLIF("userAgentHash", ''))), ''))
+        FILTER (WHERE "eventType" = ${types.PAGE_OPENED} AND "path" = ${SERVICE_PAGE_PATH}) AS "uniqueVisitors",
+      COUNT(*) FILTER (WHERE "eventType" = ${types.PAGE_OPENED} AND "path" = ${SERVICE_PAGE_PATH}) AS "opened",
+      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_LOOKUP}) AS "lookups",
+      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_FOUND}) AS "found",
+      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_NOT_FOUND}) AS "notFound",
+      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CLAIM_SUBMITTED}) AS "claimsSubmitted",
+      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_FOUND}
+        AND "metadata"->>'orderKind' = ${ORDER_KIND_TEST}) AS "testLookups"
+    FROM "PublicVisitEvent"
+    WHERE ${serviceVisitSqlWhere(filters)} AND (
+      ("eventType" = ${types.PAGE_OPENED} AND "path" = ${SERVICE_PAGE_PATH}) OR
+      "eventType" IN (${Prisma.join(SERVICE_VISIT_FUNNEL_EVENT_TYPES)})
+    )
+  `;
+  return Object.fromEntries(Object.entries(summary).map(([key, value]) => [key, Number(value)]));
 }
 
 export async function loadPublicVisitReportData(filters = {}) {

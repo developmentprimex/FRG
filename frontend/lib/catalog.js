@@ -1,5 +1,8 @@
 import { KitchenStatus, ItemType, OrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
+import { getAdminPagination } from "./admin-pagination.js";
+import { filterAdminKitchens } from "./admin-kitchen-search.js";
+import { getPriceBreakdown } from "./price-utils.js";
 import { ORDER_KIND_LIVE, ORDER_KIND_TEST, getOrderDelegate } from "./order-kind.js";
 import { applyDueScheduledCatalogPriceListImports } from "./catalog-price-list-import.js";
 import { isMissingKitchenRegistrationTableError } from "./kitchen-registration-db.js";
@@ -464,6 +467,30 @@ export async function listKitchensForAdmin() {
   });
 }
 
+export async function listKitchensPageForAdmin(query = "", requestedPage = 1) {
+  // Keep the existing accent/spacing-insensitive search, but count relations
+  // only for the visible rows. The unfiltered list uses database pagination.
+  let ids = null;
+  if (query.trim()) {
+    const candidates = await prisma.kitchen.findMany({
+      select: { id: true, name: true, kitchenCode: true, slug: true, programmId: true, description: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+    ids = filterAdminKitchens(candidates, query).map((row) => row.id);
+  }
+  const pagination = getAdminPagination(ids ? ids.length : await prisma.kitchen.count(), requestedPage);
+  const offset = (pagination.page - 1) * pagination.pageSize;
+  const items = await prisma.kitchen.findMany({
+    ...(ids ? { where: { id: { in: ids.slice(offset, offset + pagination.pageSize) } } } : { skip: offset, take: pagination.pageSize }),
+    select: {
+      id: true, name: true, slug: true, programmId: true, status: true, updatedAt: true,
+      _count: { select: { items: true, orders: true, contracts: true } },
+    },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+  });
+  return { ...pagination, items };
+}
+
 export async function listKitchenItemCodeOptionsForAdmin() {
   return [
     { code: "CAB-WALL-600-01", label: "COMPONENT - Wall cabinet 600 mm. Use -02, -03 for repeats." },
@@ -798,7 +825,7 @@ export async function listProjectsForAdmin(filters = {}) {
   }));
 }
 
-export async function listKitchenContractsForAdmin(filters = {}) {
+export async function listKitchenContractsForAdmin(filters = {}, requestedPage = null) {
   const whereParts = [];
   const havingParts = [];
   if (filters.contractId) whereParts.push(Prisma.sql`kc."id" = ${filters.contractId}`);
@@ -835,6 +862,24 @@ export async function listKitchenContractsForAdmin(filters = {}) {
 
   const whereSql = whereParts.length ? Prisma.sql`WHERE ${Prisma.join(whereParts, " AND ")}` : Prisma.empty;
   const havingSql = havingParts.length ? Prisma.sql`HAVING ${Prisma.join(havingParts, " AND ")}` : Prisma.empty;
+  let pagination = null;
+  if (requestedPage !== null) {
+    const [count] = await prisma.$queryRaw`
+      SELECT COUNT(*) AS "total" FROM (
+        SELECT kc."id"
+        FROM "KitchenContract" kc
+        JOIN "Kitchen" k ON k."id" = kc."kitchenId"
+        LEFT JOIN "Project" prj ON prj."id" = kc."projectId"
+        LEFT JOIN "PropertyObject" pobj ON pobj."id" = prj."propertyObjectId"
+        LEFT JOIN "HousingCompany" hc ON hc."id" = prj."housingCompanyId"
+        LEFT JOIN "Order" o ON o."kitchenContractId" = kc."id"
+        ${whereSql}
+        GROUP BY kc."id"
+        ${havingSql}
+      ) matching_contracts
+    `;
+    pagination = getAdminPagination(Number(count.total), requestedPage);
+  }
   const rows = await prisma.$queryRaw`
     SELECT
       kc."id",
@@ -925,7 +970,8 @@ export async function listKitchenContractsForAdmin(filters = {}) {
       latest_order."country",
       latest_order."createdAt"
     ${havingSql}
-    ORDER BY kc."createdAt" DESC, kc."contractNumber" ASC
+    ORDER BY kc."createdAt" DESC, kc."contractNumber" ASC, kc."id" ASC
+    ${pagination ? Prisma.sql`LIMIT ${pagination.pageSize} OFFSET ${(pagination.page - 1) * pagination.pageSize}` : Prisma.empty}
   `;
 
   const contracts = rows.map((row) => ({
@@ -1040,7 +1086,8 @@ export async function listKitchenContractsForAdmin(filters = {}) {
     _count: { orders: Number(row.orderCount || 0) },
   }));
 
-  return attachOrdersToContracts(await attachRegistrationsToContracts(contracts));
+  const items = await attachOrdersToContracts(await attachRegistrationsToContracts(contracts));
+  return pagination ? { ...pagination, items } : items;
 }
 
 export async function getKitchenContractForAdmin(id) {
@@ -1425,8 +1472,62 @@ export function serializeKitchenForLegacy(kitchen) {
   };
 }
 
-function buildOrderAdminSearch(query) {
+const ORDER_SEARCH_MAX_RELATION_IDS = 2000;
+
+async function buildOrderAdminSearch(query) {
   const contains = { contains: query, mode: "insensitive" };
+  const kitchenWhere = { name: contains };
+  const contractWhere = {
+    OR: [
+      { contractNumber: contains },
+      {
+        project: {
+          is: {
+            OR: [
+              { name: contains },
+              { projectCode: contains },
+              { status: contains },
+              { description: contains },
+              { managerName: contains },
+              {
+                propertyObject: {
+                  is: {
+                    OR: [
+                      { name: contains },
+                      { city: contains },
+                      { country: contains },
+                      { postalCode: contains },
+                      { address1: contains },
+                      { address2: contains },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    ],
+  };
+
+  // Resolve the related tables with small standalone queries so the order query
+  // only filters on its own columns and id lists instead of nested subqueries.
+  const [kitchens, contracts] = await Promise.all([
+    prisma.kitchen.findMany({ where: kitchenWhere, select: { id: true }, take: ORDER_SEARCH_MAX_RELATION_IDS + 1 }),
+    prisma.kitchenContract.findMany({ where: contractWhere, select: { id: true }, take: ORDER_SEARCH_MAX_RELATION_IDS + 1 }),
+  ]);
+
+  const relationTerms = [];
+  if (kitchens.length > ORDER_SEARCH_MAX_RELATION_IDS) {
+    relationTerms.push({ kitchen: kitchenWhere });
+  } else if (kitchens.length) {
+    relationTerms.push({ kitchenId: { in: kitchens.map((kitchen) => kitchen.id) } });
+  }
+  if (contracts.length > ORDER_SEARCH_MAX_RELATION_IDS) {
+    relationTerms.push({ kitchenContract: { is: contractWhere } });
+  } else if (contracts.length) {
+    relationTerms.push({ kitchenContractId: { in: contracts.map((contract) => contract.id) } });
+  }
 
   return [
     { orderNumber: contains },
@@ -1438,47 +1539,7 @@ function buildOrderAdminSearch(query) {
     { country: contains },
     { address1: contains },
     { address2: contains },
-    {
-      kitchen: {
-        name: contains,
-      },
-    },
-    {
-      kitchenContract: {
-        is: {
-          OR: [
-            { contractNumber: contains },
-            {
-              project: {
-                is: {
-                  OR: [
-                    { name: contains },
-                    { projectCode: contains },
-                    { status: contains },
-                    { description: contains },
-                    { managerName: contains },
-                    {
-                      propertyObject: {
-                        is: {
-                          OR: [
-                            { name: contains },
-                            { city: contains },
-                            { country: contains },
-                            { postalCode: contains },
-                            { address1: contains },
-                            { address2: contains },
-                          ],
-                        },
-                      },
-                    },
-                  ],
-                },
-              },
-            },
-          ],
-        },
-      },
-    },
+    ...relationTerms,
   ];
 }
 
@@ -1490,7 +1551,7 @@ export async function getTestOrdersForAdmin(filters = {}) {
   return getOrdersForAdminByKind(filters, ORDER_KIND_TEST);
 }
 
-async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE) {
+async function getAdminOrderWhere(filters = {}) {
   const where = {};
 
   if (filters.kitchenId) where.kitchenId = filters.kitchenId;
@@ -1508,11 +1569,40 @@ async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE
 
   const query = String(filters.q || "").trim();
   if (query) {
-    where.OR = buildOrderAdminSearch(query);
+    where.OR = await buildOrderAdminSearch(query);
   }
 
+  return where;
+}
+
+export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, orderKind = ORDER_KIND_LIVE) {
+  const where = await getAdminOrderWhere(filters);
+  const delegate = getOrderDelegate(prisma, orderKind);
+  const groups = await delegate.groupBy({
+    by: ["status"], where, _count: { _all: true }, _sum: { totalPrice: true },
+  });
+  const statusCounts = { NEW: 0, EMAILED: 0, CONFIRMED: 0, CANCELLED: 0 };
+  let totalOrders = 0;
+  let confirmedGross = 0;
+  for (const group of groups) {
+    totalOrders += group._count._all;
+    statusCounts[group.status] = group._count._all;
+    if (group.status === "CONFIRMED") confirmedGross = Number(group._sum.totalPrice || 0);
+  }
+  const pagination = getAdminPagination(totalOrders, requestedPage);
+  const items = await getOrdersForAdminByKind(filters, orderKind, pagination, where);
+  const breakdown = getPriceBreakdown(confirmedGross);
+  return {
+    pagination: { ...pagination, items },
+    summary: { totalOrders, statusCounts, confirmedGross, confirmedNet: breakdown.net, confirmedVat: breakdown.vat },
+  };
+}
+
+async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE, pagination = null, resolvedWhere = null) {
+  const where = resolvedWhere || await getAdminOrderWhere(filters);
   const orders = await getOrderDelegate(prisma, orderKind).findMany({
     where,
+    ...(pagination ? { skip: (pagination.page - 1) * pagination.pageSize, take: pagination.pageSize } : {}),
     include: {
       kitchen: {
         select: { id: true, slug: true, name: true },
@@ -1520,7 +1610,7 @@ async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE
       kitchenContract: { select: { id: true, contractNumber: true } },
       items: { select: { id: true, code: true } },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
   });
 
   const serializableOrders = orders.map((order) => ({

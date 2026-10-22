@@ -1,0 +1,374 @@
+diff --git a/frontend/app/admin/order-cancellations/[id]/page.js b/frontend/app/admin/order-cancellations/[id]/page.js
+index 363d475..cfe95a4 100644
+--- a/frontend/app/admin/order-cancellations/[id]/page.js
++++ b/frontend/app/admin/order-cancellations/[id]/page.js
+@@ -4,7 +4,7 @@ import { AdminShell } from "../../../../components/admin-shell";
+ import { AdminText } from "../../../../components/admin-i18n";
+ import { CancellationRequestPanel } from "../../../../components/admin-order-cancellation-panel";
+ import { requireAdminPage } from "../../../../lib/auth";
+-import { listCancellationRequestsForAdmin } from "../../../../lib/order-cancellations";
++import { getCancellationRequestForAdmin } from "../../../../lib/order-cancellations";
+ 
+ export const dynamic = "force-dynamic";
+ 
+@@ -12,8 +12,7 @@ export default async function WithdrawalDetailPage({ params, searchParams }) {
+   const admin = await requireAdminPage();
+   const { id } = await params;
+   const query = (await searchParams) || {};
+-  const requests = await listCancellationRequestsForAdmin();
+-  const request = requests.find((item) => String(item.id) === id);
++  const request = await getCancellationRequestForAdmin(id);
+   if (!request) notFound();
+   const returnPath = typeof query.returnTo === "string" && /^\/admin\/order-cancellations(?:\?[^#\r\n]*)?$/.test(query.returnTo) ? query.returnTo : "/admin/order-cancellations";
+ 
+diff --git a/frontend/app/admin/order-cancellations/page.js b/frontend/app/admin/order-cancellations/page.js
+index a3755d7..7077fda 100644
+--- a/frontend/app/admin/order-cancellations/page.js
++++ b/frontend/app/admin/order-cancellations/page.js
+@@ -11,7 +11,9 @@ import { AdminText, AdminTranslatedInput } from "../../../components/admin-i18n"
+ import { CancellationRequestsTable } from "../../../components/admin-order-cancellation-panel";
+ import { getFormMessage } from "../../../lib/admin-forms";
+ import { requireAdminPage } from "../../../lib/auth";
+-import { listCancellationRequestsForAdmin } from "../../../lib/order-cancellations";
++import { getCancellationRequestsPage } from "../../../lib/order-cancellations";
++import { AdminPagination } from "../../../components/admin-pagination";
++import { buildAdminPageHref } from "../../../lib/admin-pagination";
+ 
+ export const dynamic = "force-dynamic";
+ 
+@@ -41,19 +43,9 @@ export default async function AdminOrderCancellationsPage({ searchParams = {} })
+   const activeStatus = ["RECEIVED", "APPROVED", "REJECTED", "ALL"].includes(requestedStatus) ? requestedStatus : "RECEIVED";
+   const q = normalizeParam(resolvedSearchParams.q).trim();
+ 
+-  const allRequests = await listCancellationRequestsForAdmin();
+-  const matchingRequests = allRequests.filter((request) => !q || [request.referenceNumber, request.consumerName, request.confirmationEmail, request.submittedContractNumber, request.order?.orderNumber].some((value) => String(value || "").toLocaleLowerCase().includes(q.toLocaleLowerCase())));
+-  const counts = matchingRequests.reduce(
+-    (summary, request) => {
+-      const status = String(request.status).toUpperCase();
+-      if (Object.prototype.hasOwnProperty.call(summary, status)) summary[status] += 1;
+-      return summary;
+-    },
+-    { RECEIVED: 0, APPROVED: 0, REJECTED: 0 },
+-  );
+-  const requests = activeStatus === "ALL"
+-    ? matchingRequests
+-    : matchingRequests.filter((request) => String(request.status).toUpperCase() === activeStatus);
++  const { requests, counts, totalMatching, pagination } = await getCancellationRequestsPage({
++    status: activeStatus, q, page: resolvedSearchParams.page,
++  });
+ 
+   const successMessage = getFormMessage(resolvedSearchParams, "success");
+   const errorMessage = getFormMessage(resolvedSearchParams, "error");
+@@ -88,13 +80,14 @@ export default async function AdminOrderCancellationsPage({ searchParams = {} })
+                   style={isActive ? filterActiveStyle : filterStyle}
+                 >
+                   <AdminText i18nKey={filter.key} fallback={filter.fallback} />
+-                  <span style={filterCountStyle}>{filter.status === "ALL" ? matchingRequests.length : counts[filter.status]}</span>
++                  <span style={filterCountStyle}>{filter.status === "ALL" ? totalMatching : counts[filter.status]}</span>
+                 </Link>
+               );
+             })}
+           </div>
+ 
+-          <CancellationRequestsTable requests={requests} returnPath={getFilterHref(activeStatus, q)} />
++          <CancellationRequestsTable requests={requests} returnPath={buildAdminPageHref("/admin/order-cancellations", { status: activeStatus, q }, pagination.page)} />
++          <AdminPagination basePath="/admin/order-cancellations" searchParams={{ status: activeStatus, q }} {...pagination} />
+         </AdminSection>
+       </div>
+     </AdminShell>
+diff --git a/frontend/app/admin/orders/page.js b/frontend/app/admin/orders/page.js
+index 0fd572b..0d9a65b 100644
+--- a/frontend/app/admin/orders/page.js
++++ b/frontend/app/admin/orders/page.js
+@@ -1,4 +1,3 @@
+-import { calculateOrderReportSummary } from "../../../lib/admin-order-reports";
+ import Link from "next/link";
+ import {
+   AdminSection,
+@@ -27,10 +26,9 @@ import {
+ import AdminSelect from "../../../components/admin-select";
+ import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-button";
+ import { getFormMessage } from "../../../lib/admin-forms";
+-import { getOrdersForAdmin, getTestOrdersForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
++import { getOrdersPageForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
+ import { requireAdminPage } from "../../../lib/auth";
+ import { requirePxAdminPage } from "../../../lib/admin-role-guards";
+-import { paginateAdminItems } from "../../../lib/admin-pagination";
+ 
+ export const dynamic = "force-dynamic";
+ 
+@@ -122,15 +120,13 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
+     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
+     dateTo: normalizeParam(resolvedSearchParams.dateTo).trim(),
+   };
+-  const [allOrders, kitchens] = await Promise.all([
+-    pxOnly ? getTestOrdersForAdmin(filters) : getOrdersForAdmin(filters),
++  const [{ pagination, summary }, kitchens] = await Promise.all([
++    getOrdersPageForAdmin(filters, resolvedSearchParams.page, pxOnly ? "test" : "live"),
+     pxOnly ? listKitchensForAdmin() : Promise.resolve([]),
+   ]);
+-  const pagination = paginateAdminItems(allOrders, resolvedSearchParams.page);
+   const orders = await attachOrderEmailDelivery(pagination.items, pxOnly ? "test" : "live");
+   const successMessage = getFormMessage(resolvedSearchParams, "success");
+   const errorMessage = getFormMessage(resolvedSearchParams, "error");
+-  const summary = calculateOrderReportSummary(allOrders);
+   const rowNumber = (index) => pagination.totalItems - (pagination.page - 1) * pagination.pageSize - index;
+ 
+   return (
+diff --git a/frontend/lib/admin-pagination.js b/frontend/lib/admin-pagination.js
+index 8121d48..1bc56f2 100644
+--- a/frontend/lib/admin-pagination.js
++++ b/frontend/lib/admin-pagination.js
+@@ -7,13 +7,16 @@ export function normalizeAdminPage(value) {
+ }
+ 
+ export function paginateAdminItems(items = [], requestedPage = 1, pageSize = ADMIN_PAGE_SIZE) {
+-  const totalItems = items.length;
++  const pagination = getAdminPagination(items.length, requestedPage, pageSize);
++  const start = (pagination.page - 1) * pageSize;
++  return { ...pagination, items: items.slice(start, start + pageSize) };
++}
++
++export function getAdminPagination(totalItems, requestedPage = 1, pageSize = ADMIN_PAGE_SIZE) {
+   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+   const page = Math.min(normalizeAdminPage(requestedPage), totalPages);
+-  const start = (page - 1) * pageSize;
+ 
+   return {
+-    items: items.slice(start, start + pageSize),
+     page,
+     pageSize,
+     totalItems,
+diff --git a/frontend/lib/catalog.js b/frontend/lib/catalog.js
+index 86b1fd0..e5513da 100644
+--- a/frontend/lib/catalog.js
++++ b/frontend/lib/catalog.js
+@@ -1,5 +1,7 @@
+ import { KitchenStatus, ItemType, OrderStatus, Prisma } from "@prisma/client";
+ import { prisma } from "./prisma.js";
++import { getAdminPagination } from "./admin-pagination.js";
++import { getPriceBreakdown } from "./price-utils.js";
+ import { ORDER_KIND_LIVE, ORDER_KIND_TEST, getOrderDelegate } from "./order-kind.js";
+ import { applyDueScheduledCatalogPriceListImports } from "./catalog-price-list-import.js";
+ import { isMissingKitchenRegistrationTableError } from "./kitchen-registration-db.js";
+@@ -1490,7 +1492,7 @@ export async function getTestOrdersForAdmin(filters = {}) {
+   return getOrdersForAdminByKind(filters, ORDER_KIND_TEST);
+ }
+ 
+-async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE) {
++function getAdminOrderWhere(filters = {}) {
+   const where = {};
+ 
+   if (filters.kitchenId) where.kitchenId = filters.kitchenId;
+@@ -1511,8 +1513,37 @@ async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE
+     where.OR = buildOrderAdminSearch(query);
+   }
+ 
++  return where;
++}
++
++export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, orderKind = ORDER_KIND_LIVE) {
++  const where = getAdminOrderWhere(filters);
++  const delegate = getOrderDelegate(prisma, orderKind);
++  const groups = await delegate.groupBy({
++    by: ["status"], where, _count: { _all: true }, _sum: { totalPrice: true },
++  });
++  const statusCounts = { NEW: 0, EMAILED: 0, CONFIRMED: 0, CANCELLED: 0 };
++  let totalOrders = 0;
++  let confirmedGross = 0;
++  for (const group of groups) {
++    totalOrders += group._count._all;
++    statusCounts[group.status] = group._count._all;
++    if (group.status === "CONFIRMED") confirmedGross = Number(group._sum.totalPrice || 0);
++  }
++  const pagination = getAdminPagination(totalOrders, requestedPage);
++  const items = await getOrdersForAdminByKind(filters, orderKind, pagination);
++  const breakdown = getPriceBreakdown(confirmedGross);
++  return {
++    pagination: { ...pagination, items },
++    summary: { totalOrders, statusCounts, confirmedGross, confirmedNet: breakdown.net, confirmedVat: breakdown.vat },
++  };
++}
++
++async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE, pagination = null) {
++  const where = getAdminOrderWhere(filters);
+   const orders = await getOrderDelegate(prisma, orderKind).findMany({
+     where,
++    ...(pagination ? { skip: (pagination.page - 1) * pagination.pageSize, take: pagination.pageSize } : {}),
+     include: {
+       kitchen: {
+         select: { id: true, slug: true, name: true },
+@@ -1520,7 +1551,7 @@ async function getOrdersForAdminByKind(filters = {}, orderKind = ORDER_KIND_LIVE
+       kitchenContract: { select: { id: true, contractNumber: true } },
+       items: { select: { id: true, code: true } },
+     },
+-    orderBy: { createdAt: "desc" },
++    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+   });
+ 
+   const serializableOrders = orders.map((order) => ({
+diff --git a/frontend/lib/order-cancellations.js b/frontend/lib/order-cancellations.js
+index b98d901..27e495b 100644
+--- a/frontend/lib/order-cancellations.js
++++ b/frontend/lib/order-cancellations.js
+@@ -1,5 +1,6 @@
+ import { randomBytes } from "crypto";
+ import { prisma } from "./prisma";
++import { getAdminPagination } from "./admin-pagination";
+ import { cancelOrderPayment } from "./stripe-payments";
+ import {
+   sendCancellationDecisionEmail,
+@@ -265,6 +266,35 @@ export async function countOpenCancellationRequests() {
+   });
+ }
+ 
++export async function getCancellationRequestForAdmin(id) {
++  return prisma.orderCancellationRequest.findUnique({
++    where: { id }, include: { order: { select: ADMIN_ORDER_SELECT } },
++  });
++}
++
++export async function getCancellationRequestsPage({ status = "RECEIVED", q = "", page = 1 } = {}) {
++  const where = q ? { OR: [
++    ...["referenceNumber", "consumerName", "confirmationEmail", "submittedContractNumber"].map((field) => ({
++      [field]: { contains: q, mode: "insensitive" },
++    })),
++    { order: { orderNumber: { contains: q, mode: "insensitive" } } },
++  ] } : {};
++  const groups = await prisma.orderCancellationRequest.groupBy({
++    by: ["status"], where, _count: { _all: true },
++  });
++  const counts = { RECEIVED: 0, APPROVED: 0, REJECTED: 0 };
++  for (const group of groups) counts[group.status] = group._count._all;
++  const totalMatching = Object.values(counts).reduce((sum, count) => sum + count, 0);
++  const pagination = getAdminPagination(status === "ALL" ? totalMatching : counts[status] || 0, page);
++  const requests = await prisma.orderCancellationRequest.findMany({
++    where: { ...where, ...(status === "ALL" ? {} : { status }) },
++    orderBy: [{ receivedAt: "desc" }, { id: "desc" }],
++    skip: (pagination.page - 1) * pagination.pageSize, take: pagination.pageSize,
++    include: { order: { select: ADMIN_ORDER_SELECT } },
++  });
++  return { requests, counts, totalMatching, pagination };
++}
++
+ export function cancellationEmailNeedsAttention(request) {
+   return [request?.customerEmailStatus, request?.internalEmailStatus, request?.finalEmailStatus].includes("FAILED");
+ }
+diff --git a/frontend/lib/public-visit-reports.js b/frontend/lib/public-visit-reports.js
+index 5a955b0..61223ba 100644
+--- a/frontend/lib/public-visit-reports.js
++++ b/frontend/lib/public-visit-reports.js
+@@ -1,4 +1,5 @@
+ import { prisma } from "./prisma.js";
++import { Prisma } from "@prisma/client";
+ import {
+   PUBLIC_VISIT_EVENT_TYPES,
+   SERVICE_PAGE_PATH,
+@@ -240,33 +241,31 @@ export async function loadContractAccessPageData(filters = {}, requestedPage = 1
+   return { events, page, total, totalPages };
+ }
+ 
+-async function purgeJunkServiceClaimVisitEvents() {
+-  const junkLast4 = [...SERVICE_CLAIM_JUNK_CONTRACT_LAST4];
+-  if (!junkLast4.length) return;
+-
+-  try {
+-    await prisma.publicVisitEvent.deleteMany({
+-      where: {
+-        kitchenContractId: null,
+-        contractNumberLast4: { in: junkLast4 },
+-        eventType: { in: SERVICE_VISIT_FUNNEL_EVENT_TYPES },
+-      },
+-    });
+-  } catch (error) {
+-    console.warn("Junk claim-activity cleanup failed:", error?.message || error);
+-  }
++function serviceVisitSqlWhere(filters = {}) {
++  const date = getVisitReportWhere(filters).createdAt;
++  return Prisma.sql`
++    (NULLIF("kitchenContractId", '') IS NOT NULL OR
++      LOWER(BTRIM(COALESCE("contractNumberLast4", ''))) NOT IN (${Prisma.join([...SERVICE_CLAIM_JUNK_CONTRACT_LAST4])}))
++    ${date?.gte ? Prisma.sql`AND "createdAt" >= ${date.gte}` : Prisma.empty}
++    ${date?.lte ? Prisma.sql`AND "createdAt" <= ${date.lte}` : Prisma.empty}
++  `;
+ }
+ 
+ export async function loadRecentServiceVisitData(filters = {}) {
+-  await purgeJunkServiceClaimVisitEvents();
+-
++  // Filter before LIMIT, so old placeholder events cannot consume visible rows.
++  // Reading a report must not run a database cleanup on every navigation.
++  const ids = await prisma.$queryRaw`
++    SELECT "id" FROM "PublicVisitEvent"
++    WHERE ${serviceVisitSqlWhere(filters)}
++      AND "eventType" IN (${Prisma.join(SERVICE_VISIT_TABLE_EVENT_TYPES)})
++    ORDER BY "createdAt" DESC, "id" DESC LIMIT 100
++  `;
+   const events = await prisma.publicVisitEvent.findMany({
+     where: {
+-      ...getVisitReportWhere(filters),
+-      eventType: { in: SERVICE_VISIT_TABLE_EVENT_TYPES },
++      id: { in: ids.map((row) => row.id) },
+     },
+     include: kitchenContractInclude,
+-    orderBy: { createdAt: "desc" },
++    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+     take: 100,
+   });
+ 
+@@ -274,35 +273,26 @@ export async function loadRecentServiceVisitData(filters = {}) {
+ }
+ 
+ export async function loadServiceVisitSummary(filters = {}) {
+-  await purgeJunkServiceClaimVisitEvents();
+-
+-  const dateWhere = getVisitReportWhere(filters);
+-  const events = await prisma.publicVisitEvent.findMany({
+-    where: {
+-      ...dateWhere,
+-      OR: [
+-        {
+-          eventType: PUBLIC_VISIT_EVENT_TYPES.PAGE_OPENED,
+-          path: SERVICE_PAGE_PATH,
+-        },
+-        {
+-          eventType: { in: SERVICE_VISIT_FUNNEL_EVENT_TYPES },
+-        },
+-      ],
+-    },
+-    select: {
+-      eventType: true,
+-      path: true,
+-      visitorKey: true,
+-      ipHash: true,
+-      userAgentHash: true,
+-      metadata: true,
+-      kitchenContractId: true,
+-      contractNumberLast4: true,
+-    },
+-  });
+-
+-  return calculateServiceVisitSummary(events);
++  const types = PUBLIC_VISIT_EVENT_TYPES;
++  const [summary] = await prisma.$queryRaw`
++    SELECT
++      COUNT(DISTINCT NULLIF(COALESCE(NULLIF("visitorKey", ''),
++        CONCAT_WS(':', NULLIF("ipHash", ''), NULLIF("userAgentHash", ''))), ''))
++        FILTER (WHERE "eventType" = ${types.PAGE_OPENED} AND "path" = ${SERVICE_PAGE_PATH}) AS "uniqueVisitors",
++      COUNT(*) FILTER (WHERE "eventType" = ${types.PAGE_OPENED} AND "path" = ${SERVICE_PAGE_PATH}) AS "opened",
++      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_LOOKUP}) AS "lookups",
++      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_FOUND}) AS "found",
++      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_NOT_FOUND}) AS "notFound",
++      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CLAIM_SUBMITTED}) AS "claimsSubmitted",
++      COUNT(*) FILTER (WHERE "eventType" = ${types.SERVICE_CONTRACT_FOUND}
++        AND "metadata"->>'orderKind' = ${ORDER_KIND_TEST}) AS "testLookups"
++    FROM "PublicVisitEvent"
++    WHERE ${serviceVisitSqlWhere(filters)} AND (
++      ("eventType" = ${types.PAGE_OPENED} AND "path" = ${SERVICE_PAGE_PATH}) OR
++      "eventType" IN (${Prisma.join(SERVICE_VISIT_FUNNEL_EVENT_TYPES)})
++    )
++  `;
++  return Object.fromEntries(Object.entries(summary).map(([key, value]) => [key, Number(value)]));
+ }
+ 
+ export async function loadPublicVisitReportData(filters = {}) {

@@ -8,6 +8,7 @@ import { getProviderCountryConfig } from "../../lib/address-verification";
 import { prisma } from "../../lib/prisma";
 import { Prisma } from "@prisma/client";
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
@@ -765,6 +766,18 @@ async function loadPropertyOwnerAnalytics({ startDate, kitchenId, status }) {
   };
 }
 
+// The item aggregates are the heaviest dashboard reads and only feed
+// summary charts, so they are reused for a short time across page loads.
+const DASHBOARD_AGGREGATE_REVALIDATE_SECONDS = 60;
+
+function loadGroupedItemRowsCached(filters) {
+  return unstable_cache(
+    () => loadGroupedItemRows(filters),
+    ["admin-dashboard-grouped-items", filters.startDate?.toISOString() || "all", filters.kitchenId || "", filters.status || ""],
+    { revalidate: DASHBOARD_AGGREGATE_REVALIDATE_SECONDS },
+  )();
+}
+
 const hasKitchenItemArticleNumberColumn = cache(async function hasKitchenItemArticleNumberColumn() {
   const rows = await prisma.$queryRaw`
     SELECT 1
@@ -805,7 +818,7 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
     loadDailyStatusRows(dashboardFilters),
     loadPaymentRows(dashboardFilters),
     loadGeographyRows(dashboardFilters),
-    loadGroupedItemRows(dashboardFilters),
+    loadGroupedItemRowsCached(dashboardFilters),
   ]);
   const totalOrders = summary.totalOrders;
   const totalRevenue = summary.totalRevenue;

@@ -4,7 +4,7 @@ import { AdminShell } from "../../../../components/admin-shell";
 import { AdminText } from "../../../../components/admin-i18n";
 import { CancellationRequestPanel } from "../../../../components/admin-order-cancellation-panel";
 import { requireAdminPage } from "../../../../lib/auth";
-import { listCancellationRequestsForAdmin } from "../../../../lib/order-cancellations";
+import { getCancellationRequestForAdmin } from "../../../../lib/order-cancellations";
 
 export const dynamic = "force-dynamic";
 
@@ -12,8 +12,7 @@ export default async function WithdrawalDetailPage({ params, searchParams }) {
   const admin = await requireAdminPage();
   const { id } = await params;
   const query = (await searchParams) || {};
-  const requests = await listCancellationRequestsForAdmin();
-  const request = requests.find((item) => String(item.id) === id);
+  const request = await getCancellationRequestForAdmin(id);
   if (!request) notFound();
   const returnPath = typeof query.returnTo === "string" && /^\/admin\/order-cancellations(?:\?[^#\r\n]*)?$/.test(query.returnTo) ? query.returnTo : "/admin/order-cancellations";
 
