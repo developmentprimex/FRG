@@ -1,4 +1,5 @@
 import { AB_105803_HOTSPOTS, AB_105803_LIGHT_DETAILS } from "./ab-105803-plan.js";
+import { AB_105743_FAUCET_POINTS } from "./ab-105743-fixtures.js";
 // Vector plans (rendered from the source PDFs via docs/render-plan-svg.py) so the drawing
 // stays razor-sharp at any zoom. The pixel-perfect hotspot overlay sits on top unchanged
 // (the SVG keeps the PDF's aspect ratio, so the %-based boxes still line up exactly).
@@ -123,7 +124,7 @@ export const PLAN_IMAGE_BY_SLUG = {
   "ab-105738": "/plans/AB%20105732.svg",
   "ab-105740": "/plans/AB%20104968-smooth.png",
   "ab-105741": "/plans/AB%20105732.svg",
-  "ab-105743": "/plans/AB%20105743.svg",
+  "ab-105743": "/plans/AB%20105743-smooth.png",
   "ab-105744": "/plans/AB%20105744.svg",
   "ab-105760": "/plans/AB%20105760-61.svg",
   "ab-105761": "/plans/AB%20105761-62.svg",
@@ -1723,7 +1724,7 @@ export const PLAN_HOTSPOTS_BY_SLUG = {
     { componentKey: "worktop", points: [[59.572447,51.596639],[67.396675,53.210084],[67.396675,56.719328],[49.496437,53.048739]], preserveManualSize: true },
     { componentKey: "worktop", points: [[8.351544,56.27563],[16.118765,57.889076],[49.496437,53.048739],[49.496437,54.278992],[16.118765,59.119328],[8.351544,57.42521]], preserveManualSize: true },
     { componentKey: "worktop", points: [[49.496437,53.048739],[67.396675,56.719328],[67.396675,57.94958],[49.496437,54.278992]], preserveManualSize: true },
-    { componentKey: "sink-faucet", points: [[24.7981,54.621849],[24.7981,48.631933],[25.267221,46.702521],[26.038005,45.989916],[28.304039,45.344538],[28.304039,44.436975],[28.432304,44.436975],[28.432304,47.663866],[28.361045,47.663866],[28.361045,46.231933],[26.08076,46.231933],[25.267221,48.551261],[25.325416,54.581513]], preserveManualSize: true },
+    { componentKey: "sink-faucet", points: AB_105743_FAUCET_POINTS, preserveManualSize: true },
     { componentKey: "base-module-1", points: [[8.351544,57.42521],[16.118765,59.119328],[16.118765,86.12437],[8.351544,84.289076]], preserveManualSize: true },
     { componentKey: "base-module-1", points: [[16.118765,59.119328],[16.788599,59.018487],[16.788599,86.023529],[16.118765,86.12437]], preserveManualSize: true },
     { componentKey: "base-module-1", points: [[16.788599,59.018487],[21.819477,58.292437],[21.819477,85.297479],[16.788599,86.023529]], preserveManualSize: true },

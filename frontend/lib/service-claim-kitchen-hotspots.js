@@ -1,5 +1,6 @@
 import { getServiceClaimDishwasherMask } from "./service-claim-dishwasher-masks.js";
 import { AB_105803_BLENDE_CALIBRATION, AB_105803_COOKTOP_POINTS, AB_105803_OVEN_PART_POINTS, AB_105803_SINK_POINTS } from "./ab-105803-plan.js";
+import { AB_105743_SINK_POINTS } from "./ab-105743-fixtures.js";
 import { getServiceClaimPartComponentId } from "./service-claim-kitchen-plan-selection.js";
 import { AB_105793_BLENDE_CALIBRATION, AB_105793_COOKTOP_POINTS, AB_105793_OVEN_PART_POINTS } from "./ab-105793-plan.js";
 import { AB_105796_BLENDE_CALIBRATION, AB_105796_COOKTOP_POINTS, AB_105796_OVEN_PART_POINTS } from "./ab-105796-plan.js";
@@ -154,6 +155,7 @@ const L_SHAPED_SINK_POINTS_RELATIVE_TO_FAUCET_BY_SLUG = {
 // by several narrow hotspots. These coordinates remain in the uncropped source
 // plan system and are projected into the ASC display crop below.
 const L_SHAPED_SINK_SOURCE_POINTS_BY_SLUG = {
+  "ab-105743": AB_105743_SINK_POINTS,
   "ab-105803": AB_105803_SINK_POINTS,
   "ab-105791": AB_105791_SINK_POINTS,
   "ab-105794": AB_105794_SINK_POINTS,

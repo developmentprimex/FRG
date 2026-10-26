@@ -5,6 +5,8 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { loadKitchenSvgMarkup } from "../lib/load-kitchen-svg.js";
+import { AB_105743_FAUCET_POINTS, AB_105743_SINK_POINTS } from "../lib/ab-105743-fixtures.js";
+import { loadKitchenPlanPreviewData } from "../lib/email/order-notifications.js";
 import {
   AB_105831_FRG_ORDER_HOTSPOTS,
   AB_105837_FRG_ORDER_HOTSPOTS,
@@ -3699,6 +3701,34 @@ test("L kitchens use one UPEF65 instead of two UPK20 filler panels", () => {
   assert.match(seed, /const catalogBlendeQuantity = catalogBlende \? Math\.max\(1, getBlendeQuantity\(item\)\) : null/);
 });
 
+test("AB 105743 faucet covers its complete head, neck and stem without moving the sink", async () => {
+  const contains = ([x,y]) => {
+    let inside = false;
+    const points = AB_105743_FAUCET_POINTS;
+    for(let i=0,j=points.length-1;i<points.length;j=i++) {
+      const [a,b]=points[i], [c,d]=points[j];
+      if((b>y)!==(d>y) && x<(c-a)*(y-b)/(d-b)+a) inside=!inside;
+    }
+    return inside;
+  };
+  for(const [x,y] of [[241.5,266],[240,281],[229,274],[211,315],[211,285]]) {
+    assert.ok(contains([x/842*100,y/595*100]),`${x},${y} must be blue`);
+  }
+  assert.ok(!contains([229/842*100,295/595*100]), 'empty space below the spout stays clear');
+  const source = PLAN_HOTSPOTS_BY_SLUG['ab-105743'].find(h=>h.componentKey==='sink-faucet');
+  const xs=source.points.map(p=>p[0]),ys=source.points.map(p=>p[1]);
+  const hotspot={...source,left:Math.min(...xs),top:Math.min(...ys),width:Math.max(...xs)-Math.min(...xs),height:Math.max(...ys)-Math.min(...ys)};
+  const parts=buildServiceClaimPartHotspots([hotspot],[{partKey:'sink',sourceComponentKey:'sink-faucet'}],'ab-105743');
+  const sink=parts[0];
+  const painted=sink.clipPath.slice(8,-1).split(',').map(pair=>{
+    const [x,y]=pair.trim().split(/\s+/).map(parseFloat);
+    return [sink.left+x/100*sink.width,sink.top+y/100*sink.height];
+  });
+  painted.forEach((point,i)=>point.forEach((value,j)=>assert.ok(Math.abs(value-AB_105743_SINK_POINTS[i][j])<0.000001)));
+  const preview=await loadKitchenPlanPreviewData();
+  assert.deepEqual(preview.hotspotsBySlug['ab-105743'].find(h=>h.componentKey==='sink-faucet').points,source.points);
+});
+
 test("AB 105743 uses its replacement vector plan and exact Excel selection mapping", () => {
   const stageSource = fs.readFileSync(path.join(repoRoot, "components", "kitchen-svg-stage.jsx"), "utf8");
   const selectionSource = fs.readFileSync(path.join(repoRoot, "components", "kitchen-selection-utils.js"), "utf8");
@@ -3708,9 +3738,9 @@ test("AB 105743 uses its replacement vector plan and exact Excel selection mappi
 
   assert.equal(
     createHash("sha256").update(pdfBytes).digest("hex"),
-    "7992b3ea3eb98b1945774f294c09cc6e217b61a2aa97d7eac651920a0f087dbe",
+    "84b84925cc668142c6a05f5649e08fadfc430b24e5ee3abb4b693d28827f8a74",
   );
-  assert.match(stageSource, /"ab-105743":\s*"\/plans\/AB%20105743\.svg"/);
+  assert.match(stageSource, /"ab-105743":\s*"\/plans\/AB%20105743-smooth\.png"/);
   assert.match(stageSource, /"ab-105743":\s*\[[\s\S]*componentKey:\s*"base-module-1"[\s\S]*componentKey:\s*"base-module-2"[\s\S]*componentKey:\s*"sink-base"[\s\S]*componentKey:\s*"base-module-3"[\s\S]*componentKey:\s*"oven-module"[\s\S]*componentKey:\s*"drawer-module"/);
   assert.match(stageSource, /componentKey:\s*"wall-cabinet-3"[\s\S]*\[71\.529691,17\.67395\][\s\S]*\[77\.230404,28\.484034\]/);
   assert.match(stageSource, /componentKey:\s*"worktop"[\s\S]*\[59\.572447,51\.596639\][\s\S]*\[67\.396675,56\.719328\][\s\S]*\[49\.496437,53\.048739\]/);
