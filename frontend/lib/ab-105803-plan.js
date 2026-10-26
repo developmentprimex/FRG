@@ -31,19 +31,17 @@ export const AB_105803_HOTSPOTS = [
   face('worktop',[[138,358.72],[140.52,358.48],[140.52,534.88],[138,535.24]],{claimFurniturePartKey:'worktop-end-panel-left',separateLockedSidePanel:true}),
   face('worktop',[[380.88,333.88],[383.4,333.64],[383.4,510.04],[380.88,510.4]],{claimFurniturePartKey:'worktop-end-panel-left',separateLockedSidePanel:true}),
   face('worktop',[[549.96,355.96],[552,356.2],[552,532.72],[549.96,532.36]],{claimFurniturePartKey:'worktop-end-panel',separateLockedSidePanel:true}),
-  // Row 4 includes the outside UPK20 face; row 6 includes its corner-side UPK20.
+  // Row 4 includes UPK20; row 6 owns the complete UPEF65 corner, without UPK20.
   face('base-module-1',[[140.52,358.48],[148.32,357.64],[148.32,534.16],[140.52,534.88]]),
   face('base-module-1',[[148.32,357.64],[194.76,352.96],[194.76,529.36],[148.32,534.16]]),
   face('sink-base',[[194.76,352.96],[287.88,343.36],[287.88,519.88],[194.76,529.36]]),
   face('dishwasher-base',[[287.88,343.36],[380.88,333.88],[380.88,510.4],[287.88,519.88]],{claimDishwasherFront:true}),
-  // UPEF65 belongs to the dishwasher package (supplier row 5).
-  face('dishwasher-base',[[383.4,333.64],[391.2,332.8],[391.2,509.32],[383.4,510.04]]),
-  face('dishwasher-base',[[391.2,332.8],[398.28,333.88],[398.28,510.28],[391.2,509.32]]),
-  face('base-module-2',[[398.28,333.88],[406.8,335.08],[406.8,511.6],[398.28,510.28]]),
+  // Both visible corner faces belong to the right-hand 30 cm cabinet.
+  face('base-module-2',[[383.4,333.64],[391.2,332.8],[391.2,509.32],[383.4,510.04]]),
+  face('base-module-2',[[391.2,332.8],[406.8,335.08],[406.8,511.6],[391.2,509.32]]),
   face('base-module-2',[[406.8,335.08],[445.8,340.84],[445.8,517.24],[406.8,511.6]]),
   face('oven-module',[[445.8,340.84],[523.92,352.12],[523.92,528.64],[445.8,517.24]],{claimApplianceSurface:'oven'}),
   {componentKey:'oven-module',points:AB_105803_COOKTOP_POINTS,preserveManualSize:true,claimApplianceSurface:'cooktop'},
-  face('end-blende',[[523.92,352.12],[549.96,355.96],[549.96,532.36],[523.92,528.64]]),
   face('wall-cabinet-1',[[354,58.6],[369,60.76],[369,206.08],[354,203.92]]),
   face('wall-cabinet-1',[[354,58.6],[357.12,58.24],[372.12,60.52],[369,60.76]]),
   face('wall-cabinet-1',[[369,60.76],[447.12,72.16],[447.12,217.48],[369,206.08]]),
@@ -68,14 +66,13 @@ const bounds = points => {
   return {left:Math.min(...xs),right:Math.max(...xs),top:Math.min(...ys),bottom:Math.max(...ys)};
 };
 export const AB_105803_BLENDE_CALIBRATION = {
-  // UPEF65 has two visible corner faces; ASC separates both from the dishwasher package.
-  'dishwasher-base':{side:'right',wholeFacesOnly:true,wholeBlendeFaces:[
+  // ASC separates both UPEF65 faces from the right-hand 30 cm cabinet.
+  'base-module-2':{side:'left',wholeFacesOnly:true,wholeBlendeFaces:[
     bounds([[383.4,333.64],[391.2,332.8],[391.2,509.32],[383.4,510.04]]),
-    bounds([[391.2,332.8],[398.28,333.88],[398.28,510.28],[391.2,509.32]]),
+    bounds([[391.2,332.8],[406.8,335.08],[406.8,511.6],[391.2,509.32]]),
   ]},
   'wall-cabinet-1':{side:'left',wholeFacesOnly:true,wholeBlendeFaces:[bounds([[354,58.6],[369,206.08]])]},
   'base-module-1':{side:'left',wholeFacesOnly:true,wholeBlendeFaces:[bounds([[140.52,357.64],[148.32,534.88]])]},
-  'base-module-2':{side:'left',wholeFacesOnly:true,wholeBlendeFaces:[bounds([[398.28,333.88],[406.8,511.6]])]},
 };
 const detail=(key,x1,y1,x2,y2)=>{
   const {left,right,top,bottom}=bounds([[x1,y1],[x2,y2]]);

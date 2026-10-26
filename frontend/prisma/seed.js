@@ -2704,9 +2704,8 @@ const AB_105803_ITEMS = [
   defaultSinkBase({ code: "SINK-BASE-AB105803-SP60-L", articleNumber: "SP60", catalogArticleNumber: "SP60", catalogPriceSyncMode: "LOCKED_INCLUDED", widthMm: 600, heightMm: 878, depthMm: 600, sortOrder: 30, infoText: "Included SP60 sink base cabinet, hinge left (SP60 L)" }),
   defaultSinkWorktop({ code: "SINK-WORKTOP-AB105803", articleNumber: "526335 + 517720", catalogArticleNumber: "526335 + 517720", catalogPriceSyncMode: "LOCKED_INCLUDED", sortOrder: 32, infoText: "Included 526335 sink, left orientation (526335 L), and 517720 faucet" }),
   { ...AB_105802_ITEMS.find(item => item.code === "CAB-BASE-AB105802-US30-UPK20"), sortOrder: 40 },
-  { itemType: ItemType.COMPONENT, code: "DISH-AB105803-600-UPEF65", name: DISHWASHER_CATALOG_NAME_EN, nameDe: DISHWASHER_CATALOG_NAME_DE, price: articlePriceWithBlende("A-EGSPV597210 + TGV60", "UPEF65"), widthMm: 600, heightMm: 878, depthMm: 600, iconKey: "dishwasher_base", colorKey: "#001f7f", componentKey: "dishwasher-base", sortOrder: 50, articleNumber: "A-EGSPV597210 + TGV60", catalogArticleNumber: "A-EGSPV597210 + TGV60", blendeCode: "UPEF65", blendeLabel: "UPEF65", blendePrice: blendePrice("UPEF65") },
-  { itemType: ItemType.COMPONENT, code: "CAB-BASE-AB105803-US30-UPK20", name: "Lower Cabinet with Drawer", nameDe: "Unterschrank mit Schublade", price: articlePriceWithBlende("US30", "UPK20"), widthMm: 300, heightMm: 878, depthMm: 600, iconKey: "drawer_base_two", colorKey: "#f0a500", componentKey: "base-module-2", sortOrder: 60, articleNumber: "US30", catalogArticleNumber: "US30", blendeCode: "UPK20", blendeLabel: "UPK20", blendePrice: blendePrice("UPK20") },
-  { itemType: ItemType.COMPONENT, code: "BLENDE-AB105803-UPK20", name: "Lower cabinet end filler", nameDe: "Passblende Unterschrank", price: blendePrice("UPK20"), iconKey: "blende", colorKey: "#f0a500", componentKey: "end-blende", sortOrder: 70, articleNumber: "UPK20", catalogBlendeCode: "UPK20" },
+  { itemType: ItemType.COMPONENT, code: "DISH-AB105803-600-UPEF65", name: DISHWASHER_CATALOG_NAME_EN, nameDe: DISHWASHER_CATALOG_NAME_DE, price: articlePrice("A-EGSPV597210 + TGV60"), widthMm: 600, heightMm: 878, depthMm: 600, iconKey: "dishwasher_base", colorKey: "#001f7f", componentKey: "dishwasher-base", sortOrder: 50, articleNumber: "A-EGSPV597210 + TGV60", catalogArticleNumber: "A-EGSPV597210 + TGV60", blendeCode: null, blendeLabel: null, blendePrice: null },
+  { itemType: ItemType.COMPONENT, code: "CAB-BASE-AB105803-US30-UPK20", name: "Lower Cabinet with Drawer", nameDe: "Unterschrank mit Schublade", price: articlePriceWithBlende("US30", "UPEF65"), widthMm: 300, heightMm: 878, depthMm: 600, iconKey: "drawer_base_two", colorKey: "#f0a500", componentKey: "base-module-2", sortOrder: 60, articleNumber: "US30", catalogArticleNumber: "US30", blendeCode: "UPEF65", blendeLabel: "UPEF65", blendePrice: blendePrice("UPEF65") },
   { ...AB_105800_ITEMS.find(item => item.componentKey === "refrigerator"), sortOrder: 80 },
   { ...AB_105800_ITEMS.find(item => item.componentKey === "wall-cabinet-1"), sortOrder: 90 },
   { ...AB_105800_ITEMS.find(item => item.componentKey === "wall-cabinet-3"), code: "CAB-WALL-AB105803-H3002", componentKey: "wall-cabinet-2", sortOrder: 100 },
@@ -3715,13 +3714,6 @@ const DEFAULT_KITCHENS = [
     items: AB_105841_ITEMS,
   },
   {
-    slug: "108134-modul-1",
-    kitchenCode: "108 134",
-    name: "108134 Modul 1 Kitchen",
-    description: "Kitchen configuration based on frontend/public/plans/108134 MODUL 1.svg",
-    items: MODUL1_108134_ITEMS,
-  },
-  {
     slug: "ab-105838",
     kitchenCode: "105 838",
     name: "105838",
@@ -3798,7 +3790,6 @@ const DEFAULT_KITCHENS = [
 ];
 
 const DEFAULT_KITCHEN_CONTRACTS = [
-  { contractNumber: "670108134", kitchenSlug: "108134-modul-1" },
   { contractNumber: "670103898", kitchenSlug: "burger-103898" },
   { contractNumber: "111103898", kitchenSlug: "burger-103898" },
   ...DEFAULT_KITCHENS
