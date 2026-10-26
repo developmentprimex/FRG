@@ -3063,6 +3063,18 @@ test("AB 105831 splits the US60 and UPEF65 at their PDF divider", () => {
   assert.equal(blende.sourceComponentKey, "base-module-2");
 });
 
+test("AB 104968 H5002 upper filler keeps the cabinet front and exposed side separate", () => {
+  for (const slug of ["ab-104968", "ab-105734", "ab-105737", "ab-105740"]) {
+    const filler = { componentId: "component-claim-blende-wall-cabinet-1", componentKey: "claim-blende-wall-cabinet-1", claimPartKey: "blende", sourceComponentKey: "wall-cabinet-1", blendeQuantity: 1 };
+    const result = buildServiceClaimBlendeHotspots(PLAN_HOTSPOTS_BY_SLUG[slug], [filler], [], slug);
+    const band = result.find(h=>h.componentId===filler.componentId);
+    assert.ok(band, slug);
+    assert.ok(Math.abs(band.left-10.945368)<0.000001, slug);
+    assert.ok(Math.abs(band.width-(11.84323-10.945368))<0.000001, slug);
+    assert.ok(result.some(h=>h.componentKey==='wall-cabinet-1'), 'cabinet remains selectable');
+  }
+});
+
 test("AB 104968 independent claim Blenden follow their PDF end faces", () => {
   const hotspots = [
     { componentKey: "base-module-2", left: 35.72, top: 55.87, width: 9.08, height: 30.24 },

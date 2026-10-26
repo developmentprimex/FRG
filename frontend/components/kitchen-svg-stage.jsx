@@ -95,10 +95,10 @@ export const IMAGE_VIEW_BY_SLUG = {
   "ab-105813": "/jpg/AB%20105805_page-0001.jpg",
   "ab-105817": "/jpg/AB%20105805_page-0001.jpg",
   "ab-105834": "/jpg/AB%20105834_page-0001.jpg",
-  "ab-104968": "/jpg/AB%20104968_page-0001.jpg",
-  "ab-105734": "/jpg/AB%20104968_page-0001.jpg",
-  "ab-105737": "/jpg/AB%20104968_page-0001.jpg",
-  "ab-105740": "/jpg/AB%20104968_page-0001.jpg",
+  "ab-104968": "/plans/AB%20104968-smooth.png",
+  "ab-105734": "/plans/AB%20104968-smooth.png",
+  "ab-105737": "/plans/AB%20104968-smooth.png",
+  "ab-105740": "/plans/AB%20104968-smooth.png",
   "ab-105837": "/jpg/AB%20105837_page-0001.jpg",
   "ab-105840": "/jpg/AB%20105837_page-0001.jpg",
   "ab-105843": "/jpg/AB%20105837_page-0001.jpg",
@@ -2597,15 +2597,6 @@ export default function useKitchenSvgStage({
     width: `${(100 / activePlanDisplayCrop.width) * 100}%`,
     height: `${(100 / activePlanDisplayCrop.height) * 100}%`,
   };
-  const planLineBoostStyle =
-    ["ab-104968", "ab-105734", "ab-105737", "ab-105740"].includes(normalizedKitchenSlug)
-      ? {
-          ...planImageInteractiveStyle,
-          mixBlendMode: "multiply",
-          opacity: 1,
-          pointerEvents: "none",
-        }
-      : null;
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [isTracePolygonRequested, setIsTracePolygonRequested] = useState(false);
   const [isTracingPolygon, setIsTracingPolygon] = useState(false);
@@ -2946,15 +2937,6 @@ export default function useKitchenSvgStage({
                       style={planImageInteractiveStyle}
                     />
                   )}
-                  {planLineBoostStyle ? (
-                    <img
-                      src={imageViewHref}
-                      alt=""
-                      aria-hidden="true"
-                      className={styles.planImageInteractive}
-                      style={planLineBoostStyle}
-                    />
-                  ) : null}
                   <div className={styles.planHotspotLayer}>
                     {croppedImageHotspots.map((hotspot) => {
                       const isFixed = fixedComponentIds.includes(hotspot.componentId);

@@ -869,6 +869,13 @@ const CLAIM_BLENDE_CALIBRATION_BY_SLUG = {
   // AB 104968 uses complete perspective end faces. The US40 includes two
   // commercially supplied UPK20 pieces on the same narrow corner face.
   "ab-104968": {
+    // HPK2002 sits between the exposed H5002 side and its front.
+    "wall-cabinet-1": {
+      side: "left",
+      outer: 10.945368,
+      inner: 11.84323,
+      preserveOuterCabinetFace: true,
+    },
     // The UPK20 is only the thin strip between the exposed cabinet side and
     // its front. Keep both cabinet faces selectable as US50 around this band.
     "base-module-1": {
