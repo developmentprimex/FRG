@@ -80,7 +80,7 @@ const previewStyle = {
   width: 44,
   height: 44,
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "var(--color-card)",
   color: "var(--app-accent)",
   display: "grid",

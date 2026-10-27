@@ -143,7 +143,7 @@ export function AdminClaimUploadsPanel({ claimId, files }) {
                   setMediaError(false);
                   setPreview({ index: file.index, filename: file.filename, contentType: getPreviewContentType(file) });
                 }}
-                style={{ display: "block", padding: 0, marginBottom: 8, border: "1px solid var(--app-border)", borderRadius: 10, background: "#fff", cursor: "pointer", overflow: "hidden", maxWidth: "100%" }}
+                style={{ display: "block", padding: 0, marginBottom: 8, border: "1px solid var(--app-border)", borderRadius: 8, background: "#fff", cursor: "pointer", overflow: "hidden", maxWidth: "100%" }}
               >
                 <img
                   src={attachmentViewerUrl(claimId, file.index)}
@@ -372,7 +372,7 @@ const modalCardStyle = {
   display: "flex",
   flexDirection: "column",
   background: "var(--color-card, #fffdf9)",
-  borderRadius: 18,
+  borderRadius: 8,
   border: "1px solid var(--app-border)",
   boxShadow: "var(--app-shadow, 0 24px 48px rgba(40, 28, 20, 0.18))",
   overflow: "hidden",
@@ -420,7 +420,7 @@ const modalCloseStyle = {
   lineHeight: 1,
   width: 40,
   height: 40,
-  borderRadius: 12,
+  borderRadius: 8,
   border: "1px solid var(--app-border)",
   background: "rgba(255,255,255,0.9)",
   color: "var(--app-text)",
@@ -469,7 +469,7 @@ const modalTextWrapStyle = {
 const modalPreStyle = {
   margin: 0,
   padding: 14,
-  borderRadius: 12,
+  borderRadius: 8,
   border: "1px solid var(--app-border)",
   background: "#fff",
   color: "var(--app-text)",

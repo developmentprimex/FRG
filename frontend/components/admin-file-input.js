@@ -44,7 +44,7 @@ const chooseButtonStyle = {
   flex: "0 0 auto",
   padding: "7px 10px",
   border: "1px solid var(--app-border)",
-  borderRadius: 6,
+  borderRadius: 8,
   background: "var(--app-surface)",
   color: "var(--app-text)",
   fontSize: 13,

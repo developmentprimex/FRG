@@ -1,0 +1,7 @@
+{
+  "source": "\\\\192.168.10.8\\files\\10_ZHVILLIM\\05_CLIENTS\\04_FRG\\03_DOKUMENTET EXTERNE\\01_HAUS\\ABs",
+  "endpoint": "https://fragmento.de/api/internal/ab-sync",
+  "token": "REPLACE_WITH_DEDICATED_RANDOM_TOKEN",
+  "sourceName": "Fragmento file server",
+  "stateFile": "C:\\ProgramData\\Fragmento\\ab-sync\\state.json"
+}

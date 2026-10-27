@@ -13,14 +13,14 @@ function getClaimDir(claimId) {
  * Persist binary attachment bodies after the claim row exists. Files are named by
  * zero-based index so they align with `attachmentsJson` array order.
  */
-export async function persistServiceClaimAttachments(claimId, parts) {
+export async function persistServiceClaimAttachments(claimId, parts, startIndex = 0) {
   if (!parts?.length) {
     return;
   }
   const dir = getClaimDir(claimId);
   await fs.mkdir(dir, { recursive: true });
   for (let i = 0; i < parts.length; i += 1) {
-    await fs.writeFile(path.join(dir, String(i)), parts[i].content);
+    await fs.writeFile(path.join(dir, String(startIndex + i)), parts[i].content);
   }
 }
 
