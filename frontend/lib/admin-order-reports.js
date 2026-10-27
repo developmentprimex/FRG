@@ -1,6 +1,7 @@
 import { prisma } from "./prisma.js";
 import { normalizeContractTypeFilter } from "./contract-type-filter.js";
 import { getPriceBreakdown } from "./price-utils.js";
+import { reportDayStart } from "./business-report-dates.js";
 
 export const ORDER_REPORT_STATUSES = ["NEW", "EMAILED", "CONFIRMED", "CANCELLED"];
 
@@ -37,11 +38,11 @@ function getOrderReportWhere(filters = {}) {
 
   if (filters.dateFrom || filters.dateTo) {
     where.createdAt = {};
-    if (filters.dateFrom) where.createdAt.gte = new Date(filters.dateFrom);
+    if (filters.dateFrom) where.createdAt.gte = reportDayStart(filters.dateFrom);
     if (filters.dateTo) {
-      const endDate = new Date(filters.dateTo);
-      endDate.setHours(23, 59, 59, 999);
-      where.createdAt.lte = endDate;
+      const endDate = new Date(`${filters.dateTo}T12:00:00Z`);
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
+      where.createdAt.lt = reportDayStart(endDate.toISOString().slice(0, 10));
     }
   }
 

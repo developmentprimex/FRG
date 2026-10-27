@@ -1,3 +1,4 @@
+import { reportDayStart } from "./business-report-dates.js";
 import { Prisma } from "@prisma/client";
 import { normalizeContractTypeFilter } from "./contract-type-filter.js";
 import { getAdminPagination } from "./admin-pagination.js";
@@ -196,12 +197,21 @@ export function buildServiceClaimListWhere(filters, {
     conditions.push(Prisma.sql`REGEXP_REPLACE(COALESCE(${claim}."contractNumber", ''), '[[:space:]]+', '', 'g') NOT LIKE '111%'`);
   }
 
-  if (filters.dateFrom) {
-    conditions.push(Prisma.sql`${claim}."createdAt" >= ${new Date(`${filters.dateFrom}T00:00:00.000Z`)}`);
-  }
+  if (filters.reportTimeZone === "Europe/Berlin") {
+    if (filters.dateFrom) conditions.push(Prisma.sql`${claim}."createdAt" AT TIME ZONE 'UTC' >= ${reportDayStart(filters.dateFrom)}`);
+    if (filters.dateTo) {
+      const nextDate = new Date(`${filters.dateTo}T12:00:00Z`);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      conditions.push(Prisma.sql`${claim}."createdAt" AT TIME ZONE 'UTC' < ${reportDayStart(nextDate.toISOString().slice(0, 10))}`);
+    }
+  } else {
+    if (filters.dateFrom) {
+      conditions.push(Prisma.sql`${claim}."createdAt" >= ${new Date(`${filters.dateFrom}T00:00:00.000Z`)}`);
+    }
 
-  if (filters.dateTo) {
-    conditions.push(Prisma.sql`${claim}."createdAt" <= ${new Date(`${filters.dateTo}T23:59:59.999Z`)}`);
+    if (filters.dateTo) {
+      conditions.push(Prisma.sql`${claim}."createdAt" <= ${new Date(`${filters.dateTo}T23:59:59.999Z`)}`);
+    }
   }
 
   if (!conditions.length) {
@@ -212,12 +222,16 @@ export function buildServiceClaimListWhere(filters, {
 }
 
 function buildClaimColumns({
+  reportReferences = false,
   includeAttachmentsJson = true,
   includeProblemAreasJson = true,
   includeLandlordCompanyPhone = true,
   includeLandlordCompanyEmail = true,
 } = {}) {
   const optionalColumns = [];
+  if (reportReferences) {
+    optionalColumns.push(`      sc."claimSequence", (to_jsonb(sc)->>'ticketNumber')::integer AS "ticketNumber"`);
+  }
 
   if (includeLandlordCompanyPhone) {
     optionalColumns.push(`      sc."landlordCompanyPhone"`);
@@ -271,7 +285,7 @@ export async function queryServiceClaimsList(prisma, filters, pagination = null)
 
     return prisma.$queryRaw`
       SELECT
-      ${Prisma.raw(buildClaimColumns(options))}
+      ${Prisma.raw(buildClaimColumns({ ...options, reportReferences: filters.reportTimeZone === "Europe/Berlin" }))}
       FROM "ServiceClaim" sc
       LEFT JOIN "KitchenContract" kc ON kc."contractNumber" = sc."contractNumber"
       LEFT JOIN "Kitchen" k ON k."id" = kc."kitchenId"

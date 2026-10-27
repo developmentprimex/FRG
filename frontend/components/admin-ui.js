@@ -30,14 +30,14 @@ export function PageHero({ eyebrow, title, description, actions, stats }) {
   );
 }
 
-export function AdminSection({ title, description, actions, children }) {
+export function AdminSection({ title, description, actions, children, compact = false }) {
   return (
-    <section style={panelStyle}>
+    <section style={compact ? { ...panelStyle, padding: 14, gap: 10, minWidth: 0 } : panelStyle}>
       {(title || description || actions) ? (
-        <div style={sectionHeaderStyle}>
-          <div style={{ display: "grid", gap: 6 }}>
-            {title ? <h2 style={{ margin: 0, fontSize: "var(--admin-text-title, 1.5rem)", lineHeight: 1.3, fontWeight: 700, color: "var(--app-text)", letterSpacing: "-0.02em" }}>{title}</h2> : null}
-            {description ? <p style={mutedTextStyle}>{description}</p> : null}
+        <div style={compact ? { ...sectionHeaderStyle, gap: 8 } : sectionHeaderStyle}>
+          <div style={{ display: "grid", gap: compact ? 3 : 6 }}>
+            {title ? <h2 style={{ margin: 0, fontSize: compact ? 20 : "var(--admin-text-title, 1.5rem)", lineHeight: 1.3, fontWeight: 700, color: "var(--app-text)", letterSpacing: "-0.02em" }}>{title}</h2> : null}
+            {description ? <p style={compact ? { ...mutedTextStyle, fontSize: 12, lineHeight: 1.4 } : mutedTextStyle}>{description}</p> : null}
           </div>
           {actions ? <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>{actions}</div> : null}
         </div>
