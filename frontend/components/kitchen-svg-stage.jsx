@@ -79,7 +79,7 @@ export const IMAGE_VIEW_BY_SLUG = {
   "ab-105800": "/plans/670%20105800.svg",
   "ab-105803": "/plans/670%20105803.svg",
   "ab-105779": "/plans/AB%20105779.svg",
-  "ab-105789": "/plans/670%20105789.svg",
+  "ab-105789": "/plans/670%20105789-smooth.png",
   "ab-105790": "/plans/AB%20105790.svg",
   "ab-105777": "/plans/AB%20105777.svg",
   "ab-104332": "/plans/670%20104332.svg",
@@ -3051,6 +3051,7 @@ export default function useKitchenSvgStage({
                       styles.planImageInteractive,
                       styles.planPersistentLightDetail,
                       isDetailComponentSelected ? styles.planPersistentSelectedDetail : "",
+                      detail.preserveWhiteBackground ? styles.planPersistentSourceLinework : "",
                     ]
                       .filter(Boolean)
                       .join(" ");

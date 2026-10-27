@@ -42,14 +42,17 @@ async function main() {
   assert.equal(byKey("sink-base").widthMm, 600);
   assert.match(byKey("sink-base").infoText, /hinge right/);
   for (const [key, article, filler] of [
-    ["base-module-1", "US30", "UPK20"],
+    ["base-module-1", "US30", "UPEF65"],
     ["base-module-2", "US30", "UPK20"],
-    ["dishwasher-base", "A-EGSPV597210 + TGV60", "UPEF65"],
+    ["dishwasher-base", "A-EGSPV597210 + TGV60", null],
     ["wall-cabinet-3", "H6002", "HPK2002"],
   ]) {
     assert.equal(byKey(key).catalogArticle.articleNumber, article);
-    assert.equal(byKey(key).catalogBlende.code, filler);
+    assert.equal(byKey(key).catalogBlende?.code || null, filler);
   }
+  assert.equal(byKey("dishwasher-base").blendeCode, null);
+  assert.equal(byKey("dishwasher-base").blendePrice, null);
+  assert.equal(byKey("dishwasher-base").catalogBlendeQuantity, null);
   assert.equal(byKey("extractor-hood").isActive, false);
   assert.equal(kitchen.items.filter((item) => item.isLocked).length, 4);
   const optional = kitchen.items.filter((item) => item.itemType === "COMPONENT" && item.isActive && !item.isLocked);

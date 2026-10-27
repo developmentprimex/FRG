@@ -28,8 +28,8 @@ const order = {
 
 test("email metadata loads modular 105789 geometry and keeps earlier kitchen layouts available", async () => {
   const preview = await loadKitchenPlanPreviewData();
-  assert.equal(preview.imageViews[order.kitchen.slug], "/plans/670%20105789.svg");
-  assert.equal(preview.hotspotsBySlug[order.kitchen.slug].length, 39);
+  assert.equal(preview.imageViews[order.kitchen.slug], "/plans/670%20105789-smooth.png");
+  assert.equal(preview.hotspotsBySlug[order.kitchen.slug].length, 38);
   assert.ok(preview.hotspotsBySlug["ab-105778"].length > 0);
   assert.deepEqual(preview.linkedGroupsBySlug[order.kitchen.slug], [["component-wall-cabinet-1", "component-extractor-hood"]]);
   for (const slug of ["ab-105789", "ab-105778"]) {

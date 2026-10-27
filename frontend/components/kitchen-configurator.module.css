@@ -571,6 +571,14 @@
   opacity: 0.72;
 }
 
+/* Preserve white source pixels so a clipped drawing cannot become a grey box. */
+.planPersistentSourceLinework {
+  /* Map white to white and the pale CAD strokes to visible grey. */
+  filter: grayscale(1) brightness(0.529412) contrast(17);
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+
 .planHotspotLayer {
   position: absolute;
   inset: 0;

@@ -48,10 +48,10 @@ export const AB_105789_HOTSPOTS = [
   face("oven-module", [[289.32,354.16],[382.32,344.68],[382.32,521.2],[289.32,530.68]], { claimApplianceSurface: "oven" }),
   { componentKey: "oven-module", points: AB_105789_COOKTOP_POINTS, preserveManualSize: true, claimApplianceSurface: "cooktop" },
   face("base-module-1", [[382.32,344.68],[428.88,340],[428.88,516.4],[382.32,521.2]]),
-  face("base-module-1", [[428.88,340],[438.96,338.92],[438.96,515.32],[428.88,516.4]]),
-  face("dishwasher-base", [[438.96,338.92],[447.48,338.08],[447.48,514.48],[438.96,515.32]]),
+  // One continuous filler face: no selection border at the old UPK20 seam.
+  face("base-module-1", [[428.88,340],[447.48,338.08],[447.48,514.48],[428.88,516.4]]),
   // Only the thin right edge belongs to the worktop; the left return is UPEF65.
-  face("dishwasher-base", [[447.48,338.08],[454.08,339.04],[454.08,515.44],[447.48,514.48]]),
+  face("base-module-1", [[447.48,338.08],[454.08,339.04],[454.08,515.44],[447.48,514.48]]),
   face("worktop", [[454.08,339.04],[456.12,339.28],[456.12,515.8],[454.08,515.44]], { separateLockedSidePanel: true }),
   face("dishwasher-base", [[456.12,339.28],[534.24,350.68],[534.24,527.08],[456.12,515.8]]),
   face("sink-base", [[534.24,350.68],[612.24,361.96],[612.24,538.48],[534.24,527.08]]),
@@ -80,12 +80,11 @@ const blendeFace = (points) => {
   return { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys) };
 };
 export const AB_105789_BLENDE_CALIBRATION = {
-  "base-module-1": { side: "right", wholeFacesOnly: true, wholeBlendeFaces: [blendeFace([[428.88,340],[438.96,338.92],[438.96,515.32],[428.88,516.4]])] },
-  "base-module-2": { side: "right", wholeFacesOnly: true, wholeBlendeFaces: [blendeFace([[651.36,367.6],[657.84,368.56],[657.84,545.08],[651.36,544.12]])] },
-  "dishwasher-base": { side: "left", wholeFacesOnly: true, wholeBlendeFaces: [
-    blendeFace([[438.96,338.92],[447.48,338.08],[447.48,514.48],[438.96,515.32]]),
+  "base-module-1": { side: "right", wholeFacesOnly: true, wholeBlendeFaces: [
+    blendeFace([[428.88,340],[447.48,338.08],[447.48,514.48],[428.88,516.4]]),
     blendeFace([[447.48,338.08],[454.08,339.04],[454.08,515.44],[447.48,514.48]]),
   ] },
+  "base-module-2": { side: "right", wholeFacesOnly: true, wholeBlendeFaces: [blendeFace([[651.36,367.6],[657.84,368.56],[657.84,545.08],[651.36,544.12]])] },
   "wall-cabinet-3": { side: "right", wholeFacesOnly: true, wholeBlendeFaces: [
     blendeFace([[488.16,66.64],[506.76,64.72],[506.76,210.04],[488.16,211.96]]),
     blendeFace([[485.52,66.28],[504.12,64.36],[506.76,64.72],[488.16,66.64]]),
@@ -100,6 +99,7 @@ const lightDetail = (key, points) => {
   const left = Math.min(...xs), top = Math.min(...ys);
   return {
     key, componentKey: "dishwasher-base", persistWhenSelected: true,
+    preserveWhiteBackground: true,
     left, top, width: Math.max(...xs) - left, height: Math.max(...ys) - top,
   };
 };

@@ -14,7 +14,7 @@ const near = (actual, expected) => assert.ok(Math.abs(actual - expected) < 0.000
 const pointInSource = ([x, y], px, py) => { near(x, px / 842 * 100); near(y, py / 595 * 100); };
 
 test("105789 loads its own vector source in both order and ASC views", async () => {
-  assert.equal(PLAN_IMAGE_BY_SLUG[slug], "/plans/670%20105789.svg");
+  assert.equal(PLAN_IMAGE_BY_SLUG[slug], "/plans/670%20105789-smooth.png");
   const expected = readFileSync(new URL("../public/plans/670 105789.svg", import.meta.url), "utf8").trim();
   assert.equal(await loadKitchenSvgMarkup(slug), expected);
   assert.match(expected, /width="842" height="595" viewBox="0 0 842 595"/);
@@ -23,7 +23,7 @@ test("105789 loads its own vector source in both order and ASC views", async () 
 });
 
 test("perspective fronts and supplier fillers follow the PDF seams", () => {
-  assert.equal(boxes.length, 39);
+  assert.equal(boxes.length, 38);
   assert.ok(boxes.every((box) => box.points?.length >= 3 && box.preserveManualSize));
   const base = boxes.filter((box) => {
     const isCornerReturn = box.componentKey === "worktop" && box.separateLockedSidePanel
@@ -48,6 +48,7 @@ test("perspective fronts and supplier fillers follow the PDF seams", () => {
   const details = PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG[slug];
   assert.equal(details.length, 2);
   assert.ok(details.every((detail) => detail.persistWhenSelected));
+  assert.ok(details.every((detail) => detail.preserveWhiteBackground), "technical linework keeps white pixels transparent instead of painting grey rectangles");
 });
 
 test("persistent grey details have finite tight clip bounds and cannot cover the whole plan", () => {
@@ -115,7 +116,12 @@ test("ASC selects each thin return with its worktop leg and keeps the end panel 
 });
 
 test("ASC assigns whole sloped Blende faces instead of cutting arbitrary strips", () => {
-  const definitions = [["base-module-1", "UPK20", 300, 1], ["base-module-2", "UPK20", 300, 1], ["dishwasher-base", "UPEF65", 600, 2], ["wall-cabinet-3", "HPK2002", 600, 2]];
+  assert.equal(boxes.filter((box) => box.componentKey === "dishwasher-base").length, 1, "dishwasher selects only its front");
+  assert.equal(boxes.filter((box) => box.componentKey === "base-module-1").length, 3, "US30 and both continuous corner filler faces select together");
+  const fillerFace = boxes.filter((box) => box.componentKey === "base-module-1")[1];
+  pointInSource(fillerFace.points[0], 428.88, 340);
+  pointInSource(fillerFace.points[1], 447.48, 338.08);
+  const definitions = [["base-module-1", "UPEF65", 300, 2], ["base-module-2", "UPK20", 300, 1], ["wall-cabinet-3", "HPK2002", 600, 2]];
   const blenden = definitions.map(([sourceComponentKey, code, sourceWidthMm]) => ({
     componentId: `blende-${sourceComponentKey}`, componentKey: `claim-blende-${sourceComponentKey}`,
     sourceComponentKey, code, sourceWidthMm, claimPartKey: "blende", blendeQuantity: 1,
