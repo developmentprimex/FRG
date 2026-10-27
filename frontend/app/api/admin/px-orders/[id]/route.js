@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
-import { requireAdminApi } from "../../../../../lib/auth";
+import { requirePxAdminApi } from "../../../../../lib/admin-role-guards";
 import { getTestOrderById } from "../../../../../lib/catalog";
 import { confirmOrder, deleteOrder, resendOrderEmail, updateOrderStatus } from "../../../../../lib/orders";
 import { cancelOrderPayment, createCheckoutSessionForOrder } from "../../../../../lib/stripe-payments";
@@ -42,7 +42,8 @@ function parseEmailExcludedAttachments(value) {
 }
 
 export async function GET(_request, { params }) {
-  await requireAdminApi();
+  try { await requirePxAdminApi(); }
+  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
   const { id } = await params;
   const order = await getTestOrderById(id);
   if (!order) {
@@ -52,7 +53,8 @@ export async function GET(_request, { params }) {
 }
 
 export async function POST(request, { params }) {
-  await requireAdminApi();
+  try { await requirePxAdminApi(); }
+  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
   const { id } = await params;
   let returnPath = `/admin/px-orders/${id}`;
   try {

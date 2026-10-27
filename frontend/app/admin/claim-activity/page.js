@@ -34,6 +34,7 @@ function ClaimActivityResultBadge({ event }) {
   if (event.eventType === PUBLIC_VISIT_EVENT_TYPES.SERVICE_CLAIM_SUBMITTED) {
     return (
       <span style={isTestEvent(event) ? testStyle : claimStyle}>
+        <span aria-hidden="true" style={badgeDotStyle} />
         <AdminText
           i18nKey={isTestEvent(event) ? "claimActivityAdmin.resultClaimTest" : "claimActivityAdmin.resultClaim"}
           fallback={isTestEvent(event) ? "Claim (test)" : "Claim submitted"}
@@ -45,6 +46,7 @@ function ClaimActivityResultBadge({ event }) {
   if (event.eventType === PUBLIC_VISIT_EVENT_TYPES.SERVICE_CONTRACT_FOUND) {
     return (
       <span style={isTestEvent(event) ? testStyle : foundStyle}>
+        <span aria-hidden="true" style={badgeDotStyle} />
         <AdminText
           i18nKey={isTestEvent(event) ? "claimActivityAdmin.resultTest" : "claimActivityAdmin.resultFound"}
           fallback={isTestEvent(event) ? "Test" : "Found"}
@@ -55,6 +57,7 @@ function ClaimActivityResultBadge({ event }) {
 
   return (
     <span style={failedStyle}>
+      <span aria-hidden="true" style={badgeDotStyle} />
       <AdminText i18nKey="claimActivityAdmin.resultNotFound" fallback="Not found" />
     </span>
   );
@@ -80,15 +83,7 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
-        <AdminSection
-          title={<AdminText i18nKey="claimActivityAdmin.title" fallback="Claim activity" />}
-          description={(
-            <AdminText
-              i18nKey="claimActivityAdmin.description"
-              fallback="Successful contract lookups and submitted claims on the public /service page for the selected date range."
-            />
-          )}
-        >
+        <AdminSection>
           <form action="/admin/claim-activity" method="get" style={filterPanelStyle}>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
@@ -138,37 +133,41 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
               value={summary.testLookups}
             />
           </div>
+        </AdminSection>
 
-          <div className="admin-claim-activity-table" style={tableWrapStyle}>
-            <table style={tableStyle}>
+        <AdminSection title={<AdminText i18nKey="claimActivityAdmin.title" fallback="Claim activity" />}>
+          <div className="admin-claim-activity-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
+            <table style={{ ...tableStyle, tableLayout: "auto", minWidth: 1000 }}>
               <thead>
                 <tr>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.accessTime" fallback="Time" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.source" fallback="Source" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.device" fallback="Device" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.contract" fallback="Contract" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.project" fallback="Project" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.result" fallback="Result" /></th>
+                  <th scope="col" style={{ ...activityThStyle, width: 48, textAlign: "center" }}><AdminText i18nKey="reportsAdmin.rowNumber" fallback="No." /></th>
+                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.accessTime" fallback="Time" /></th>
+                  <th scope="col" style={activityThStyle}><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
+                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.source" fallback="Source" /></th>
+                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.device" fallback="Device" /></th>
+                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.contract" fallback="Contract" /></th>
+                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.project" fallback="Project" /></th>
+                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.result" fallback="Result" /></th>
                 </tr>
               </thead>
               <tbody>
                 {!events.length ? (
                   <tr>
-                    <td style={tdStyle} colSpan={7}>
+                    <td style={activityTdStyle} colSpan={8}>
                       <AdminText i18nKey="claimActivityAdmin.noEvents" fallback="No claim activity events found." />
                     </td>
                   </tr>
                 ) : null}
-                {events.map((event) => {
+                {events.map((event, index) => {
                   const contract = event.kitchenContract;
                   const source = event.source || event.referrerHost || "direct";
 
                   return (
                     <tr key={event.id}>
-                      <td style={tdStyle}><AdminDateTime value={event.createdAt} /></td>
-                      <td style={tdStyle}><AdminCountryName code={event.countryCode} /></td>
-                      <td style={tdStyle}>
+                      <td style={{ ...activityTdStyle, textAlign: "center", color: "var(--app-text-muted)", fontSize: "var(--admin-text-label)", fontWeight: 500 }}>{index + 1}</td>
+                      <td style={activityTdStyle}><AdminDateTime value={event.createdAt} stacked /></td>
+                      <td style={activityTdStyle}><AdminCountryName code={event.countryCode} /></td>
+                      <td style={activityTdStyle}>
                         <strong>
                           {source === "direct"
                             ? <AdminText i18nKey="claimActivityAdmin.directVisit" fallback="Direct visit" />
@@ -176,25 +175,25 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
                         </strong>
                         {event.utmCampaign ? <span style={mutedLineStyle}>{event.utmCampaign}</span> : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td style={activityTdStyle}>
                         {event.deviceType || <AdminText i18nKey="claimActivityAdmin.notCaptured" fallback="Not captured" />}
                         {event.browserFamily ? (
                           <span style={mutedLineStyle}>{event.browserFamily} · {event.operatingSystem}</span>
                         ) : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td style={activityTdStyle}>
                         {contract ? (
                           <Link href={`/admin/contracts/${contract.id}`} style={contractLinkStyle}>{contract.contractNumber}</Link>
                         ) : event.contractNumberLast4 ? `••••${event.contractNumberLast4}` : "-"}
                         {contract?.kitchen?.name ? <span style={mutedLineStyle}>{contract.kitchen.name}</span> : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td style={{ ...activityTdStyle, whiteSpace: "normal", minWidth: 200, maxWidth: 300 }}>
                         {contract?.project?.name || "-"}
                         {contract?.project?.housingCompany?.name ? (
                           <span style={mutedLineStyle}>{contract.project.housingCompany.name}</span>
                         ) : null}
                       </td>
-                      <td style={tdStyle}><ClaimActivityResultBadge event={event} /></td>
+                      <td style={activityTdStyle}><ClaimActivityResultBadge event={event} /></td>
                     </tr>
                   );
                 })}
@@ -278,7 +277,7 @@ const summaryGridStyle = {
 };
 
 const summaryCardStyle = {
-  borderRadius: 10,
+  borderRadius: 8,
   border: "1px solid rgba(143, 62, 44, 0.14)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,241,0.72))",
   padding: "14px 16px",
@@ -301,14 +300,19 @@ const summaryValueStyle = {
 
 const badgeBaseStyle = {
   display: "inline-flex",
+  alignItems: "center",
+  gap: 7,
+  minWidth: 78,
   borderRadius: 999,
-  padding: "6px 9px",
-  fontSize: 11,
-  fontWeight: 900,
-  textTransform: "uppercase",
+  padding: "5px 10px",
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
+  lineHeight: 1.4,
   border: "1px solid transparent",
   whiteSpace: "nowrap",
 };
+
+const badgeDotStyle = { width: 6, height: 6, borderRadius: "50%", background: "currentColor", flexShrink: 0 };
 
 const foundStyle = {
   ...badgeBaseStyle,
@@ -341,12 +345,15 @@ const failedStyle = {
 const contractLinkStyle = {
   color: "var(--app-text)",
   textDecoration: "none",
-  fontWeight: 900,
+  fontWeight: 600,
 };
+
+const activityThStyle = { ...thStyle, padding: "16px 20px", whiteSpace: "nowrap" };
+const activityTdStyle = { ...tdStyle, padding: "16px 12px", verticalAlign: "middle", whiteSpace: "nowrap", fontSize: "var(--admin-text-body)" };
 
 const mutedLineStyle = {
   display: "block",
   color: "var(--app-text-muted)",
-  fontSize: 13,
-  marginTop: 5,
+  fontSize: "var(--admin-text-meta)",
+  marginTop: 3,
 };

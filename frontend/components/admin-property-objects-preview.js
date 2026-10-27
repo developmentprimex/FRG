@@ -248,7 +248,7 @@ const objectPreviewCardStyle = {
   display: "grid",
   gap: 8,
   padding: "9px 10px",
-  borderRadius: 12,
+  borderRadius: 8,
   border: "1px solid rgba(45, 108, 121, 0.14)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(245,250,249,0.72))",
 };
@@ -258,7 +258,7 @@ const projectOnlyCardStyle = {
   gap: 4,
   minHeight: "100%",
   padding: "9px 10px",
-  borderRadius: 12,
+  borderRadius: 8,
   border: "1px solid rgba(45, 108, 121, 0.14)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(245,250,249,0.72))",
 };
@@ -268,7 +268,7 @@ const objectOnlyCardStyle = {
   gap: 6,
   minHeight: "100%",
   padding: "9px 10px",
-  borderRadius: 12,
+  borderRadius: 8,
   border: "1px solid rgba(45, 108, 121, 0.14)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(245,250,249,0.72))",
 };

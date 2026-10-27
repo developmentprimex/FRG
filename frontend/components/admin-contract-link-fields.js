@@ -226,7 +226,7 @@ const inlineObjectBodyStyle = {
   gap: 14,
   gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
   padding: 12,
-  borderRadius: 12,
+  borderRadius: 8,
   border: "1px solid rgba(143, 62, 44, 0.12)",
   background: "rgba(255,255,255,0.78)",
 };

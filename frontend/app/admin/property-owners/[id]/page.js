@@ -530,7 +530,7 @@ const objectDetailsStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   border: "1px solid rgba(45, 108, 121, 0.14)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "rgba(255,255,255,0.82)",
   padding: "12px 14px",
 };

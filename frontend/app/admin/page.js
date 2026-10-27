@@ -1,13 +1,11 @@
+import { AdminWorkOverview } from "../../components/admin-work-overview";
 ﻿import { getPriceBreakdown } from "../../lib/price-utils";
 import { AdminShell } from "../../components/admin-shell";
 import { AdminDashboardCharts } from "../../components/admin-dashboard-charts";
 import { listKitchensForAdmin } from "../../lib/catalog";
-import { showAdminClaimsInNav } from "../../lib/admin-claims-access";
 import { requireAdminPage } from "../../lib/auth";
 import { getProviderCountryConfig } from "../../lib/address-verification";
 import { prisma } from "../../lib/prisma";
-import { KITCHEN_AREA_FIRST_LINE_PREFIXES } from "../../lib/service-claim-problem-description";
-import { stripProductDimensionsFromLabel } from "../../lib/product-label-format";
 import { Prisma } from "@prisma/client";
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
@@ -197,82 +195,6 @@ function toDateKey(value) {
   return new Date(value).toISOString().slice(0, 10);
 }
 
-function normalizeClaimElementLabel(value) {
-  return stripProductDimensionsFromLabel(String(value || "").trim())
-    .replace(/\s+/g, " ")
-    .replace(/\s+\([^)]+\)$/, "")
-    .trim();
-}
-
-function normalizeClaimElementKey(value) {
-  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-function buildClaimElementStat(area) {
-  const code = String(area?.code || "").trim();
-  const componentId = String(area?.componentId || "").trim();
-  const name = normalizeClaimElementLabel(area?.name || code || componentId);
-  const key = code
-    ? `code:${code.toUpperCase()}`
-    : componentId
-      ? `component:${componentId.toLowerCase()}`
-      : `name:${normalizeClaimElementKey(name)}`;
-  return name ? { key, name } : null;
-}
-
-function extractClaimElements(problemDescription) {
-  const lines = String(problemDescription || "").split("\n").map((line) => line.trim());
-  if (!lines.length) return [];
-  const firstKitchenAreasPrefix = KITCHEN_AREA_FIRST_LINE_PREFIXES.find((prefix) => lines[0].startsWith(prefix));
-  if (firstKitchenAreasPrefix) {
-    const inlineElements = lines[0]
-      .slice(firstKitchenAreasPrefix.length)
-      .split(",")
-      .map(normalizeClaimElementLabel)
-      .filter(Boolean)
-      .map((name) => buildClaimElementStat({ name }));
-    if (inlineElements.length) {
-      return inlineElements;
-    }
-    const multilineElements = [];
-    for (const line of lines.slice(1)) {
-      if (!line) break;
-      const separatorIndex = line.indexOf(":");
-      const label = separatorIndex >= 0 ? line.slice(0, separatorIndex) : line;
-      const element = buildClaimElementStat({ name: normalizeClaimElementLabel(label) });
-      if (element) {
-        multilineElements.push(element);
-      }
-    }
-    return multilineElements;
-  }
-
-  const selectedAreasIndex = lines.findIndex((line) => line === "Ausgewählte Küchenbereiche:");
-  if (selectedAreasIndex < 0) return [];
-
-  const elements = [];
-  for (const line of lines.slice(selectedAreasIndex + 1)) {
-    if (!line) break;
-    if (!line.startsWith("-")) break;
-    elements.push(normalizeClaimElementLabel(line.slice(1)));
-  }
-  return elements.filter(Boolean).map((name) => buildClaimElementStat({ name }));
-}
-
-function extractStructuredClaimElements(problemAreasJson) {
-  const raw = String(problemAreasJson || "").trim();
-  if (!raw) return [];
-  try {
-    const areas = JSON.parse(raw);
-    if (!Array.isArray(areas)) return [];
-    return areas
-      .map(buildClaimElementStat)
-      .filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-
 function getDateKeys(startDate, earliestCreatedAt) {
   if (!startDate && !earliestCreatedAt) return [];
   const end = new Date();
@@ -449,26 +371,6 @@ function buildOrderAndClause(filters, alias = "o") {
   return conditions.length ? Prisma.sql`AND ${Prisma.join(conditions, " AND ")}` : Prisma.empty;
 }
 
-function buildClaimFilterConditions({ startDate, kitchenId }, alias = "sc") {
-  const table = Prisma.raw(alias);
-  const filters = [];
-  if (startDate) filters.push(Prisma.sql`${table}."createdAt" >= ${startDate}`);
-  if (kitchenId) {
-    filters.push(Prisma.sql`EXISTS (
-      SELECT 1
-      FROM "KitchenContract" kc
-      WHERE kc."contractNumber" = ${table}."contractNumber"
-        AND kc."kitchenId" = ${kitchenId}
-    )`);
-  }
-  return filters;
-}
-
-function buildClaimWhereClause(filters, alias = "sc") {
-  const conditions = buildClaimFilterConditions(filters, alias);
-  return conditions.length ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}` : Prisma.empty;
-}
-
 async function loadDashboardSummary(filters) {
   const whereClause = buildOrderWhereClause(filters, "o");
   const [row] = await prisma.$queryRaw`
@@ -487,73 +389,6 @@ async function loadDashboardSummary(filters) {
     emailedOrders: Number(row?.emailedOrders || 0),
     earliestCreatedAt: row?.earliestCreatedAt || null,
   };
-}
-
-async function loadClaimDashboardSummary(filters) {
-  const whereClause = buildClaimWhereClause(filters, "sc");
-  const [row] = await prisma.$queryRaw`
-    SELECT
-      MIN(sc."createdAt") AS "earliestCreatedAt"
-    FROM "ServiceClaim" sc
-    ${whereClause}
-  `;
-
-  return {
-    earliestCreatedAt: row?.earliestCreatedAt || null,
-  };
-}
-
-async function loadClaimElementRows(filters) {
-  const whereClause = buildClaimWhereClause(filters, "sc");
-  const hasMissingClaimAnalyticsColumn = (error) => {
-    const message = String(error?.message ?? "");
-    const metaMessage = typeof error?.meta?.message === "string" ? error.meta.message : "";
-    const combined = `${message} ${metaMessage}`;
-    return (
-      combined.includes("does not exist")
-      && (
-        combined.includes("problemAreasJson")
-        || combined.includes("attachmentsJson")
-        || combined.includes("clientCountry")
-        || combined.includes("clientCity")
-        || combined.includes("clientPostalCode")
-        || combined.includes("42703")
-      )
-    );
-  };
-  try {
-    return await prisma.$queryRaw`
-      SELECT
-        sc."id",
-        sc."problemDescription",
-        sc."problemAreasJson",
-        sc."attachmentsJson",
-        sc."clientCountry",
-        sc."clientCity",
-        sc."clientPostalCode"
-      FROM "ServiceClaim" sc
-      ${whereClause}
-      ORDER BY sc."createdAt" DESC
-    `;
-  } catch (error) {
-    if (!hasMissingClaimAnalyticsColumn(error)) {
-      throw error;
-    }
-
-    return await prisma.$queryRaw`
-      SELECT
-        sc."id",
-        sc."problemDescription",
-        NULL::text AS "problemAreasJson",
-        NULL::text AS "attachmentsJson",
-        NULL::text AS "clientCountry",
-        NULL::text AS "clientCity",
-        NULL::text AS "clientPostalCode"
-      FROM "ServiceClaim" sc
-      ${whereClause}
-      ORDER BY sc."createdAt" DESC
-    `;
-  }
 }
 
 async function loadDailyStatusRows(filters) {
@@ -931,7 +766,7 @@ async function loadPropertyOwnerAnalytics({ startDate, kitchenId, status }) {
   };
 }
 
-// The item and claim aggregates are the heaviest dashboard reads and only feed
+// The item aggregates are the heaviest dashboard reads and only feed
 // summary charts, so they are reused for a short time across page loads.
 const DASHBOARD_AGGREGATE_REVALIDATE_SECONDS = 60;
 
@@ -939,14 +774,6 @@ function loadGroupedItemRowsCached(filters) {
   return unstable_cache(
     () => loadGroupedItemRows(filters),
     ["admin-dashboard-grouped-items", filters.startDate?.toISOString() || "all", filters.kitchenId || "", filters.status || ""],
-    { revalidate: DASHBOARD_AGGREGATE_REVALIDATE_SECONDS },
-  )();
-}
-
-function loadClaimElementRowsCached(filters) {
-  return unstable_cache(
-    () => loadClaimElementRows(filters),
-    ["admin-dashboard-claim-elements", filters.startDate?.toISOString() || "all", filters.kitchenId || ""],
     { revalidate: DASHBOARD_AGGREGATE_REVALIDATE_SECONDS },
   )();
 }
@@ -983,8 +810,6 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
     paymentRows,
     geographyRows,
     groupedItemRows,
-    claimSummary,
-    claimElementRows,
   ] = await Promise.all([
     listKitchensForAdmin(),
     loadPropertyOwnerAnalytics({ startDate, kitchenId, status: validStatus }),
@@ -994,8 +819,6 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
     loadPaymentRows(dashboardFilters),
     loadGeographyRows(dashboardFilters),
     loadGroupedItemRowsCached(dashboardFilters),
-    loadClaimDashboardSummary({ startDate, kitchenId }),
-    loadClaimElementRowsCached({ startDate, kitchenId }),
   ]);
   const totalOrders = summary.totalOrders;
   const totalRevenue = summary.totalRevenue;
@@ -1003,10 +826,7 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
   const emailedOrders = summary.emailedOrders;
   const conversionRate = totalOrders ? (emailedOrders / totalOrders) * 100 : 0;
 
-  const earliestDashboardDate = [summary.earliestCreatedAt, claimSummary.earliestCreatedAt]
-    .filter(Boolean)
-    .sort((a, b) => new Date(a) - new Date(b))[0] || null;
-  const dateKeys = getDateKeys(startDate, earliestDashboardDate);
+  const dateKeys = getDateKeys(startDate, summary.earliestCreatedAt);
   const dailyStatusByDate = new Map(
     dateKeys.map((date) => [
       date,
@@ -1091,48 +911,6 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
   }
 
   const dailyStatusData = Array.from(dailyStatusByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-  const claimElementStats = new Map();
-  const claimCityStats = new Map();
-  for (const row of claimElementRows) {
-    const structuredElements = extractStructuredClaimElements(row.problemAreasJson);
-    const uniqueElements = new Map(
-      (structuredElements.length ? structuredElements : extractClaimElements(row.problemDescription))
-        .map((element) => [element.key, element]),
-    );
-    const hasAttachments = Boolean(String(row.attachmentsJson || "").trim());
-    const city = String(row.clientCity || "").trim() || "Not captured";
-    const currentCity = claimCityStats.get(city) || {
-      name: city,
-      claims: 0,
-      claimsWithAttachments: 0,
-    };
-    currentCity.claims += 1;
-    if (hasAttachments) currentCity.claimsWithAttachments += 1;
-    claimCityStats.set(city, currentCity);
-
-    for (const element of uniqueElements.values()) {
-      const current = claimElementStats.get(element.key) || {
-        name: element.name,
-        claims: 0,
-        claimsWithAttachments: 0,
-      };
-      current.claims += 1;
-      if (hasAttachments) current.claimsWithAttachments += 1;
-      claimElementStats.set(element.key, current);
-    }
-  }
-  const claimElementData = Array.from(claimElementStats.values())
-    .sort((a, b) => {
-      if (b.claims !== a.claims) return b.claims - a.claims;
-      if (b.claimsWithAttachments !== a.claimsWithAttachments) return b.claimsWithAttachments - a.claimsWithAttachments;
-      return a.name.localeCompare(b.name);
-    });
-  const claimCityData = Array.from(claimCityStats.values())
-    .sort((a, b) => {
-      if (b.claims !== a.claims) return b.claims - a.claims;
-      if (b.claimsWithAttachments !== a.claimsWithAttachments) return b.claimsWithAttachments - a.claimsWithAttachments;
-      return a.name.localeCompare(b.name);
-    });
   const resolvedItemStats = Array.from(itemStats.values()).map((item) => ({
     ...item,
     name: item.canonicalName || item.fallbackName || item.code || "",
@@ -1510,8 +1288,8 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
 
   return (
     <AdminShell adminEmail={admin.email}>
+      <AdminWorkOverview />
       <AdminDashboardCharts
-        showClaimsLink={showAdminClaimsInNav(admin.email)}
         kpis={kpis}
         periodOptions={PERIOD_OPTIONS.map(({ value, labelKey, fallbackLabel }) => ({ value, labelKey, fallbackLabel }))}
         selectedPeriod={period.value}
@@ -1520,8 +1298,6 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
         statusOptions={ORDER_STATUSES}
         selectedStatus={validStatus}
         dailyStatusData={dailyStatusData}
-        claimElementData={claimElementData}
-        claimCityData={claimCityData}
         topItemsByQuantity={topItemsByQuantity}
         topItemsByRevenue={topItemsByRevenue}
         itemTypeData={itemTypeData}

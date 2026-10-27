@@ -46,6 +46,9 @@ export function ClaimEmailReview({ claimId, submissionId }) {
         <button type="button" style={buttonStyle} onClick={() => setOpen(false)}>{t("close", "Close")}</button>
       </div>
       <div style={{ padding: 18 }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          {[["notification", "notification", "Claim notification"], ["confirmation", "confirmation", "Customer confirmation"]].map(([value, key, label]) => <button key={value} type="button" aria-pressed={kind === value} onClick={() => setKind(value)} style={{ ...buttonStyle, ...(kind === value ? { background: "var(--app-accent)", color: "var(--app-accent-contrast)", borderColor: "var(--app-accent)" } : {}) }}>{t(key, label)}</button>)}
+        </div>
         <p style={{ margin: "0 0 12px", fontSize: 12, color: "var(--app-text-muted)" }}>{t("previewNote", "Preview rebuilt from saved details using the current email template.")}</p>
         {loading && <p role="status">{t("loading", "Loading email…")}</p>}
         {error && <p role="alert" style={{ color: "var(--app-danger-text)" }}>{error}</p>}

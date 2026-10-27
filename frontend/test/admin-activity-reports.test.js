@@ -1,9 +1,10 @@
+import { formatServiceClaimReference, formatServiceClaimEmailSubject } from "../lib/service-claim-email-subject.js";
 import assert from "node:assert/strict";
 import test from "node:test";
 import { buildActivityReportRows, normalizeActivityReportFilters, buildActivityReportQuery, loadActivityReportData } from "../lib/admin-activity-reports.js";
 
 const orders = [{ id: "o1", orderNumber: "6701-1", createdAt: new Date("2026-10-07T09:00:00Z"), status: "CONFIRMED", paymentStatus: "PAID", firstName: "Max", lastName: "Test", email: "max@example.com", totalPrice: 119, items: [{ quantity: 2 }], kitchenContract: { contractNumber: "6701" } }];
-const claims = [{ id: "c1", contractNumber: "6701", createdAt: new Date("2026-10-08T09:00:00Z"), fullName: "Max Test (male)", serialNumber: "SN-123", problemDescription: "Oven does not heat", phone: "12345", clientCity: "Berlin", requestType: "complaint" }];
+const claims = [{ id: "c1", contractNumber: "6701", claimSequence: 2, ticketNumber: 1020, createdAt: new Date("2026-10-08T09:00:00Z"), fullName: "Max Test (male)", serialNumber: "SN-123", problemDescription: "Oven does not heat", phone: "12345", clientCity: "Berlin", requestType: "complaint" }];
 
 const dependencies = {
   loadOrders: async () => ({ orders, summary: { totalOrders: 1, confirmedGross: 119, confirmedNet: 100, confirmedVat: 19 } }),
@@ -71,6 +72,14 @@ test("filter query preserves type and status and rejects invalid dates", () => {
   assert.deepEqual(buildActivityReportRows(), []);
 });
 
+test("claim reports use the same persisted ticket reference as notification emails", () => {
+  const row = buildActivityReportRows([], claims)[0];
+  assert.equal(row.reference, "#1020 6701 KD 02");
+  assert.equal(row.reference, formatServiceClaimReference(claims[0].contractNumber, claims[0].claimSequence, claims[0].ticketNumber));
+  assert(formatServiceClaimEmailSubject(claims[0].contractNumber, claims[0].claimSequence, claims[0].ticketNumber).startsWith(row.reference));
+  assert.equal(row.href, "/admin/claims/c1");
+  assert.equal(buildActivityReportRows([], [{ ...claims[0], ticketNumber: null }])[0].reference, "6701 KD 02");
+});
 
 test("contract type survives report links and reaches both data sources", async () => {
   for (const contractType of ["ARC", "FRG"]) {

@@ -225,8 +225,10 @@ function roleDescriptionFallback(role) {
   switch (role) {
     case "SUPERADMIN":
       return "Full access, including user management.";
+    case "PX_ADMIN":
+      return "Full access, including PX orders, PX claims and user management.";
     case "ADMIN":
-      return "Standard admin access to the current dashboard.";
+      return "Admin access without PX orders, PX claims, users, claim activity or contract access.";
     case "USER":
       return "Basic admin access with the same workflows for now.";
     default:
@@ -243,7 +245,7 @@ const profileItemStyle = {
   display: "grid",
   gap: 8,
   padding: "16px 18px",
-  borderRadius: 16,
+  borderRadius: 8,
   border: "1px solid var(--app-border)",
   background: "var(--app-surface-muted)",
 };

@@ -7,6 +7,10 @@ import {
 import { requireAdminApi } from "../../../../../../lib/auth";
 import { loadPublicVisitReportData } from "../../../../../../lib/public-visit-reports";
 import { buildStandardExcelWorkbook } from "../../../../../../lib/standard-excel";
+import { loadBusinessReportData, getBusinessReportSheets } from "../../../../../../lib/admin-business-reports";
+import { normalizeBusinessReportFilters } from "../../../../../../lib/business-report-filters";
+import { loadBusinessReportDetails, buildBusinessReportDetailSheet } from "../../../../../../lib/business-report-details";
+import { prisma } from "../../../../../../lib/prisma";
 
 function money(value) {
   return Math.round(Number(value || 0) * 100) / 100;
@@ -22,19 +26,58 @@ function getInitials(email) {
   return String(email || "").split("@")[0].split(/[._\s-]+/).filter(Boolean).slice(0, 3).map((part) => part[0]).join("").toUpperCase();
 }
 
+function excelResponse({ buffer, filename }) {
+  return new NextResponse(buffer, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": 'attachment; filename="' + filename + '"',
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export async function GET(request) {
   const admin = await requireAdminApi();
-  const filters = normalizeActivityReportFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
-  const [{ rows: activityRows, summary }, visitReport] = await Promise.all([
+  const params = Object.fromEntries(request.nextUrl.searchParams.entries());
+  const businessFilters = normalizeBusinessReportFilters(params);
+  const scope = String(params.scope || "").trim().toUpperCase();
+  if (scope && !["FRG", "ASC"].includes(scope)) {
+    return NextResponse.json({ error: "Invalid report scope." }, { status: 400 });
+  }
+  if (scope) {
+    // Summary and individual records must represent the same database snapshot.
+    const { report, details } = await prisma.$transaction(async db => {
+      const [report, details] = await Promise.all([
+        loadBusinessReportData(businessFilters, db),
+        loadBusinessReportDetails(businessFilters, scope, db),
+      ]);
+      return { report, details };
+    }, { isolationLevel: "RepeatableRead" });
+    const sheetName = scope === "FRG" ? "Fragmento" : "ASC";
+    return excelResponse(buildStandardExcelWorkbook({
+      description: `REPORT_${scope}`,
+      timeZone: REPORT_TIME_ZONE,
+      initials: getInitials(admin?.email),
+      sheets: [
+        ...getBusinessReportSheets(report).filter(sheet => sheet.name === sheetName),
+        buildBusinessReportDetailSheet(details, scope, report.filters),
+      ],
+    }));
+  }
+  const filters = normalizeActivityReportFilters({ ...params, ...businessFilters });
+  const [{ rows: activityRows, summary }, visitReport, businessReport] = await Promise.all([
     loadActivityReportData(filters),
     loadPublicVisitReportData(filters),
+    loadBusinessReportData(businessFilters),
   ]);
   const { summary: visits } = visitReport;
   const { buffer, filename } = buildStandardExcelWorkbook({
-    description: "REPORT_ORDERS_CLAIMS",
+    description: "REPORT_FRAGMENTO_ASC",
     timeZone: REPORT_TIME_ZONE,
     initials: getInitials(admin?.email),
     sheets: [
+      ...getBusinessReportSheets(businessReport),
       {
         name: "Report",
         title: "ORDERS AND CLAIMS REPORT",
@@ -91,12 +134,5 @@ export async function GET(request) {
     ],
   });
 
-  return new NextResponse(buffer, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": 'attachment; filename="' + filename + '"',
-      "Cache-Control": "no-store",
-    },
-  });
+  return excelResponse({ buffer, filename });
 }

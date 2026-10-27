@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -178,7 +178,6 @@ export const EXAMPLE_DASHBOARD_MOCK_DATA = {
 };
 
 export function AdminDashboardCharts({
-  showClaimsLink = false,
   kpis,
   periodOptions,
   selectedPeriod,
@@ -187,8 +186,6 @@ export function AdminDashboardCharts({
   statusOptions,
   selectedStatus,
   dailyStatusData,
-  claimElementData,
-  claimCityData,
   topItemsByQuantity,
   topItemsByRevenue,
   itemTypeData,
@@ -223,7 +220,6 @@ export function AdminDashboardCharts({
   const mobileKpis = kpis.slice(0, 4);
   const mobileTabs = [
     { value: "overview", label: translate("dashboard.mobileTabOverview", "Overview") },
-    { value: "claims", label: translate("dashboard.mobileTabClaims", "Claims") },
     { value: "orders", label: translate("dashboard.mobileTabOrders", "Orders") },
     { value: "housing", label: translate("dashboard.mobileTabHousing", "Housing") },
     { value: "products", label: translate("dashboard.mobileTabProducts", "Products") },
@@ -372,31 +368,6 @@ export function AdminDashboardCharts({
             </>
           ) : null}
 
-          {mobileSection === "claims" ? (
-            <section className="mobile-chart-card mobile-chart-card--claims">
-              <ChartHeader
-                eyebrow={translate("dashboard.claimElementOverview", "Claims by item")}
-                title={translate("dashboard.claimsBySelectedElementAndCity", "Claims by selected item and city")}
-              />
-              <MobileClaimBars
-                title={translate("dashboard.selectedElements", "Selected items")}
-                data={claimElementData}
-                emptyLabel={translate("dashboard.noClaimElementDataForSelectedFilters", "No item-level claim data for the current filters.")}
-                translateElementLabels
-              />
-              <MobileClaimBars
-                title={translate("dashboard.submittedCities", "Submitted cities")}
-                data={claimCityData}
-                emptyLabel={translate("dashboard.noClaimCityDataForSelectedFilters", "No submitted city data for the current filters.")}
-              />
-              {showClaimsLink ? (
-                <Link className="mobile-panel-link" href="/admin/claims" prefetch={false}>
-                  {translate("dashboard.viewAllClaims", "View all claims")}
-                </Link>
-              ) : null}
-            </section>
-          ) : null}
-
           {mobileSection === "orders" ? (
             <>
               <MobileStatusBars data={dailyStatusData} />
@@ -413,40 +384,6 @@ export function AdminDashboardCharts({
               <MobileTopItems topItemsByQuantity={topItemsByQuantity} topItemsByRevenue={topItemsByRevenue} />
               <DistributionSection itemTypeData={itemTypeData} paymentData={paymentData} />
             </>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="chart-card chart-card--compact chart-card--claims desktop-dashboard-section">
-        <ChartHeader
-          eyebrow={translate("dashboard.claimElementOverview", "Claims by item")}
-          title={translate("dashboard.claimsBySelectedElementAndCity", "Claims by selected item and city")}
-          detail={translate("dashboard.claimsBySelectedElementAndCityDetail", "Ranked by selected kitchen items and the city submitted in the service request form.")}
-        />
-        <div className="claim-overview-grid">
-          <ClaimBreakdownChart
-            title={translate("dashboard.selectedElements", "Selected items")}
-            data={claimElementData}
-            emptyLabel={translate("dashboard.noClaimElementDataForSelectedFilters", "No item-level claim data for the current filters.")}
-            translateElementLabels
-            yAxisWidth={154}
-            maxRows={5}
-            compact
-          />
-          <ClaimBreakdownChart
-            title={translate("dashboard.submittedCities", "Submitted cities")}
-            data={claimCityData}
-            emptyLabel={translate("dashboard.noClaimCityDataForSelectedFilters", "No submitted city data for the current filters.")}
-            yAxisWidth={104}
-            maxRows={6}
-            compact
-          />
-          {showClaimsLink ? (
-            <div className="claim-action-row">
-              <Link className="claim-action-row__link" href="/admin/claims" prefetch={false}>
-                {translate("dashboard.viewAllClaims", "View all claims")}
-              </Link>
-            </div>
           ) : null}
         </div>
       </section>
@@ -636,7 +573,7 @@ export function AdminDashboardCharts({
             gap: 6px;
             min-height: 112px;
             border: 1px solid rgba(107, 79, 58, 0.18);
-            border-radius: 10px;
+            border-radius: 8px;
             background: #fffdf9;
             padding: 13px;
             box-shadow: 0 8px 22px rgba(84, 59, 40, 0.08);
@@ -796,7 +733,7 @@ export function AdminDashboardCharts({
           }
 
           .mobile-search-section :global(.search-workspace) {
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 12px;
             gap: 10px;
           }
@@ -807,7 +744,7 @@ export function AdminDashboardCharts({
 
           .mobile-search-section :global(.matches-panel) {
             padding: 10px;
-            border-radius: 10px;
+            border-radius: 8px;
           }
 
           .mobile-dashboard-tabs {
@@ -819,7 +756,7 @@ export function AdminDashboardCharts({
             overflow-x: auto;
             padding: 5px;
             border: 1px solid rgba(107, 79, 58, 0.14);
-            border-radius: 10px;
+            border-radius: 8px;
             background: rgba(255, 253, 249, 0.96);
             box-shadow: 0 8px 20px rgba(84, 59, 40, 0.07);
             backdrop-filter: blur(12px);
@@ -852,7 +789,7 @@ export function AdminDashboardCharts({
           .mobile-chart-card,
           .mobile-tab-panel :global(.chart-card),
           .mobile-tab-panel :global(.project-card) {
-            border-radius: 10px !important;
+            border-radius: 8px !important;
             border-color: rgba(107, 79, 58, 0.18) !important;
             background: #fffdf9 !important;
             padding: 14px !important;
@@ -1377,7 +1314,7 @@ function StatusTooltip({ active, payload, label, mode }) {
           display: grid;
           gap: 6px;
           border: 1px solid var(--color-border);
-          border-radius: 10px;
+          border-radius: 8px;
           background: var(--color-card);
           padding: 10px 12px;
           box-shadow: var(--app-shadow-soft);
@@ -1414,7 +1351,7 @@ function ClaimElementTooltip({ active, payload, label }) {
           display: grid;
           gap: 6px;
           border: 1px solid var(--color-border);
-          border-radius: 10px;
+          border-radius: 8px;
           background: var(--color-card);
           padding: 10px 12px;
           box-shadow: var(--app-shadow-soft);
@@ -1766,7 +1703,7 @@ function PropertyOwnerAnalyticsSection({ analytics, modeSwitcher = null }) {
       <style jsx>{`
         .chart-card {
           border: 1px solid var(--color-border);
-          border-radius: 16px;
+          border-radius: 8px;
           background: var(--color-card);
           box-shadow: var(--app-shadow-soft);
           display: grid;
@@ -1785,7 +1722,7 @@ function PropertyOwnerAnalyticsSection({ analytics, modeSwitcher = null }) {
           display: grid;
           gap: 14px;
           border: 1px solid var(--color-border);
-          border-radius: 12px;
+          border-radius: 8px;
           padding: 14px;
           background: #fbfaf7;
         }
@@ -1952,7 +1889,7 @@ function PropertyOwnerAnalyticsSection({ analytics, modeSwitcher = null }) {
           align-items: flex-start;
           text-align: left;
           border: 1px solid var(--color-border);
-          border-radius: 12px;
+          border-radius: 8px;
           padding: 12px;
           background: var(--color-card);
           cursor: pointer;
@@ -1986,7 +1923,7 @@ function PropertyOwnerAnalyticsSection({ analytics, modeSwitcher = null }) {
           display: grid;
           place-items: center;
           border: 1px dashed var(--color-border);
-          border-radius: 12px;
+          border-radius: 8px;
           color: var(--color-text-muted);
           background: #fbfaf7;
           text-align: center;
@@ -2342,7 +2279,7 @@ function ProjectAnalyticsSection({ analytics, modeSwitcher = null }) {
       <style jsx>{`
         .project-card {
           border: 1px solid var(--color-border);
-          border-radius: 16px;
+          border-radius: 8px;
           background: var(--color-card);
           box-shadow: var(--app-shadow-soft);
           display: grid;
@@ -2366,7 +2303,7 @@ function ProjectAnalyticsSection({ analytics, modeSwitcher = null }) {
 
         .project-main {
           border: 1px solid var(--color-border);
-          border-radius: 12px;
+          border-radius: 8px;
           padding: 14px;
           background: #fbfaf7;
         }
@@ -2537,7 +2474,7 @@ function ProjectAnalyticsSection({ analytics, modeSwitcher = null }) {
           align-items: flex-start;
           text-align: left;
           border: 1px solid var(--color-border);
-          border-radius: 12px;
+          border-radius: 8px;
           padding: 12px;
           background: var(--color-card);
           cursor: pointer;
@@ -2571,7 +2508,7 @@ function ProjectAnalyticsSection({ analytics, modeSwitcher = null }) {
           display: grid;
           place-items: center;
           border: 1px dashed var(--color-border);
-          border-radius: 12px;
+          border-radius: 8px;
           color: var(--color-text-muted);
           background: #fbfaf7;
           text-align: center;
@@ -2635,7 +2572,7 @@ function ProjectListPanel({ title, emptyLabel, rows, renderRow }) {
           justify-content: space-between;
           gap: 12px;
           border: 1px solid var(--color-border);
-          border-radius: 10px;
+          border-radius: 8px;
           background: #fbfaf7;
           padding: 10px;
         }
@@ -2682,7 +2619,7 @@ function CompanyTimelineTooltip({ active, payload, label }) {
           display: grid;
           gap: 6px;
           border: 1px solid var(--color-border);
-          border-radius: 10px;
+          border-radius: 8px;
           background: var(--color-card);
           padding: 10px 12px;
           box-shadow: var(--app-shadow-soft);
@@ -2802,7 +2739,7 @@ function TopItemsSection({ topItemsByQuantity, topItemsByRevenue }) {
       <style jsx>{`
         .chart-card {
           border: 1px solid var(--color-border);
-          border-radius: 16px;
+          border-radius: 8px;
           background: var(--color-card);
           box-shadow: var(--app-shadow-soft);
           display: grid;
@@ -2926,7 +2863,7 @@ function TopItemsTooltip({ active, payload }) {
           display: grid;
           gap: 6px;
           border: 1px solid var(--color-border);
-          border-radius: 10px;
+          border-radius: 8px;
           background: var(--color-card);
           padding: 10px 12px;
           box-shadow: var(--app-shadow-soft);
@@ -3018,7 +2955,7 @@ function DistributionSection({ itemTypeData, paymentData }) {
       <style jsx>{`
         .chart-card {
           border: 1px solid var(--color-border);
-          border-radius: 16px;
+          border-radius: 8px;
           background: var(--color-card);
           box-shadow: var(--app-shadow-soft);
           display: grid;
@@ -3137,7 +3074,7 @@ function GeographySection({ data }) {
       <style jsx>{`
         .chart-card {
           border: 1px solid var(--color-border);
-          border-radius: 16px;
+          border-radius: 8px;
           background: var(--color-card);
           box-shadow: var(--app-shadow-soft);
           display: grid;
@@ -3191,7 +3128,7 @@ function CountryTooltip({ active, payload }) {
           display: grid;
           gap: 6px;
           border: 1px solid var(--color-border);
-          border-radius: 10px;
+          border-radius: 8px;
           background: var(--color-card);
           padding: 10px 12px;
           box-shadow: var(--app-shadow-soft);
@@ -3213,7 +3150,7 @@ function EmptyChart({ label }) {
       display: grid;
       place-items: center;
       border: 1px dashed var(--color-border);
-      border-radius: 12px;
+      border-radius: 8px;
       color: var(--color-text-muted);
       background: #fbfaf7;
       text-align: center;
