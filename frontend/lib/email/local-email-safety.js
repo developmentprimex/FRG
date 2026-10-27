@@ -2,7 +2,7 @@ import nodemailer from "nodemailer";
 
 const BLOCKED_LOCAL_MAILBOX = "nachkauf@myarchitecto.de";
 export const LOCAL_EMAIL_RECIPIENT = "334primex.eu@gmail.com";
-const CLAIM_FEEDBACK_SENDER = "315primex.eu@gmail.com";
+const LOCAL_DIRECT_EMAIL_SENDER = "315primex.eu@gmail.com";
 
 export function isLocalEmailEnvironment(env = process.env) {
   if (String(env.LOCAL_EMAIL_SAFETY || "").trim().toLowerCase() === "true") return true;
@@ -27,19 +27,23 @@ export function assertLocalEmailSenderAllowed({ user, from, sender, envelopeFrom
 
 // Every application SMTP path uses this factory. Check before creating the
 // transport, and again before handing a message to Nodemailer (including retries).
-export function resolveLocalEmailRecipient({ to, from, user, localFeedbackRecipient } = {}, env = process.env) {
+export function resolveLocalEmailRecipient({ to, from, user, localFeedbackRecipient, localAdminLoginRecipient } = {}, env = process.env) {
   if (!isLocalEmailEnvironment(env)) return to;
   const allowlisted = String(env.LOCAL_CLAIM_FEEDBACK_RECIPIENT || "").trim().toLowerCase();
   const requested = String(to || "").trim().toLowerCase();
   const scoped = String(localFeedbackRecipient || "").trim().toLowerCase();
+  const adminAllowlisted = String(env.LOCAL_ADMIN_LOGIN_RECIPIENT || "").trim().toLowerCase();
+  const adminScoped = String(localAdminLoginRecipient || "").trim().toLowerCase();
   const fromAddress = String(from || "").match(/<([^>]+)>/)?.[1] || String(from || "").trim();
-  if (allowlisted && allowlisted === requested && scoped === requested
-    && String(user || "").toLowerCase() === CLAIM_FEEDBACK_SENDER
-    && fromAddress.toLowerCase() === CLAIM_FEEDBACK_SENDER) return String(to).trim();
+  const scopedRecipientAllowed = (allowlisted && allowlisted === requested && scoped === requested)
+    || (adminAllowlisted && adminAllowlisted === requested && adminScoped === requested);
+  if (scopedRecipientAllowed
+    && String(user || "").toLowerCase() === LOCAL_DIRECT_EMAIL_SENDER
+    && fromAddress.toLowerCase() === LOCAL_DIRECT_EMAIL_SENDER) return String(to).trim();
   return LOCAL_EMAIL_RECIPIENT;
 }
 
-export function createGuardedSmtpTransport(options, env = process.env, { localFeedbackRecipient } = {}) {
+export function createGuardedSmtpTransport(options, env = process.env, { localFeedbackRecipient, localAdminLoginRecipient } = {}) {
   assertLocalEmailSenderAllowed({ user: options.auth?.user }, env);
   const transport = nodemailer.createTransport(options);
   const originalSendMail = transport.sendMail.bind(transport);
@@ -53,7 +57,7 @@ export function createGuardedSmtpTransport(options, env = process.env, { localFe
       }, env);
       if (isLocalEmailEnvironment(env)) {
         if (message.raw) throw new Error("Raw email is disabled locally; use a structured message for safe recipient redirection.");
-        const recipient = resolveLocalEmailRecipient({ to: message.to, from: message.from, user: options.auth?.user, localFeedbackRecipient }, env);
+        const recipient = resolveLocalEmailRecipient({ to: message.to, from: message.from, user: options.auth?.user, localFeedbackRecipient, localAdminLoginRecipient }, env);
         message = {
           ...message,
           to: recipient,

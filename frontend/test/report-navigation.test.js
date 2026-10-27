@@ -5,6 +5,7 @@ import { getReportsReturnHref } from "../lib/report-navigation.js";
 test("return navigation preserves report filters", () => {
   assert.equal(getReportsReturnHref("/admin/reports?dateFrom=2026-10-01&dateTo=2026-10-14&type=CLAIM&status=RECEIVED"), "/admin/reports?dateFrom=2026-10-01&dateTo=2026-10-14&type=CLAIM&status=RECEIVED");
   assert.equal(getReportsReturnHref(["/admin/reports?type=ORDER"]), "/admin/reports?type=ORDER");
+  assert.equal(getReportsReturnHref("/admin/reports?groupBy=WEEK&contractType=ARC&period=ALL"), "/admin/reports?groupBy=WEEK&contractType=ARC&period=ALL");
 });
 
 test("return navigation accepts only the report page", () => {

@@ -18,13 +18,15 @@ import {
   AdminText,
 } from "../../../components/admin-i18n";
 import AdminSelect from "../../../components/admin-select";
+import { AdminReportScopeLink } from "../../../components/admin-report-scope-link";
+import { AdminReportTable } from "../../../components/admin-report-table";
 import {
   ACTIVITY_REPORT_STATUSES,
-  buildActivityReportQuery,
   loadActivityReportData,
   normalizeActivityReportFilters,
 } from "../../../lib/admin-activity-reports";
 import { requireAdminPage } from "../../../lib/auth";
+import { normalizeBusinessReportFilters, buildBusinessReportQuery, BUSINESS_REPORT_PERIODS } from "../../../lib/business-report-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -36,8 +38,8 @@ function formatCurrency(value) {
   }).format(Number(value || 0));
 }
 
-function getExportHref(filters) {
-  const query = buildActivityReportQuery(filters);
+function getExportHref(filters, businessFilters) {
+  const query = buildBusinessReportQuery(businessFilters, filters);
   return query
     ? `/api/admin/reports/orders/export?${query}`
     : "/api/admin/reports/orders/export";
@@ -46,13 +48,14 @@ function getExportHref(filters) {
 export default async function AdminReportsPage({ searchParams = {} }) {
   const admin = await requireAdminPage();
   const resolvedSearchParams = (await searchParams) || {};
-  const filters = normalizeActivityReportFilters(resolvedSearchParams);
+  const businessFilters = normalizeBusinessReportFilters(resolvedSearchParams);
+  const filters = normalizeActivityReportFilters({ ...resolvedSearchParams, ...businessFilters });
   const { rows, summary } = await loadActivityReportData(filters);
-  const exportHref = getExportHref(filters);
+  const exportHref = getExportHref(filters, businessFilters);
   const claimsOnly = filters.type === "CLAIM";
   const showIssue = filters.type !== "ORDER";
   const columnCount = 6 + (claimsOnly ? 0 : 2) + (showIssue ? 1 : 0);
-  const reportQuery = buildActivityReportQuery(filters);
+  const reportQuery = buildBusinessReportQuery(businessFilters, filters);
   const returnToReports = "/admin/reports" + (reportQuery ? "?" + reportQuery : "");
 
   return (
@@ -60,14 +63,23 @@ export default async function AdminReportsPage({ searchParams = {} }) {
       <div style={pageGridStyle}>
         <AdminSection
           title={<AdminText i18nKey="reportsAdmin.reports" fallback="Reports" />}
-          description={<AdminText i18nKey="reportsAdmin.description" fallback="Orders and claims in one table, with filters and Excel export." />}
           actions={(
+            <>
+            <AdminReportScopeLink href={"/admin/reports/frg?" + reportQuery}>FRG</AdminReportScopeLink>
+            <AdminReportScopeLink href={"/admin/reports/asc?" + reportQuery}>ASC</AdminReportScopeLink>
             <Link href={exportHref} prefetch={false} style={exportButtonStyle}>
               <AdminText i18nKey="reportsAdmin.exportExcel" fallback="Export Excel" />
             </Link>
+            </>
           )}
         >
-          <form action="/admin/reports" method="get" style={filterPanelStyle}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+            {BUSINESS_REPORT_PERIODS.map(period => <Link key={period} prefetch={false} style={{ ...filterClearLinkStyle, ...(businessFilters.period === period ? { background: "var(--app-accent)", color: "white" } : {}) }} href={"/admin/reports?" + buildBusinessReportQuery(normalizeBusinessReportFilters({ ...filters, groupBy: businessFilters.groupBy, period }), filters)}>
+              <AdminText i18nKey={`businessReports.${period}`} fallback={period.replaceAll("_", " ")} />
+            </Link>)}
+          </div>
+          <form key={reportQuery} action="/admin/reports" method="get" style={filterPanelStyle}>
+            <input type="hidden" name="period" value="CUSTOM" />
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
               <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
@@ -82,6 +94,12 @@ export default async function AdminReportsPage({ searchParams = {} }) {
                 <option value=""><AdminText i18nKey="contractsAdmin.allContractTypes" fallback="All contract types" /></option>
                 <option value="ARC">ARC</option>
                 <option value="FRG">FRG</option>
+              </AdminSelect>
+            </label>
+            <label style={filterFieldStyle}>
+              <span><AdminText i18nKey="businessReports.groupBy" fallback="Group by" /></span>
+              <AdminSelect name="groupBy" defaultValue={businessFilters.groupBy} style={filterInputStyle}>
+                {["DAY", "WEEK", "MONTH"].map(group => <option key={group} value={group}><AdminText i18nKey={`businessReports.${group}`} fallback={group} /></option>)}
               </AdminSelect>
             </label>
             <label style={filterFieldStyle}>
@@ -110,14 +128,17 @@ export default async function AdminReportsPage({ searchParams = {} }) {
               </Link>
             </div>
           </form>
-
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap", marginTop: 12, color: "var(--app-text-muted)", fontSize: 14 }}>
-            <span><AdminText i18nKey="reportsAdmin.totalRecords" fallback="Total records" />: <strong>{summary.totalRecords}</strong></span>
-            <span><AdminText i18nKey="reportsAdmin.totalClaims" fallback="Total claims" />: <strong>{summary.totalClaims}</strong></span>
-          </div>
+          <dl style={{ display: "flex", flexWrap: "wrap", gap: 12, margin: 0 }}>
+            {[
+              ["reportsAdmin.totalOrders", "Total orders", summary.totalOrders],
+              ["reportsAdmin.totalClaims", "Total claims", summary.totalClaims],
+            ].map(([key, label, value]) => <div key={key} style={reportTotalCardStyle}>
+              <dt style={summaryLabelStyle}><AdminText i18nKey={key} fallback={label} /></dt>
+              <dd style={{ ...summaryValueStyle, fontSize: 28, fontVariantNumeric: "tabular-nums" }}>{new Intl.NumberFormat("de-DE").format(value)}</dd>
+            </div>)}
+          </dl>
           {filters.type === "ORDER" && <div style={orderSummaryStyle}>
             <dl style={orderSummaryGridStyle}>
-              <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.totalOrders" fallback="Total orders" /></dt><dd style={summaryValueStyle}>{summary.totalOrders}</dd></div>
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.doneOrders" fallback="Done orders" /></dt><dd style={summaryValueStyle}>{summary.doneOrders}</dd></div>
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.notDone" fallback="Not done" /></dt><dd style={summaryValueStyle}>{summary.notDoneUnpaidOrders}</dd></div>
               <div><dt style={summaryLabelStyle}><AdminText i18nKey="reportsAdmin.netWithoutVat" fallback="Net without VAT" /></dt><dd style={summaryValueStyle}>{formatCurrency(summary.confirmedNet)}</dd></div>
@@ -131,7 +152,7 @@ export default async function AdminReportsPage({ searchParams = {} }) {
         <AdminSection
           title={<AdminText i18nKey="reportsAdmin.activityRows" fallback="Orders and claims" />}
         >
-          <div className="admin-reports-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
+          <AdminReportTable style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={{ ...tableStyle, tableLayout: "auto", minWidth: 1000 }}>
               <thead>
                 <tr>
@@ -174,7 +195,7 @@ export default async function AdminReportsPage({ searchParams = {} }) {
                 })}
               </tbody>
             </table>
-          </div>
+          </AdminReportTable>
         </AdminSection>
       </div>
     </AdminShell>
@@ -262,6 +283,13 @@ const orderSummaryStyle = {
   marginTop: 12,
   paddingTop: 12,
   borderTop: "1px solid var(--app-border)",
+};
+
+const reportTotalCardStyle = {
+  padding: "12px 16px",
+  border: "1px solid var(--app-border)",
+  borderRadius: 8,
+  background: "var(--app-surface-soft, #faf8f5)",
 };
 
 const orderSummaryGridStyle = {

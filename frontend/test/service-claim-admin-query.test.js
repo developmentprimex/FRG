@@ -27,6 +27,19 @@ test("claim page clamps out-of-range requests and counts with the same filters",
   }
 });
 
+test("reports can omit the unused per-claim submission count", async () => {
+  resetServiceClaimQueryColumnSupportCache();
+  let selected = "";
+  const db = { $queryRaw: async (strings, ...values) => {
+    const sql = renderSqlTemplate(strings, values);
+    if (!sql.includes("information_schema")) selected = sql;
+    return [];
+  } };
+  await queryServiceClaimsList(db, { includeSubmissionCount: false, claimType: "live" });
+  assert(selected.includes('FROM "ServiceClaim" sc'));
+  assert(!selected.includes('ServiceClaimSubmission'));
+});
+
 function renderSqlTemplate(strings, values) {
   let output = "";
   for (let index = 0; index < strings.length; index += 1) {
@@ -248,8 +261,8 @@ test("queryServiceClaimsList keeps kitchen and Berlin calendar dates from overvi
   });
 
   assert.match(queries[1], /kc\."kitchenId" = kitchen-1/);
-  assert.match(queries[1], /sc\."createdAt" >= 2026-10-23T22:00:00\.000Z/);
-  assert.match(queries[1], /sc\."createdAt" < 2026-10-25T23:00:00\.000Z/);
+  assert.match(queries[1], /sc\."createdAt" AT TIME ZONE 'UTC' >= 2026-10-23T22:00:00\.000Z/);
+  assert.match(queries[1], /sc\."createdAt" AT TIME ZONE 'UTC' < 2026-10-25T23:00:00\.000Z/);
 });
 
 test("overview drilldowns filter exact contracts and normalized contacts", async () => {

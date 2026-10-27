@@ -1,6 +1,7 @@
 import { formatServiceClaimReference } from "../service-claim-email-subject.js";
 import { resolveServiceClaimEmailRecipient } from "../service-claim-email-recipient.js";
 import { CLAIM_INTERNAL_PREFIXES, resolveSmtpConfigForContract, sendMailForContract } from "./contract-smtp.js";
+import { observeClaimEmailSend } from "./claim-email-tracking.js";
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (character) => ({
@@ -27,11 +28,21 @@ export function buildClaimConfirmationMessage(payload, env = process.env) {
   };
 }
 
-export async function sendClaimConfirmation(payload, { env = process.env, send = sendMailForContract } = {}) {
+export async function sendClaimConfirmation(payload, { env = process.env, send = sendMailForContract, schedule } = {}) {
   const message = buildClaimConfirmationMessage(payload, env);
   if (!message.to) return false;
   const config = resolveSmtpConfigForContract(payload.contractNumber, env, CLAIM_INTERNAL_PREFIXES);
   if (!config.host || !config.from) throw new Error("Claim confirmation SMTP is not configured");
-  await send(payload.contractNumber, message, { env, prefixes: CLAIM_INTERNAL_PREFIXES });
-  return true;
+  return observeClaimEmailSend({
+    claimId: payload.id,
+    recipient: message.to,
+    kind: "customer-confirmation",
+    role: "customer",
+    schedule,
+    send: async captureReceipt => {
+      const result = await send(payload.contractNumber, message, { env, prefixes: CLAIM_INTERNAL_PREFIXES });
+      captureReceipt(result?.receipt);
+      return true;
+    },
+  });
 }

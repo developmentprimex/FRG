@@ -76,7 +76,7 @@ export function buildActivityReportRows(orders = [], claims = []) {
 export async function loadActivityReportData(filters = {}, dependencies = {}) {
   const normalized = normalizeActivityReportFilters(filters);
   const loadOrders = dependencies.loadOrders || loadOrderReportData;
-  const loadClaims = dependencies.loadClaims || ((claimFilters) => queryServiceClaimsList(prisma, claimFilters));
+  const loadClaims = dependencies.loadClaims || ((claimFilters) => queryServiceClaimsList(prisma, { ...claimFilters, includeSubmissionCount: false }));
   const includeOrders = normalized.type !== "CLAIM" && normalized.status !== "RECEIVED";
   const includeClaims = normalized.type !== "ORDER" && (!normalized.status || normalized.status === "RECEIVED");
   const [orderData, claims] = await Promise.all([

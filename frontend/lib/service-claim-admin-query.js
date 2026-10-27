@@ -14,7 +14,6 @@ const REQUIRED_CLAIM_COLUMNS = `
       sc."id",
       sc."ticketNumber",
       sc."claimSequence",
-      (SELECT COUNT(*)::integer FROM "ServiceClaimSubmission" sub WHERE sub."claimId" = sc."id") AS "submissionCount",
       sc."contractNumber",
       sc."fullName",
       sc."phone",
@@ -223,13 +222,13 @@ export function buildServiceClaimListWhere(filters, {
   }
 
   if (filters.dateFrom) {
-    conditions.push(Prisma.sql`${claim}."createdAt" >= ${workDayStart(filters.dateFrom)}`);
+    conditions.push(Prisma.sql`${claim}."createdAt" AT TIME ZONE 'UTC' >= ${workDayStart(filters.dateFrom)}`);
   }
 
   if (filters.dateTo) {
     const nextDate = new Date(`${filters.dateTo}T12:00:00.000Z`);
     nextDate.setUTCDate(nextDate.getUTCDate() + 1);
-    conditions.push(Prisma.sql`${claim}."createdAt" < ${workDayStart(nextDate.toISOString().slice(0, 10))}`);
+    conditions.push(Prisma.sql`${claim}."createdAt" AT TIME ZONE 'UTC' < ${workDayStart(nextDate.toISOString().slice(0, 10))}`);
   }
 
   if (!conditions.length) {
@@ -244,8 +243,12 @@ function buildClaimColumns({
   includeProblemAreasJson = true,
   includeLandlordCompanyPhone = true,
   includeLandlordCompanyEmail = true,
+  includeSubmissionCount = true,
 } = {}) {
   const optionalColumns = [];
+  if (includeSubmissionCount) {
+    optionalColumns.push(`      (SELECT COUNT(*)::integer FROM "ServiceClaimSubmission" sub WHERE sub."claimId" = sc."id") AS "submissionCount"`);
+  }
 
   if (includeLandlordCompanyPhone) {
     optionalColumns.push(`      sc."landlordCompanyPhone"`);
@@ -299,7 +302,7 @@ export async function queryServiceClaimsList(prisma, filters, pagination = null)
 
     return prisma.$queryRaw`
       SELECT
-      ${Prisma.raw(buildClaimColumns(options))}
+      ${Prisma.raw(buildClaimColumns({ ...options, includeSubmissionCount: filters.includeSubmissionCount !== false }))}
       FROM "ServiceClaim" sc
       LEFT JOIN "KitchenContract" kc ON kc."contractNumber" = sc."contractNumber"
       LEFT JOIN "Kitchen" k ON k."id" = kc."kitchenId"

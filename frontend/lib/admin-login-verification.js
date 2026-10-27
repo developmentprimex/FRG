@@ -1,6 +1,7 @@
 import crypto from "crypto";
-import { createGuardedSmtpTransport } from "./email/local-email-safety.js";
-import { prisma } from "./prisma";
+import { createGuardedSmtpTransport, resolveLocalEmailRecipient } from "./email/local-email-safety.js";
+import { resolveDefaultSmtpConfig } from "./email/contract-smtp.js";
+import { prisma } from "./prisma.js";
 
 export const ADMIN_LOGIN_CODE_TTL_MS = 15 * 60 * 1000;
 export const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
@@ -97,33 +98,35 @@ export async function verifyAdminLoginCode(adminId, code) {
   return { ok: true, admin };
 }
 
-export async function sendAdminLoginVerificationEmail({ to, code }) {
-  const smtpHost = String(process.env.SMTP_HOST || "smtp.gmail.com").trim();
-  const smtpFrom = String(process.env.SMTP_FROM || "").trim();
+export function resolveAdminLoginVerificationRecipient(to, env = process.env) {
+  const config = resolveDefaultSmtpConfig(env);
+  return resolveLocalEmailRecipient({ to, from: config.from, user: config.user, localAdminLoginRecipient: to }, env);
+}
 
-  if (!to || !smtpHost || !smtpFrom || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    if (process.env.NODE_ENV !== "production") {
-      console.info(`[admin-login] Verification code for ${to}: ${code}`);
-      return;
-    }
+export async function sendAdminLoginVerificationEmail({ to, code }, { env = process.env, createTransport = createGuardedSmtpTransport } = {}) {
+  const config = resolveDefaultSmtpConfig(env);
 
+  if (!to || !config.host || !config.from || !config.user || !config.pass) {
     const error = new Error("Email verification is not configured. Please contact support.");
     error.status = 503;
     throw error;
   }
 
-  const transporter = createGuardedSmtpTransport({
-    host: smtpHost,
-    port: Number.parseInt(process.env.SMTP_PORT || "587", 10),
-    secure: process.env.SMTP_SECURE === "true",
+  const transporter = createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.secure,
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 20000,
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: config.user,
+      pass: config.pass,
     },
-  });
+  }, env, { localAdminLoginRecipient: to });
 
-  await transporter.sendMail({
-    from: `"Fragmento" <${smtpFrom}>`,
+  const receipt = await transporter.sendMail({
+    from: `"Fragmento" <${config.from}>`,
     to,
     subject: "Your Fragmento admin sign-in code",
     text: [
@@ -142,4 +145,5 @@ export async function sendAdminLoginVerificationEmail({ to, code }) {
       </div>
     `,
   });
+  return { recipient: resolveAdminLoginVerificationRecipient(to, env), accepted: receipt?.accepted || [] };
 }
