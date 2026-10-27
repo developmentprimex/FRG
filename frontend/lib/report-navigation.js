@@ -4,7 +4,7 @@ export function getReportsReturnHref(value) {
   const url = new URL(raw, "http://localhost");
   if (url.pathname !== "/admin/reports") return "";
   const params = new URLSearchParams();
-  for (const key of ["dateFrom", "dateTo", "type", "status", "groupBy", "contractType", "period"]) {
+  for (const key of ["dateFrom", "dateTo", "type", "status"]) {
     if (url.searchParams.has(key)) params.set(key, url.searchParams.get(key));
   }
   return "/admin/reports" + (params.size ? "?" + params.toString() : "");

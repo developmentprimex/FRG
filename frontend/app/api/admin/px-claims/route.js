@@ -1,12 +1,10 @@
-import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../lib/admin-forms";
-import { requirePxAdminApi } from "../../../../lib/admin-role-guards";
+import { requireAdminClaimsApi } from "../../../../lib/admin-claims-access";
 import { prisma } from "../../../../lib/prisma";
 import { deleteServiceClaimAttachments } from "../../../../lib/service-claim-attachments-storage";
 
 export async function POST(request) {
-  try { await requirePxAdminApi(); }
-  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
+  await requireAdminClaimsApi();
 
   try {
     const formData = await request.formData();

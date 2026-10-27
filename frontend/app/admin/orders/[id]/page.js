@@ -1,7 +1,5 @@
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import { AdminOrderSummaryTable } from "../../../../components/admin-order-summary-table";
-import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
-import { loadOrderKitchenSpecifications } from "../../../../lib/kitchen-ab-runtime";
 import { OrderStatus } from "@prisma/client";
 import {
   ActionLink,
@@ -297,10 +295,6 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
           </AdminSection>
         ) : null}
 
-        <AdminSection title={<AdminText i18nKey="kitchenSpecificationsAdmin.title" fallback="Kitchen specifications" />}>
-          <AdminOrderKitchenSpecifications details={await loadOrderKitchenSpecifications(order)} />
-        </AdminSection>
-
         <AdminSection
           title={<AdminText i18nKey="orderDetailAdmin.orderItems" fallback="Order items" />}
         >
@@ -385,7 +379,7 @@ const actionPanelStyle = {
   display: "grid",
   gap: 14,
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 14,
   background: "transparent",
   padding: 14,
 };
@@ -423,7 +417,7 @@ const actionMetricStyle = {
   gap: 6,
   minWidth: 0,
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 10,
   background: "rgba(255,255,255,0.78)",
   padding: "12px 14px",
 };
@@ -445,7 +439,7 @@ const statusHintStyle = {
 
 const quietDangerButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.22)",
-  borderRadius: 8,
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.72)",
@@ -458,7 +452,7 @@ const quietDangerButtonStyle = {
 
 const technicalButtonStyle = {
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 8,
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.62)",
@@ -471,7 +465,7 @@ const technicalButtonStyle = {
 
 const paymentLinkButtonStyle = {
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 8,
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(42, 145, 85, 0.1)",
@@ -486,7 +480,7 @@ const paymentLinkPanelStyle = {
   display: "grid",
   gap: 8,
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "rgba(42, 145, 85, 0.08)",
   color: "var(--app-text)",
   padding: "12px 14px",

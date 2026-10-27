@@ -28,7 +28,6 @@ import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-b
 import { getFormMessage } from "../../../lib/admin-forms";
 import { getOrdersPageForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
 import { requireAdminPage } from "../../../lib/auth";
-import { requirePxAdminPage } from "../../../lib/admin-role-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -110,7 +109,7 @@ function DeleteAllPxOrdersAction() {
 }
 
 export default async function AdminOrdersPage({ searchParams = {}, pxOnly = false }) {
-  const admin = await (pxOnly ? requirePxAdminPage() : requireAdminPage());
+  const admin = await requireAdminPage();
   const basePath = pxOnly ? "/admin/px-orders" : "/admin/orders";
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {
@@ -337,7 +336,7 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
               min-width: 0;
               padding: 14px 16px;
               border: 1px solid var(--summary-border, #e4dbd1);
-              border-radius: 8px;
+              border-radius: 12px;
               background: var(--summary-bg, #f7f3ee);
               color: var(--summary-color, #6b503b);
             }

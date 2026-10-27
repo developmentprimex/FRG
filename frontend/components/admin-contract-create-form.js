@@ -163,7 +163,7 @@ const typeButtonStyle = {
   gap: 5,
   minHeight: 88,
   padding: "16px 18px",
-  borderRadius: 8,
+  borderRadius: 12,
   border: "1px solid var(--app-border)",
   background: "rgba(255,255,255,0.86)",
   color: "var(--app-text)",

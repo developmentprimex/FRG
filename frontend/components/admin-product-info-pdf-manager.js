@@ -179,7 +179,7 @@ export function AdminProductInfoPdfManager({
 
 const panelStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 10,
   background: "rgba(255,255,255,0.58)",
   overflow: "hidden",
 };
@@ -215,7 +215,7 @@ const uploadRowStyle = {
 const fileInputStyle = {
   width: "100%",
   minHeight: 42,
-  borderRadius: 8,
+  borderRadius: 12,
   border: "1px solid var(--app-border-strong)",
   background: "var(--color-card)",
   padding: "8px 10px",
@@ -225,7 +225,7 @@ const fileInputStyle = {
 
 const buttonStyle = {
   border: "1px solid var(--color-primary)",
-  borderRadius: 8,
+  borderRadius: 12,
   minHeight: 42,
   padding: "9px 13px",
   background: "var(--color-primary)",
@@ -236,7 +236,7 @@ const buttonStyle = {
 
 const secondaryButtonStyle = {
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 8,
+  borderRadius: 12,
   minHeight: 42,
   padding: "9px 13px",
   background: "var(--color-card)",

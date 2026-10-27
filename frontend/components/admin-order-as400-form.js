@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AdminText } from "./admin-i18n";
 
-export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved = false, compact = false }) {
+export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved = false }) {
   const normalizedInitialValue = String(initialValue || "");
   const [value, setValue] = useState(normalizedInitialValue);
   const [showSaved, setShowSaved] = useState(Boolean(initialSaved));
@@ -31,12 +31,12 @@ export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved =
   }
 
   return (
-    <form action={`/api/admin/orders/${orderId}`} method="post" onSubmit={handleSubmit} style={compact ? { ...as400HeaderFormStyle, margin: 0, padding: 0, border: 0, background: "transparent", width: "100%" } : as400HeaderFormStyle}>
+    <form action={`/api/admin/orders/${orderId}`} method="post" onSubmit={handleSubmit} style={as400HeaderFormStyle}>
       <input type="hidden" name="_intent" value="update-as400" />
-      {!compact ? <label htmlFor="as400Number" style={as400InlineLabelStyle}>
+      <label htmlFor="as400Number" style={as400InlineLabelStyle}>
         <AdminText i18nKey="orderDetailAdmin.as400Number" fallback="AS 400" />
-      </label> : null}
-      <div style={{ ...as400EditorStyle, ...(compact ? { flexWrap: "wrap", width: "100%" } : {}) }}>
+      </label>
+      <div style={as400EditorStyle}>
         <input
           id="as400Number"
           name="as400Number"
@@ -48,7 +48,7 @@ export function AdminOrderAs400Form({ orderId, initialValue = "", initialSaved =
           onChange={handleChange}
           placeholder="123456"
           aria-label="AS 400"
-          style={{ ...as400InputStyle, ...(compact ? { minWidth: 0, maxWidth: "100%", flex: "1 1 120px" } : {}) }}
+          style={as400InputStyle}
         />
         <button
           type="submit"
@@ -91,7 +91,7 @@ const as400HeaderFormStyle = {
   margin: "-4px 0 4px",
   padding: "8px 10px 8px 12px",
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "rgba(255,255,255,0.62)",
   flexWrap: "wrap",
 };
@@ -109,7 +109,7 @@ const as400InputStyle = {
   width: 210,
   minWidth: 120,
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 8,
+  borderRadius: 9,
   background: "#fff",
   color: "var(--app-text)",
   padding: "8px 10px",
@@ -118,7 +118,7 @@ const as400InputStyle = {
 
 const as400SaveButtonStyle = {
   border: "1px solid var(--app-accent)",
-  borderRadius: 8,
+  borderRadius: 9,
   background: "var(--app-accent)",
   color: "#fff",
   padding: "8px 14px",

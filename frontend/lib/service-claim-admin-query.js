@@ -1,5 +1,4 @@
 import { Prisma } from "@prisma/client";
-import { workDayStart } from "./work-processing-rules.js";
 import { normalizeContractTypeFilter } from "./contract-type-filter.js";
 import { getAdminPagination } from "./admin-pagination.js";
 
@@ -12,8 +11,6 @@ const OPTIONAL_SERVICE_CLAIM_COLUMNS = [
 
 const REQUIRED_CLAIM_COLUMNS = `
       sc."id",
-      sc."ticketNumber",
-      sc."claimSequence",
       sc."contractNumber",
       sc."fullName",
       sc."phone",
@@ -153,9 +150,6 @@ export function buildServiceClaimListWhere(filters, {
   if (filters.q) {
     const query = `%${filters.q}%`;
     const parts = [
-      Prisma.sql`EXISTS (SELECT 1 FROM "ServiceClaimSubmission" sub WHERE sub."claimId" = ${claim}."id" AND sub."payload"::text ILIKE ${query})`,
-      Prisma.sql`${claim}."ticketNumber"::text = ${String(filters.q).trim().replace(/^#/, "")}`,
-      Prisma.sql`('#' || ${claim}."ticketNumber"::text || ' ' || ${claim}."contractNumber" || ' KD ' || CASE WHEN ${claim}."claimSequence" < 10 THEN '0' ELSE '' END || ${claim}."claimSequence"::text) ILIKE ${query}`,
       Prisma.sql`${claim}."contractNumber" ILIKE ${query}`,
       Prisma.sql`${claim}."fullName" ILIKE ${query}`,
       Prisma.sql`COALESCE(${claim}."phone", '') ILIKE ${query}`,
@@ -196,25 +190,6 @@ export function buildServiceClaimListWhere(filters, {
     conditions.push(Prisma.sql`LOWER(COALESCE(${claim}."clientCity", '')) = LOWER(${filters.city})`);
   }
 
-  if (filters.kitchenId) {
-    conditions.push(Prisma.sql`kc."kitchenId" = ${filters.kitchenId}`);
-  }
-
-  if (filters.contractNumber) {
-    conditions.push(Prisma.sql`BTRIM(${claim}."contractNumber") = ${filters.contractNumber}`);
-  }
-
-  if (filters.contactKey) {
-    if (filters.contactKey.startsWith("email:")) {
-      conditions.push(Prisma.sql`LOWER(REGEXP_REPLACE(BTRIM(COALESCE(${claim}."email", '')), '[[:space:]]+', ' ', 'g')) = ${filters.contactKey.slice(6)}`);
-    } else if (filters.contactKey.startsWith("phone:")) {
-      conditions.push(Prisma.sql`NULLIF(BTRIM(COALESCE(${claim}."email", '')), '') IS NULL`);
-      conditions.push(Prisma.sql`REGEXP_REPLACE(REGEXP_REPLACE(COALESCE(${claim}."phone", ''), '[^0-9]', '', 'g'), '^00', '') = ${filters.contactKey.slice(6)}`);
-    } else {
-      conditions.push(Prisma.sql`FALSE`);
-    }
-  }
-
   if (filters.claimType === "px") {
     conditions.push(Prisma.sql`REGEXP_REPLACE(COALESCE(${claim}."contractNumber", ''), '[[:space:]]+', '', 'g') LIKE '111%'`);
   } else if (filters.claimType === "live") {
@@ -222,13 +197,11 @@ export function buildServiceClaimListWhere(filters, {
   }
 
   if (filters.dateFrom) {
-    conditions.push(Prisma.sql`${claim}."createdAt" AT TIME ZONE 'UTC' >= ${workDayStart(filters.dateFrom)}`);
+    conditions.push(Prisma.sql`${claim}."createdAt" >= ${new Date(`${filters.dateFrom}T00:00:00.000Z`)}`);
   }
 
   if (filters.dateTo) {
-    const nextDate = new Date(`${filters.dateTo}T12:00:00.000Z`);
-    nextDate.setUTCDate(nextDate.getUTCDate() + 1);
-    conditions.push(Prisma.sql`${claim}."createdAt" AT TIME ZONE 'UTC' < ${workDayStart(nextDate.toISOString().slice(0, 10))}`);
+    conditions.push(Prisma.sql`${claim}."createdAt" <= ${new Date(`${filters.dateTo}T23:59:59.999Z`)}`);
   }
 
   if (!conditions.length) {
@@ -243,12 +216,8 @@ function buildClaimColumns({
   includeProblemAreasJson = true,
   includeLandlordCompanyPhone = true,
   includeLandlordCompanyEmail = true,
-  includeSubmissionCount = true,
 } = {}) {
   const optionalColumns = [];
-  if (includeSubmissionCount) {
-    optionalColumns.push(`      (SELECT COUNT(*)::integer FROM "ServiceClaimSubmission" sub WHERE sub."claimId" = sc."id") AS "submissionCount"`);
-  }
 
   if (includeLandlordCompanyPhone) {
     optionalColumns.push(`      sc."landlordCompanyPhone"`);
@@ -302,7 +271,7 @@ export async function queryServiceClaimsList(prisma, filters, pagination = null)
 
     return prisma.$queryRaw`
       SELECT
-      ${Prisma.raw(buildClaimColumns({ ...options, includeSubmissionCount: filters.includeSubmissionCount !== false }))}
+      ${Prisma.raw(buildClaimColumns(options))}
       FROM "ServiceClaim" sc
       LEFT JOIN "KitchenContract" kc ON kc."contractNumber" = sc."contractNumber"
       LEFT JOIN "Kitchen" k ON k."id" = kc."kitchenId"

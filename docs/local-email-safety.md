@@ -17,10 +17,3 @@ fallback to the production account. Missing safe credentials fail without sendin
 The current local sender is `315primex.eu@gmail.com`. Hosted production retains
 its configured senders and fallback behavior when no local condition applies.
 Tests use mocked transports; verification does not send email.
-
-Admin login codes can be delivered directly to the single address configured in
-`LOCAL_ADMIN_LOGIN_RECIPIENT`, only through the admin verification sender and
-only from the safe `315primex.eu@gmail.com` account. Other local mail retains
-the default recipient redirection. The verification page shows the actual
-delivery address, and missing SMTP configuration fails instead of claiming a
-code was emailed.

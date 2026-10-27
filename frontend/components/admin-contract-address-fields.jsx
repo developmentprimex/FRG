@@ -48,7 +48,7 @@ const defaultInputStyle = {
   width: "100%",
   minHeight: 52,
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "rgba(255, 255, 255, 0.92)",
   color: "var(--app-text)",
   padding: "10px 14px",
@@ -67,7 +67,7 @@ const verificationMessageBaseStyle = {
   display: "grid",
   gap: 4,
   padding: "10px 12px",
-  borderRadius: 8,
+  borderRadius: 12,
   border: "1px solid rgba(143, 62, 44, 0.14)",
   background: "rgba(255, 247, 241, 0.7)",
   color: "var(--app-text-muted)",
@@ -77,7 +77,7 @@ const verificationMessageBaseStyle = {
 
 const verifyButtonBaseStyle = {
   minHeight: 42,
-  borderRadius: 8,
+  borderRadius: 10,
   border: "1px solid rgba(143, 62, 44, 0.2)",
   background: "rgba(255,255,255,0.92)",
   color: "var(--app-accent)",

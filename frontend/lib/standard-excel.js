@@ -16,7 +16,7 @@ function makeStyles() {
   ];
   const formatIds = new Map();
 
-  function cellStyle({ left, right, top, bottom, bold, numberFormat = 0, tone = "" }) {
+  function cellStyle({ left, right, top, bottom, bold, numberFormat = 0 }) {
     const sides = [left, right, top, bottom];
     const borderKey = sides.join(":");
     if (!borderIds.has(borderKey)) {
@@ -24,12 +24,10 @@ function makeStyles() {
       borders.push("<border>" + ["left", "right", "top", "bottom"].map((side, index) => '<' + side + ' style="' + sides[index] + '"><color rgb="FF000000"/></' + side + '>').join("") + "<diagonal/></border>");
     }
     const borderId = borderIds.get(borderKey);
-    const fillId = tone === "header" ? 2 : tone === "total" ? 3 : 0;
-    const fontId = tone === "header" ? 3 : bold ? 1 : 0;
-    const key = [borderId, fontId, fillId, numberFormat].join(":");
+    const key = [borderId, bold ? 1 : 0, numberFormat].join(":");
     if (!formatIds.has(key)) {
       formatIds.set(key, formats.length);
-      formats.push('<xf numFmtId="' + numberFormat + '" fontId="' + fontId + '" fillId="' + fillId + '" borderId="' + borderId + '" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1" applyNumberFormat="1"><alignment horizontal="left" vertical="bottom" wrapText="1"/></xf>');
+      formats.push('<xf numFmtId="' + numberFormat + '" fontId="' + (bold ? 1 : 0) + '" fillId="0" borderId="' + borderId + '" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1" applyNumberFormat="1"><alignment horizontal="left" vertical="bottom" wrapText="1"/></xf>');
     }
     return formatIds.get(key);
   }
@@ -37,9 +35,9 @@ function makeStyles() {
   function stylesXml() {
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
       '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-      '<numFmts count="5"><numFmt numFmtId="164" formatCode="#,##0"/><numFmt numFmtId="165" formatCode="#,##0.##"/><numFmt numFmtId="166" formatCode="#,##0.00"/><numFmt numFmtId="167" formatCode="dd.mm.yyyy hh:mm"/><numFmt numFmtId="168" formatCode="dd/mm/yyyy"/></numFmts>' +
-      '<fonts count="4"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="16"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts>' +
-      '<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF6B4F3A"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE8DED4"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+      '<numFmts count="4"><numFmt numFmtId="164" formatCode="#,##0"/><numFmt numFmtId="165" formatCode="#,##0.##"/><numFmt numFmtId="166" formatCode="#,##0.00"/><numFmt numFmtId="167" formatCode="dd.mm.yyyy hh:mm"/></numFmts>' +
+      '<fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="16"/><name val="Calibri"/></font></fonts>' +
+      '<fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills>' +
       '<borders count="' + borders.length + '">' + borders.join("") + '</borders>' +
       '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
       '<cellXfs count="' + formats.length + '">' + formats.join("") + '</cellXfs>' +
@@ -49,7 +47,7 @@ function makeStyles() {
 }
 
 function numericFormat(value, column, dataIndex, spec) {
-  if (isDate(value)) return spec.dateColumns?.includes(column - 1) ? 168 : 167;
+  if (isDate(value)) return 167;
   if (typeof value !== "number") return 0;
   if (column > 0 && (spec.currencyColumns?.includes(column - 1) || spec.currencyRows?.includes(dataIndex))) return 166;
   return Number.isInteger(value) ? 164 : 165;
@@ -61,11 +59,7 @@ function prepareSheet(spec, timeZone) {
   const lastDataRow = 6 + records.length;
   const finalRow = lastDataRow + 2;
   const rows = [[], [], [spec.title], [], [], headers, ...records, [records.length + 1], [records.length + 2]];
-  // Date-only columns already encode a calendar day at UTC midnight. Apply the
-  // report timezone only to timestamps, so date-only values stay at midnight.
-  const worksheet = XLSX.utils.aoa_to_sheet(rows.map((row) => row.map((value, column) => isDate(value)
-    ? (spec.dateColumns?.includes(column - 1) ? value : toTimeZoneWallClockDate(value, timeZone)).getTime() / 86400000 + 25569
-    : value)));
+  const worksheet = XLSX.utils.aoa_to_sheet(rows.map((row) => row.map((value) => isDate(value) ? toTimeZoneWallClockDate(value, timeZone).getTime() / 86400000 + 25569 : value)));
   worksheet["!ref"] = "A1:" + columnName(headers.length - 1) + finalRow;
   worksheet["!merges"] = [{ s: { r: 2, c: 0 }, e: { r: 2, c: headers.length - 1 } }];
   worksheet["!autofilter"] = { ref: "A6:" + columnName(headers.length - 1) + lastDataRow };
@@ -73,7 +67,7 @@ function prepareSheet(spec, timeZone) {
     if (column === 0) return { width: 6, wch: 6 };
     let longest = String(header).length;
     for (const row of records) {
-      const value = isDate(row[column]) ? (spec.dateColumns?.includes(column - 1) ? "00/00/0000" : "00.00.0000 00:00") : String(row[column] ?? "");
+      const value = isDate(row[column]) ? "00.00.0000 00:00" : String(row[column] ?? "");
       for (const line of value.split(/\r?\n/)) longest = Math.max(longest, line.length);
     }
     const width = Math.min(45, Math.max(10, longest + 2));
@@ -92,15 +86,13 @@ function formatSheet(sheetXml, prepared, styles, now, initials) {
   const title = existingCells.get("A3").replace(/<c\b/, '<c s="1"');
   let sheetData = '<sheetData><row r="3" ht="24" customHeight="1">' + title + '</row>';
   for (let row = 6; row <= finalRow; row += 1) {
-    const isTotal = spec.totalRows?.includes(row - 7);
-    const tone = row === 6 && spec.highlightHeader ? "header" : isTotal ? "total" : "";
     let maxLines = 1;
     let cells = "";
     for (let column = 0; column < headers.length; column += 1) {
       const address = columnName(column) + row;
       const value = rows[row - 1]?.[column];
       const width = prepared.worksheet["!cols"][column].wch;
-      const text = isDate(value) ? (spec.dateColumns?.includes(column - 1) ? "00/00/0000" : "00.00.0000 00:00") : String(value ?? "");
+      const text = isDate(value) ? "00.00.0000 00:00" : String(value ?? "");
       const usableWidth = Math.max(width - (row === 6 ? 5 : 3), 1);
       const lineCount = text.split(/\r?\n/).reduce((count, line) => count + Math.max(1, Math.ceil(line.length / usableWidth)), 0);
       maxLines = Math.max(maxLines, lineCount);
@@ -109,8 +101,7 @@ function formatSheet(sheetXml, prepared, styles, now, initials) {
         right: column === headers.length - 1 ? "medium" : "thin",
         top: row === 6 ? "medium" : "thin",
         bottom: row === 6 || row === finalRow ? "medium" : "thin",
-        bold: row === 6 || isTotal,
-        tone,
+        bold: row === 6,
         numberFormat: numericFormat(value, column, row - 7, spec),
       });
       const existing = existingCells.get(address);

@@ -1,82 +1,45 @@
-import { formatServiceClaimReference } from "../service-claim-email-subject.js";
 import { parseServiceClaimProblemAreas } from "../service-claim-problem-areas.js";
 import { isElectricalApplianceProblemArea } from "../service-claim-serial-number.js";
 import { REFERENCE_PLAN_EMAIL_DISPLAY_WIDTH } from "./claim-notification-layout.js";
 
-export function buildComplaintEmailText(payload) {
-  const landlordBlock = buildPartyContactBlock({
-    companyName: payload.landlordCompanyName,
-    companyPhone: payload.landlordCompanyPhone,
-    companyEmail: payload.landlordCompanyEmail,
-    contactPerson: payload.landlordContactPerson,
-    gender: payload.landlordContactGender,
-    contactGivenName: payload.landlordContactGivenName,
-    contactSurname: payload.landlordContactSurname,
-    givenName: payload.landlordGivenName,
-    surname: payload.landlordSurname,
-    phone: payload.landlordPhone,
-    email: payload.landlordEmail,
-  });
-  const hausBlock = buildPartyContactBlock({
-    givenName: payload.hausmeisterGivenName,
-    surname: payload.hausmeisterSurname,
-    phone: payload.hausmeisterPhone,
-    email: payload.hausmeisterEmail,
-  });
-  const hasHausmeisterDetails = hasPartyContactDetails([
-    payload.hausmeisterGivenName,
-    payload.hausmeisterSurname,
-    payload.hausmeisterPhone,
-    payload.hausmeisterEmail,
-  ]);
-  const hasLandlordDetails = Boolean(landlordBlock);
-  const { availability } = extractAvailabilityFromDescription(
-    payload.problemDescription,
-  );
-  const legacyAvailability = splitLegacyAvailability(availability);
-  const availabilityDate = payload.preferredContactDate || legacyAvailability.date;
-  const availabilityTime = payload.preferredContactTime || legacyAvailability.time;
-  const claimItemRows = buildClaimItemRows(payload.problemAreasJson, payload.attachmentsMeta);
-  const showClaimItemArticleCode = payload.contractType !== "ARC";
-  const generalAttachments = (payload.attachmentsMeta || []).filter((entry) => entry.role === "general");
-  return [
-    "Servicereklamation",
-    "",
-    `Vertragsnummer: ${payload.contractNumber}`,
-    `Ticket: ${formatServiceClaimReference(payload.contractNumber, payload.claimSequence, payload.ticketNumber)}`,
-    `Küche: ${payload.kitchenName || "-"}`,
-    `Kunde: ${payload.genderLabel === "Keine Angabe" ? "" : `${payload.genderLabel} `}${payload.givenName} ${payload.surname}`,
-    `Adresse: ${formatClaimClientAddressForEmail(payload.clientAddress)}`,
-    `Telefon: ${payload.phone || "—"}`,
-    `E-Mail: ${payload.email || "—"}`,
-    ...(claimItemRows.length
-      ? [
-          "",
-          "Ausgewählte Küchenteile",
-          ...claimItemRows.flatMap((row, index) => [
-            "",
-            `${row.name || `Küchenteil ${index + 1}`}:`,
-            buildClaimItemText(row, { showArticleCode: showClaimItemArticleCode }),
-          ]),
-        ]
-      : []),
-    ...(hasLandlordDetails ? ["", "Vermieter", landlordBlock] : []),
-    ...(hasHausmeisterDetails ? ["", "Hausmeister", hausBlock] : []),
-    ...(availabilityDate || availabilityTime
-      ? [
-          "",
-          ...(availabilityDate ? [`GewÃ¼nschtes Kontaktdatum: ${availabilityDate}`] : []),
-          ...(availabilityTime ? [`GewÃ¼nschte Kontaktzeit: ${availabilityTime}`] : []),
-        ]
-      : []),
-    ...(generalAttachments.length
-      ? [
-          "",
-          "Allgemeine Anhänge (siehe E-Mail-Anhänge):",
-          ...generalAttachments.map((entry) => `- ${formatAttachmentMetaLine(entry)}`),
-        ]
-      : []),
-  ].join("\n");
+export function formatAttachmentLabel(entry) {
+  const areaName = String(entry?.areaName || "").trim();
+  const areaCode = String(entry?.areaCode || "").trim();
+  const role = String(entry?.role || "").trim();
+  const areaLabel = areaName && areaCode
+    ? `${areaName} (${areaCode})`
+    : areaName || areaCode;
+
+  if (role === "problem_area" && areaLabel) {
+    return `[${areaLabel}] ${entry.filename}`;
+  }
+  if (role === "serial_number") {
+    return `[Seriennummer] ${entry.filename}`;
+  }
+  return entry.filename;
+}
+
+export function genderDisplayLabel(gender) {
+  if (gender === "male") return "Herr";
+  if (gender === "female" || gender === "ms") return "Frau";
+  if (gender === "prefer_not_to_say") return "Keine Angabe";
+  return String(gender || "-");
+}
+
+export function formatContactPersonName({ gender, givenName, surname, legacyName = "" }) {
+  const joined = combinePersonName(givenName, surname);
+  const person = legacyName || joined;
+  if (!person) {
+    return "";
+  }
+  if (gender === "female" || gender === "male" || gender === "ms") {
+    return `${genderDisplayLabel(gender)} ${person}`;
+  }
+  return person;
+}
+
+export function combinePersonName(givenName, surname) {
+  return [givenName, surname].filter(Boolean).join(" ").trim();
 }
 
 export function buildPartyContactBlock(contact) {
@@ -109,31 +72,18 @@ export function buildPartyContactBlock(contact) {
     .join("\n");
 }
 
-export function formatContactPersonName({ gender, givenName, surname, legacyName = "" }) {
-  const joined = combinePersonName(givenName, surname);
-  const person = legacyName || joined;
-  if (!person) {
-    return "";
+export function formatClaimEmailFileSize(bytes) {
+  const n = Number(bytes);
+  if (!Number.isFinite(n) || n < 0) {
+    return "—";
   }
-  if (gender === "female" || gender === "male" || gender === "ms") {
-    return `${genderDisplayLabel(gender)} ${person}`;
+  if (n < 1024) {
+    return `${n} B`;
   }
-  return person;
-}
-
-export function combinePersonName(givenName, surname) {
-  return [givenName, surname].filter(Boolean).join(" ").trim();
-}
-
-export function genderDisplayLabel(gender) {
-  if (gender === "male") return "Herr";
-  if (gender === "female" || gender === "ms") return "Frau";
-  if (gender === "prefer_not_to_say") return "Keine Angabe";
-  return String(gender || "-");
-}
-
-export function hasPartyContactDetails(values) {
-  return values.some((value) => String(value || "").trim());
+  if (n < 1024 * 1024) {
+    return `${(n / 1024).toFixed(1)} KB`;
+  }
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 export function extractAvailabilityFromDescription(description) {
@@ -162,6 +112,19 @@ export function splitLegacyAvailability(availability) {
   return /^\d{1,2}[./-]\d{1,2}[./-]\d{2,4}$/.test(onlyValue)
     ? { date: onlyValue, time: "" }
     : { date: "", time: onlyValue };
+}
+
+export function isEmailInlineImage(contentType) {
+  const normalized = String(contentType || "").toLowerCase().split(";")[0].trim();
+  return normalized.startsWith("image/") && normalized !== "image/svg+xml";
+}
+
+export function formatAttachmentMetaLine(entry) {
+  return `${formatAttachmentLabel(entry)} (${entry.contentType}, ${formatClaimEmailFileSize(entry.size)})`;
+}
+
+export function formatAttachmentFileMetaLine(entry) {
+  return `${entry.filename} (${entry.contentType}, ${formatClaimEmailFileSize(entry.size)})`;
 }
 
 export function buildClaimItemRows(problemAreasJson, attachmentsMeta = []) {
@@ -216,12 +179,6 @@ export function buildClaimItemRows(problemAreasJson, attachmentsMeta = []) {
   return rows;
 }
 
-export function formatClaimClientAddressForEmail(value) {
-  return String(value || "")
-    .replace(/(^|[,\r\n]\s*)(?:Floor|Etage):\s*/gi, (_match, separator) => `${separator ? "\n" : ""}Etage: `)
-    .replace(/(^|[,\r\n]\s*)(?:Unit|Einheit|Wohnungsnummer):\s*/gi, (_match, separator) => `${separator ? "\n" : ""}Wohnungsnummer: `);
-}
-
 export function buildClaimItemText(row, { showArticleCode = true } = {}) {
   return [
     `Type: ${row.name || "-"}`,
@@ -248,43 +205,161 @@ export function buildClaimItemText(row, { showArticleCode = true } = {}) {
   ].join("\n");
 }
 
-export function formatAttachmentFileMetaLine(entry) {
-  return `${entry.filename} (${entry.contentType}, ${formatEmailFileSize(entry.size)})`;
+export function buildClaimItemHtml(row, { showArticleCode = true, itemNumber = 1 } = {}) {
+  const itemTdStyles = "padding:8px 0;border-bottom:1px solid #eeeeee;vertical-align:top;";
+  const itemLabelStyles = `${itemTdStyles}box-sizing:border-box;font-weight:bold;width:35%;padding-left:15px;padding-right:15px;line-height:1.45;`;
+  const itemValueStyles = `${itemTdStyles}box-sizing:border-box;padding-left:15px;padding-right:15px;line-height:1.45;`;
+  const itemKind = row.isElectricalAppliance ? "Elektrogerät" : "Möbelteil";
+  const uploads = row.attachments?.length
+    ? row.attachments.map((entry) => formatAttachmentHtml(entry, { includeItemContext: false })).join("")
+    : "-";
+  const serialUploads = row.serialAttachments?.length
+    ? row.serialAttachments.map((entry) => formatAttachmentHtml(entry, { includeItemContext: false })).join("")
+    : "-";
+  const serialRows = row.isElectricalAppliance
+    ? `
+        <tr><td style="${itemLabelStyles}">Seriennummer</td><td style="${itemValueStyles}">${formatMultiline(row.serialNumber || (row.serialAttachments?.length ? "Siehe Seriennummernfoto" : "-"))}</td></tr>
+        <tr><td style="${itemLabelStyles}">Seriennummer-Foto</td><td style="${itemValueStyles}">${serialUploads}</td></tr>
+      `
+    : "";
+
+  return `
+    <table role="presentation" style="width:100%;border-collapse:collapse;">
+      <tbody>
+        <tr>
+          <td colspan="2" style="padding:10px 15px;border-bottom:2px solid #d9c7b8;font-size:14px;font-weight:bold;color:#5f4634;">
+            Problem ${itemNumber} &middot; ${itemKind}
+          </td>
+        </tr>
+        <tr><td style="${itemLabelStyles}">Type</td><td style="${itemValueStyles}">${formatMultiline(row.name || "-")}</td></tr>
+        ${showArticleCode ? `<tr><td style="${itemLabelStyles}">Typen - NR</td><td style="${itemValueStyles}">${formatMultiline(row.articleCode || "-")}</td></tr>` : ""}
+        <tr><td style="${itemLabelStyles}">Problembeschreibung</td><td style="${itemValueStyles}">${formatMultiline(row.detail || "-")}</td></tr>
+        ${row.markerNumber ? `<tr><td style="${itemLabelStyles}">Skizzenposition</td><td style="${itemValueStyles}">X${row.markerNumber}</td></tr>` : ""}
+        ${serialRows}
+        <tr><td style="${itemLabelStyles}border-bottom:0;">Anhänge</td><td style="${itemValueStyles}border-bottom:0;">${uploads}</td></tr>
+      </tbody>
+    </table>
+  `;
 }
 
-export function formatEmailFileSize(bytes) {
-  const n = Number(bytes);
-  if (!Number.isFinite(n) || n < 0) {
-    return "—";
-  }
-  if (n < 1024) {
-    return `${n} B`;
-  }
-  if (n < 1024 * 1024) {
-    return `${(n / 1024).toFixed(1)} KB`;
-  }
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+export function buildEmailDetailSubtable(rows) {
+  const labelStyles = "padding:8px 15px;border-bottom:1px solid #eeeeee;box-sizing:border-box;font-weight:bold;width:35%;vertical-align:top;line-height:1.45;";
+  const valueStyles = "padding:8px 15px;border-bottom:1px solid #eeeeee;box-sizing:border-box;vertical-align:top;line-height:1.45;";
+  const populatedRows = rows.filter(([, value]) => String(value || "").trim());
+  return `
+    <table role="presentation" style="width:100%;border-collapse:collapse;">
+      <tbody>
+        ${populatedRows.map(([label, value], index) => {
+          const isLast = index === populatedRows.length - 1;
+          const borderOverride = isLast ? "border-bottom:0;" : "";
+          return `<tr><td style="${labelStyles}${borderOverride}">${escapeHtml(label)}</td><td style="${valueStyles}${borderOverride}">${formatMultiline(value)}</td></tr>`;
+        }).join("")}
+      </tbody>
+    </table>
+  `;
 }
 
-export function formatAttachmentMetaLine(entry) {
-  return `${formatAttachmentLabel(entry)} (${entry.contentType}, ${formatEmailFileSize(entry.size)})`;
+export function hasPartyContactDetails(values) {
+  return values.some((value) => String(value || "").trim());
 }
 
-export function formatAttachmentLabel(entry) {
-  const areaName = String(entry?.areaName || "").trim();
-  const areaCode = String(entry?.areaCode || "").trim();
-  const role = String(entry?.role || "").trim();
-  const areaLabel = areaName && areaCode
-    ? `${areaName} (${areaCode})`
-    : areaName || areaCode;
+export function formatAttachmentHtml(entry, { includeItemContext = true } = {}) {
+  const label = escapeHtml(
+    includeItemContext ? formatAttachmentMetaLine(entry) : formatAttachmentFileMetaLine(entry),
+  );
+  if (!entry?.cid || !isEmailInlineImage(entry.contentType)) {
+    return `<div style="margin-top:4px;">${label}</div>`;
+  }
 
-  if (role === "problem_area" && areaLabel) {
-    return `[${areaLabel}] ${entry.filename}`;
-  }
-  if (role === "serial_number") {
-    return `[Seriennummer] ${entry.filename}`;
-  }
-  return entry.filename;
+  return `
+    <div style="margin-top:8px;">
+      <div style="margin-bottom:6px;">${label}</div>
+      <table role="presentation" width="150" cellspacing="0" cellpadding="0" border="0" style="width:150px;border-collapse:separate;">
+        <tbody>
+          <tr>
+            <td width="148" height="148" align="center" valign="middle" style="box-sizing:border-box;width:148px;height:148px;padding:4px;border:1px solid #e5e5e5;border-radius:6px;background:#fafafa;text-align:center;vertical-align:middle;">
+              <img src="cid:${escapeHtml(entry.cid)}" alt="${escapeHtml(entry.filename || "Hochgeladenes Bild")}" width="140" height="140" style="display:block;width:140px;height:140px;max-width:140px;max-height:140px;object-fit:contain;border:0;" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+export function buildComplaintEmailText(payload) {
+  const landlordBlock = buildPartyContactBlock({
+    companyName: payload.landlordCompanyName,
+    companyPhone: payload.landlordCompanyPhone,
+    companyEmail: payload.landlordCompanyEmail,
+    contactPerson: payload.landlordContactPerson,
+    gender: payload.landlordContactGender,
+    contactGivenName: payload.landlordContactGivenName,
+    contactSurname: payload.landlordContactSurname,
+    givenName: payload.landlordGivenName,
+    surname: payload.landlordSurname,
+    phone: payload.landlordPhone,
+    email: payload.landlordEmail,
+  });
+  const hausBlock = buildPartyContactBlock({
+    givenName: payload.hausmeisterGivenName,
+    surname: payload.hausmeisterSurname,
+    phone: payload.hausmeisterPhone,
+    email: payload.hausmeisterEmail,
+  });
+  const hasHausmeisterDetails = hasPartyContactDetails([
+    payload.hausmeisterGivenName,
+    payload.hausmeisterSurname,
+    payload.hausmeisterPhone,
+    payload.hausmeisterEmail,
+  ]);
+  const hasLandlordDetails = Boolean(landlordBlock);
+  const { availability } = extractAvailabilityFromDescription(
+    payload.problemDescription,
+  );
+  const legacyAvailability = splitLegacyAvailability(availability);
+  const availabilityDate = payload.preferredContactDate || legacyAvailability.date;
+  const availabilityTime = payload.preferredContactTime || legacyAvailability.time;
+  const claimItemRows = buildClaimItemRows(payload.problemAreasJson, payload.attachmentsMeta);
+  const showClaimItemArticleCode = payload.contractType !== "ARC";
+  const generalAttachments = (payload.attachmentsMeta || []).filter((entry) => entry.role === "general");
+  return [
+    "Servicereklamation",
+    "",
+    `Vertragsnummer: ${payload.contractNumber}`,
+    `Küche: ${payload.kitchenName || "-"}`,
+    `Kunde: ${payload.genderLabel === "Keine Angabe" ? "" : `${payload.genderLabel} `}${payload.givenName} ${payload.surname}`,
+    `Adresse: ${formatClaimClientAddressForEmail(payload.clientAddress)}`,
+    `Telefon: ${payload.phone || "—"}`,
+    `E-Mail: ${payload.email || "—"}`,
+    ...(claimItemRows.length
+      ? [
+          "",
+          "Ausgewählte Küchenteile",
+          ...claimItemRows.flatMap((row, index) => [
+            "",
+            `${row.name || `Küchenteil ${index + 1}`}:`,
+            buildClaimItemText(row, { showArticleCode: showClaimItemArticleCode }),
+          ]),
+        ]
+      : []),
+    ...(hasLandlordDetails ? ["", "Vermieter", landlordBlock] : []),
+    ...(hasHausmeisterDetails ? ["", "Hausmeister", hausBlock] : []),
+    ...(availabilityDate || availabilityTime
+      ? [
+          "",
+          ...(availabilityDate ? [`GewÃ¼nschtes Kontaktdatum: ${availabilityDate}`] : []),
+          ...(availabilityTime ? [`GewÃ¼nschte Kontaktzeit: ${availabilityTime}`] : []),
+        ]
+      : []),
+    ...(generalAttachments.length
+      ? [
+          "",
+          "Allgemeine Anhänge (siehe E-Mail-Anhänge):",
+          ...generalAttachments.map((entry) => `- ${formatAttachmentMetaLine(entry)}`),
+        ]
+      : []),
+  ].join("\n");
 }
 
 export function buildComplaintEmailHtml(payload, previewAttachment = null) {
@@ -337,7 +412,6 @@ export function buildComplaintEmailHtml(payload, previewAttachment = null) {
   const showClaimItemArticleCode = payload.contractType !== "ARC";
   const generalAttachments = (payload.attachmentsMeta || []).filter((entry) => entry.role === "general");
   const detailRows = [
-    ["Ticket", formatServiceClaimReference(payload.contractNumber, payload.claimSequence, payload.ticketNumber)],
     ["Vertragsnummer", payload.contractNumber],
     ["Küche", payload.kitchenName || "-"],
     ["Vorname", payload.givenName],
@@ -424,6 +498,16 @@ export function buildComplaintEmailHtml(payload, previewAttachment = null) {
   `;
 }
 
+export function formatClaimClientAddressForEmail(value) {
+  return String(value || "")
+    .replace(/(^|[,\r\n]\s*)(?:Floor|Etage):\s*/gi, (_match, separator) => `${separator ? "\n" : ""}Etage: `)
+    .replace(/(^|[,\r\n]\s*)(?:Unit|Einheit|Wohnungsnummer):\s*/gi, (_match, separator) => `${separator ? "\n" : ""}Wohnungsnummer: `);
+}
+
+export function formatMultiline(value) {
+  return escapeHtml(value || "-").replaceAll("\n", "<br />");
+}
+
 export function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -431,91 +515,4 @@ export function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
-}
-
-export function buildEmailDetailSubtable(rows) {
-  const labelStyles = "padding:8px 15px;border-bottom:1px solid #eeeeee;box-sizing:border-box;font-weight:bold;width:35%;vertical-align:top;line-height:1.45;";
-  const valueStyles = "padding:8px 15px;border-bottom:1px solid #eeeeee;box-sizing:border-box;vertical-align:top;line-height:1.45;";
-  const populatedRows = rows.filter(([, value]) => String(value || "").trim());
-  return `
-    <table role="presentation" style="width:100%;border-collapse:collapse;">
-      <tbody>
-        ${populatedRows.map(([label, value], index) => {
-          const isLast = index === populatedRows.length - 1;
-          const borderOverride = isLast ? "border-bottom:0;" : "";
-          return `<tr><td style="${labelStyles}${borderOverride}">${escapeHtml(label)}</td><td style="${valueStyles}${borderOverride}">${formatMultiline(value)}</td></tr>`;
-        }).join("")}
-      </tbody>
-    </table>
-  `;
-}
-
-export function formatMultiline(value) {
-  return escapeHtml(value || "-").replaceAll("\n", "<br />");
-}
-
-export function buildClaimItemHtml(row, { showArticleCode = true, itemNumber = 1 } = {}) {
-  const itemTdStyles = "padding:8px 0;border-bottom:1px solid #eeeeee;vertical-align:top;";
-  const itemLabelStyles = `${itemTdStyles}box-sizing:border-box;font-weight:bold;width:35%;padding-left:15px;padding-right:15px;line-height:1.45;`;
-  const itemValueStyles = `${itemTdStyles}box-sizing:border-box;padding-left:15px;padding-right:15px;line-height:1.45;`;
-  const itemKind = row.isElectricalAppliance ? "Elektrogerät" : "Möbelteil";
-  const uploads = row.attachments?.length
-    ? row.attachments.map((entry) => formatAttachmentHtml(entry, { includeItemContext: false })).join("")
-    : "-";
-  const serialUploads = row.serialAttachments?.length
-    ? row.serialAttachments.map((entry) => formatAttachmentHtml(entry, { includeItemContext: false })).join("")
-    : "-";
-  const serialRows = row.isElectricalAppliance
-    ? `
-        <tr><td style="${itemLabelStyles}">Seriennummer</td><td style="${itemValueStyles}">${formatMultiline(row.serialNumber || (row.serialAttachments?.length ? "Siehe Seriennummernfoto" : "-"))}</td></tr>
-        <tr><td style="${itemLabelStyles}">Seriennummer-Foto</td><td style="${itemValueStyles}">${serialUploads}</td></tr>
-      `
-    : "";
-
-  return `
-    <table role="presentation" style="width:100%;border-collapse:collapse;">
-      <tbody>
-        <tr>
-          <td colspan="2" style="padding:10px 15px;border-bottom:2px solid #d9c7b8;font-size:14px;font-weight:bold;color:#5f4634;">
-            Problem ${itemNumber} &middot; ${itemKind}
-          </td>
-        </tr>
-        <tr><td style="${itemLabelStyles}">Type</td><td style="${itemValueStyles}">${formatMultiline(row.name || "-")}</td></tr>
-        ${showArticleCode ? `<tr><td style="${itemLabelStyles}">Typen - NR</td><td style="${itemValueStyles}">${formatMultiline(row.articleCode || "-")}</td></tr>` : ""}
-        <tr><td style="${itemLabelStyles}">Problembeschreibung</td><td style="${itemValueStyles}">${formatMultiline(row.detail || "-")}</td></tr>
-        ${row.markerNumber ? `<tr><td style="${itemLabelStyles}">Skizzenposition</td><td style="${itemValueStyles}">X${row.markerNumber}</td></tr>` : ""}
-        ${serialRows}
-        <tr><td style="${itemLabelStyles}border-bottom:0;">Anhänge</td><td style="${itemValueStyles}border-bottom:0;">${uploads}</td></tr>
-      </tbody>
-    </table>
-  `;
-}
-
-export function formatAttachmentHtml(entry, { includeItemContext = true } = {}) {
-  const label = escapeHtml(
-    includeItemContext ? formatAttachmentMetaLine(entry) : formatAttachmentFileMetaLine(entry),
-  );
-  if (!entry?.cid || !isEmailInlineImage(entry.contentType)) {
-    return `<div style="margin-top:4px;">${label}</div>`;
-  }
-
-  return `
-    <div style="margin-top:8px;">
-      <div style="margin-bottom:6px;">${label}</div>
-      <table role="presentation" width="150" cellspacing="0" cellpadding="0" border="0" style="width:150px;border-collapse:separate;">
-        <tbody>
-          <tr>
-            <td width="148" height="148" align="center" valign="middle" style="box-sizing:border-box;width:148px;height:148px;padding:4px;border:1px solid #e5e5e5;border-radius:6px;background:#fafafa;text-align:center;vertical-align:middle;">
-              <img src="cid:${escapeHtml(entry.cid)}" alt="${escapeHtml(entry.filename || "Hochgeladenes Bild")}" width="140" height="140" style="display:block;width:140px;height:140px;max-width:140px;max-height:140px;object-fit:contain;border:0;" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  `;
-}
-
-export function isEmailInlineImage(contentType) {
-  const normalized = String(contentType || "").toLowerCase().split(";")[0].trim();
-  return normalized.startsWith("image/") && normalized !== "image/svg+xml";
 }

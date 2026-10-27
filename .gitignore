@@ -11,10 +11,6 @@ frontend/.next-dev-backup-*/
 /tmp/admin-performance-main/
 frontend/node_modules
 frontend/.prisma-preflight-client
-frontend/.local-data/ab-pdfs/
-frontend/.local-data/ab-sync/
-frontend/.env.local
-/AB-test/
 frontend/data/service-claim-uploads
 frontend/voices/
 frontend/vendor/

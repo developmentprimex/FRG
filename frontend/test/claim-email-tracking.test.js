@@ -60,7 +60,7 @@ for (const scenario of ["success", "px", "222", "arc-reference", "arc-reference-
       SERVICE_REQUEST_EMAIL: "px-service@example.com",
       SERVICE_REQUEST_OTHER_EMAIL: scenario === "missing-recipient" ? "" : scenario === "partial" ? "service@example.com, other@example.com" : "service@example.com",
     };
-    const payload = { id: "claim-fixture", ticketNumber: 1020, contractNumber: scenario === "px" ? "111123456" : "670123456", claimSequence: 2, email: "customer@example.com", attachmentsMeta: [{ filename: "photo.png" }] };
+    const payload = { id: "claim-fixture", contractNumber: scenario === "px" ? "111123456" : "670123456", claimSequence: 2, email: "customer@example.com", attachmentsMeta: [{ filename: "photo.png" }] };
     payload.contractType = scenario.startsWith("arc-") ? "ARC" : "PX";
     if (scenario === "222") payload.contractNumber = "222123456";
     if (scenario === "arc-reference-other") payload.contractNumber = "671123456";
@@ -124,7 +124,7 @@ for (const scenario of ["success", "px", "222", "arc-reference", "arc-reference-
       assert.equal(mails[0].to, expectedTo);
       assert.equal(mails[0].replyTo, payload.email);
       assert.equal(mails[0].cc, expectedCc);
-      assert.equal(mails[0].subject, formatServiceClaimEmailSubject(payload.contractNumber, 2, 1020));
+      assert.equal(mails[0].subject, formatServiceClaimEmailSubject(payload.contractNumber, 2));
       assert.equal(mails[0].text, "Original text");
       assert.equal(mails[0].html, "<p>Original HTML</p>");
       assert.equal(mails[0].attachments[0].content, "image-bytes");

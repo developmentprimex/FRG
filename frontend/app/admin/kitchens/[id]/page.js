@@ -41,8 +41,6 @@ import { loadKitchenSvgMarkup } from "../../../../lib/load-kitchen-svg";
 import { prisma } from "../../../../lib/prisma";
 import { loadKitchenApplianceInventories } from "../../../../lib/contract-appliance-inventory";
 import AdminApplianceSummary from "../../../../components/admin-appliance-summary";
-import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
-import { loadOrderKitchenSpecifications } from "../../../../lib/kitchen-ab-runtime";
 
 export const dynamic = "force-dynamic";
 
@@ -591,10 +589,6 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
           </form>
         </AdminSection>
 
-        <AdminSection title={<AdminText i18nKey="kitchenSpecificationsAdmin.title" fallback="Kitchen specifications" />}>
-          <AdminOrderKitchenSpecifications details={await loadOrderKitchenSpecifications({ kitchen })} referenceOnly />
-        </AdminSection>
-
         <AdminSection title={<AdminText i18nKey="contractDetailAdmin.appliances" fallback="Electrical appliances" />} description={<AdminText i18nKey="contractDetailAdmin.kitchenAppliancesHelp" fallback="Included kitchen appliances. Contract details also include confirmed optional appliances and installed-brand overrides." />}>
           <AdminApplianceSummary appliances={applianceInventories[id]} />
         </AdminSection>
@@ -1008,7 +1002,7 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
             }
 
             .kitchen-catalog-item-card {
-              border-radius: 8px !important;
+              border-radius: 14px !important;
             }
 
             .kitchen-catalog-item-card__summary {
@@ -1115,7 +1109,7 @@ const catalogFiltersStyle = {
 
 const addItemDetailsStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 14,
   background: "var(--app-surface)",
   overflow: "hidden",
 };
@@ -1126,7 +1120,7 @@ const addItemSummaryStyle = {
   cursor: "pointer",
   margin: 16,
   border: "1px solid var(--app-border-strong)",
-  borderRadius: 8,
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--color-card)",
@@ -1145,7 +1139,7 @@ const addItemFormStyle = {
 
 const formGroupStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 14,
   padding: "16px",
   margin: 0,
   display: "grid",
@@ -1192,7 +1186,7 @@ const componentSlotHelpStyle = {
 
 const advancedDetailsStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "rgba(255,255,255,0.62)",
   overflow: "hidden",
 };
@@ -1218,7 +1212,7 @@ const productInfoGroupsStyle = {
 
 const productInfoGroupStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 10,
   padding: "12px",
   margin: 0,
   display: "grid",
@@ -1435,7 +1429,7 @@ const previewWrapStyle = {
   minWidth: 180,
   maxWidth: 220,
   padding: 8,
-  borderRadius: 8,
+  borderRadius: 14,
   border: "1px solid rgba(143, 62, 44, 0.12)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,240,232,0.76))",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",
@@ -1474,7 +1468,7 @@ const previewIconWrapStyle = {
   minWidth: 96,
   maxWidth: 96,
   padding: 4,
-  borderRadius: 8,
+  borderRadius: 10,
   border: "1px solid rgba(143, 62, 44, 0.12)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,240,232,0.76))",
   boxShadow: "inset 0 1px 0 rgba(255,255,255,0.7)",

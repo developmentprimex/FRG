@@ -6,18 +6,16 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const routePath = path.join(__dirname, "..", "app", "api", "service-claims", "route.js");
-const templatePath = path.join(__dirname, "..", "lib", "email", "claim-notification-template.js");
-const readClaimSource = () => fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(templatePath, "utf8");
 
 test("service-claims route limits floor values to 20 characters", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /requiredString\(body\.clientFloor,\s*"Floor",\s*20\)/);
   assert.match(source, /normalized\.length > maxLength/);
 });
 
 test("service-claims route retries inserts when landlord company columns are missing", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /getMissingOptionalInsertColumns/);
   assert.match(source, /information_schema"\."columns/);
@@ -30,7 +28,7 @@ test("service-claims route retries inserts when landlord company columns are mis
 });
 
 test("service-claims route recovers when a running server cached the pre-sequence schema", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /isClaimSequenceNotNullViolation/);
   assert.match(source, /code === "23502"/);
@@ -39,7 +37,7 @@ test("service-claims route recovers when a running server cached the pre-sequenc
 });
 
 test("service-claims route sends notifications after returning the durable success response", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /import \{ after, NextResponse \} from "next\/server"/);
   assert.match(source, /await insertServiceClaimRecord\(prisma, payload\);[\s\S]*after\(async \(\) =>/);
@@ -47,7 +45,7 @@ test("service-claims route sends notifications after returning the durable succe
 });
 
 test("service-claims route requires explicit confirmation for grouped kitchen parts", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /buildServiceClaimComponentChoiceGroups/);
   assert.match(source, /parseConfirmedChoiceGroupKeys/);
@@ -56,7 +54,7 @@ test("service-claims route requires explicit confirmation for grouped kitchen pa
 });
 
 test("service-claims route requires serial evidence and damage photos for every affected component", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /normalizeReferenceIssuesJson/);
   assert.match(source, /Reference-plan components are not allowed for this contract/);
@@ -67,7 +65,7 @@ test("service-claims route requires serial evidence and damage photos for every 
 });
 
 test("service-claims route embeds a kitchen preview png in notification emails when available", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /renderClaimKitchenPreviewPng/);
   assert.match(source, /buildClaimKitchenPreviewAttachment/);
@@ -80,7 +78,7 @@ test("service-claims route embeds a kitchen preview png in notification emails w
 });
 
 test("service-claims route embeds the ARC contract sketch or attaches its PDF fallback", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /getPublicContractClaimPlanAsset/);
   assert.match(source, /buildArcReferencePlanEmailAttachment/);
@@ -92,7 +90,7 @@ test("service-claims route embeds the ARC contract sketch or attaches its PDF fa
 });
 
 test("service-claims route validates optional ARC sketch markers and renders them into the email image", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /Invalid kitchen-sketch marker coordinates/);
   assert.match(source, /renderReferencePlanMarkersPng/);
@@ -106,7 +104,7 @@ test("service-claims route validates optional ARC sketch markers and renders the
 });
 
 test("service-claim email limits only ARC reference sketches to the marker renderer's display width", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /previewDisplayWidth = REFERENCE_PLAN_EMAIL_DISPLAY_WIDTH/);
   assert.match(source, /previewAttachment\?\.isArcReferenceImage/);
@@ -115,7 +113,7 @@ test("service-claim email limits only ARC reference sketches to the marker rende
   assert.match(source, /style="\$\{previewImageStyle\}"/);
 });
 test("service-claims route resolves item names and article numbers from the contract kitchen database", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /getServiceClaimKitchenPlan\(contractNumber\)/);
   assert.match(source, /databaseAreasByComponentId\.get\(componentId\)/);
@@ -127,7 +125,7 @@ test("service-claims route resolves item names and article numbers from the cont
 });
 
 test("service-claim notification email separates every item field into German rows", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, />Type</);
   assert.match(source, />Typen - NR</);
@@ -140,7 +138,7 @@ test("service-claim notification email separates every item field into German ro
 });
 
 test("service-claim item email uses full-width rows and hides article codes for ARC", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /payload\.contractType !== "ARC"/);
   assert.match(source, /showArticleCode: showClaimItemArticleCode/);
@@ -161,7 +159,7 @@ test("service-claim item email uses full-width rows and hides article codes for 
 });
 
 test("service-claim email keeps uploaded photos inside small thumbnail containers", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /<table role="presentation" width="150"/);
   assert.match(source, /<td width="148" height="148"/);
@@ -193,7 +191,7 @@ test("service-claim email requests the PDF-derived ordered-component kitchen pre
 });
 
 test("service-claim email omits the logo and the duplicate final problem-description row", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.doesNotMatch(source, /buildLogoAttachment|buildComplaintEmailLogoHtml|logo@fragmento/);
   assert.doesNotMatch(source, /\["Problembeschreibung",\s*standaloneProblemText/);
@@ -202,7 +200,7 @@ test("service-claim email omits the logo and the duplicate final problem-descrip
 });
 
 test("service-claim email separates landlord and caretaker contact details into rows", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /function buildEmailDetailSubtable/);
   assert.match(source, /const populatedRows = rows\.filter/);
@@ -224,7 +222,7 @@ test("service-claim email separates landlord and caretaker contact details into 
 });
 
 test("service-claim email separates preferred contact date and time into German rows", () => {
-  const source = readClaimSource();
+  const source = fs.readFileSync(routePath, "utf8") + "\n" + fs.readFileSync(path.join(__dirname, "..", "lib", "email", "claim-notification-template.js"), "utf8");
 
   assert.match(source, /function formatGermanPreferredContactTime/);
   assert.match(source, /\["Gewünschtes Kontaktdatum", availabilityDate\]/);

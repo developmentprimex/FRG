@@ -1,11 +1,6 @@
-import { formatServiceClaimReference } from "../../../lib/service-claim-email-subject";
-import { attachWorkProcessing } from "../../../lib/work-processing";
-import { filterAndSortWork, summarizeWork, workUiItem, workRowStyle } from "../../../lib/work-processing-rules";
-import { WorkCell, WorkActions, WorkFilter, WorkSummary } from "../../../components/admin-work-processing";
 import Link from "next/link";
 import {
   AdminSection,
-  ActionLink,
   FlashMessage,
   inputStyle,
   itemCardStyle,
@@ -25,12 +20,9 @@ import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-b
 import { AdminClaimLocalizedText } from "../../../components/admin-claim-localized-text";
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminClaimsPage } from "../../../lib/admin-claims-access";
-import { requirePxAdminPage } from "../../../lib/admin-role-guards";
 import { prisma } from "../../../lib/prisma";
-import { listKitchensForAdmin } from "../../../lib/catalog";
-import { queryServiceClaimsList } from "../../../lib/service-claim-admin-query";
-import { paginateAdminItems } from "../../../lib/admin-pagination";
 import { normalizeContractTypeFilter } from "../../../lib/contract-type-filter";
+import { queryServiceClaimsPage } from "../../../lib/service-claim-admin-query";
 
 export const dynamic = "force-dynamic";
 
@@ -50,15 +42,12 @@ function truncate(value, max = 140) {
 }
 
 export default async function AdminClaimsPage({ searchParams = {}, pxOnly = false }) {
-  const admin = await (pxOnly ? requirePxAdminPage() : requireAdminClaimsPage());
+  const admin = await requireAdminClaimsPage();
   const resolvedSearchParams = (await searchParams) || {};
   const basePath = pxOnly ? "/admin/px-claims" : "/admin/claims";
   const filters = {
     q: normalizeParam(resolvedSearchParams.q).trim(),
     city: normalizeParam(resolvedSearchParams.city).trim(),
-    kitchenId: normalizeParam(resolvedSearchParams.kitchenId).trim(),
-    contactKey: normalizeParam(resolvedSearchParams.contactKey).trim(),
-    contractNumber: normalizeParam(resolvedSearchParams.contractNumber).trim(),
     contractType: normalizeContractTypeFilter(resolvedSearchParams.contractType),
     claimType: pxOnly ? "px" : "live",
     dateFrom: normalizeParam(resolvedSearchParams.dateFrom).trim(),
@@ -67,25 +56,10 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
 
-  const [rawClaims, cityOptions, kitchens] = await Promise.all([
-    queryServiceClaimsList(prisma, filters),
+  const [pagination, cityOptions] = await Promise.all([
+    queryServiceClaimsPage(prisma, filters, resolvedSearchParams.page),
     listClaimCities(),
-    pxOnly ? Promise.resolve([]) : listKitchensForAdmin(),
   ]);
-  const trackedClaims = await attachWorkProcessing(prisma, rawClaims, "CLAIM");
-  const processingFilter = normalizeParam(resolvedSearchParams.processing);
-  const clearExactHref = `${basePath}?${new URLSearchParams({
-    ...(filters.q ? { q: filters.q } : {}),
-    ...(filters.city ? { city: filters.city } : {}),
-    ...(filters.contractType ? { contractType: filters.contractType } : {}),
-    ...(filters.kitchenId ? { kitchenId: filters.kitchenId } : {}),
-    ...(filters.dateFrom ? { dateFrom: filters.dateFrom } : {}),
-    ...(filters.dateTo ? { dateTo: filters.dateTo } : {}),
-    ...(processingFilter ? { processing: processingFilter } : {}),
-  }).toString()}`;
-  const processingCounts = summarizeWork(trackedClaims);
-  const allClaims = filterAndSortWork(trackedClaims, processingFilter);
-  const pagination = paginateAdminItems(allClaims, resolvedSearchParams.page);
   const claims = await attachClaimEmailDelivery(pagination.items);
   const rowNumber = (index) => pagination.totalItems - (pagination.page - 1) * pagination.pageSize - index;
 
@@ -96,23 +70,13 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           title={pxOnly
             ? <AdminText i18nKey="pxClaimsAdmin.title" fallback="PX claims" />
             : <AdminText i18nKey="claimsAdmin.claims" fallback="Claims" />}
-          actions={pxOnly
-            ? <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><ActionLink href="/admin/px-claims/feedback"><AdminText i18nKey="claimFeedbackList.viewFeedback" fallback="View customer feedback" /></ActionLink>{allClaims.length ? <DeleteAllPxClaimsAction /> : null}</div>
-            : <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}><ActionLink href="/admin/claims/feedback"><AdminText i18nKey="claimFeedbackList.viewFeedback" fallback="View customer feedback" /></ActionLink><ActionLink href="/admin/claims-overview"><AdminText i18nKey="claimOverview.title" fallback="Claims overview" /></ActionLink></div>}
+          actions={pxOnly && pagination.totalItems ? <DeleteAllPxClaimsAction /> : null}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-          <WorkSummary counts={processingCounts} />
           <form action={basePath} method="get" style={filterPanelStyle}>
-            {filters.contactKey ? <input type="hidden" name="contactKey" value={filters.contactKey} /> : null}
-            {filters.contractNumber ? <input type="hidden" name="contractNumber" value={filters.contractNumber} /> : null}
-            {filters.contactKey || filters.contractNumber ? <div style={rowMetaStyle}>
-              <AdminText i18nKey={filters.contactKey ? "claimOverview.contactScope" : "claimOverview.contractScope"} fallback={filters.contactKey ? "Showing claims for contact" : "Showing claims for contract"} />: <strong>{filters.contactKey ? filters.contactKey.slice(filters.contactKey.indexOf(":") + 1) : filters.contractNumber}</strong>{" "}
-              <Link href={clearExactHref}><AdminText i18nKey="claimOverview.clearExactFilter" fallback="Clear this filter" /></Link>
-            </div> : null}
             <div style={filterGridStyle}>
-              <WorkFilter value={processingFilter} />
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
                 <AdminTranslatedInput
@@ -140,13 +104,6 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   ))}
                 </AdminSelect>
               </label>
-              {!pxOnly ? <label style={filterFieldStyle}>
-                <span><AdminText i18nKey="dashboard.kitchen" fallback="Kitchen" /></span>
-                <AdminSelect name="kitchenId" defaultValue={filters.kitchenId} style={filterInputStyle}>
-                  <option value=""><AdminText i18nKey="dashboard.allKitchens" fallback="All kitchens" /></option>
-                  {kitchens.map((kitchen) => <option key={kitchen.id} value={kitchen.id}>{kitchen.name}</option>)}
-                </AdminSelect>
-              </label> : null}
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
                 <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
@@ -169,11 +126,10 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   <th style={{ ...thStyle, width: 64, boxSizing: "border-box", textAlign: "center", letterSpacing: "0.04em", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal" }}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
                   <th style={{ ...thStyle, width: 210 }}><AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.customer" fallback="Customer" /></th>
-                  <th style={{ ...thStyle, width: 150 }}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /></th>
                   <th style={thStyle}><AdminText i18nKey="claimsAdmin.issue" fallback="Issue" /></th>
                   <th className="claims-table-date" style={thStyle}><AdminText i18nKey="claimsAdmin.createdAt" fallback="Created" /></th>
                   <th style={thStyle}><AdminText i18nKey="orderEmailDelivery.column" fallback="Email status" /></th>
-                  <th style={{ ...thStyle, width: 290 }}><AdminText i18nKey="ordersAdmin.action" fallback="Action" /></th>
+                  <th style={thStyle}><AdminText i18nKey="ordersAdmin.action" fallback="Action" /></th>
                 </tr>
               </thead>
               <tbody>
@@ -185,17 +141,15 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                   </tr>
                 ) : null}
                 {claims.map((claim, index) => (
-                  <tr key={claim.id} className="claims-table-row" style={workRowStyle(claim)}>
+                  <tr key={claim.id} className="claims-table-row">
                     <td style={{ ...tdStyle, width: 64, boxSizing: "border-box", textAlign: "center", whiteSpace: "nowrap", overflowWrap: "normal", wordBreak: "normal", color: "var(--app-text-muted)", fontVariantNumeric: "tabular-nums", fontSize: "var(--admin-text-label)", fontWeight: 500 }}>{rowNumber(index)}</td>
                     <td style={tdStyle}>
-                      <strong style={{ whiteSpace: "nowrap" }}>{formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber)}</strong>
+                      <strong style={{ whiteSpace: "nowrap" }}>{claim.contractNumber}</strong>
                       <div style={rowMetaStyle}><ClaimRequestTypeText requestType={claim.requestType} /></div>
-                      {claim.submissionCount > 1 ? <div style={rowMetaStyle}><AdminText i18nKey="claimsAdmin.submissionCount" fallback="{count} submissions" values={{ count: claim.submissionCount }} /></div> : null}
                     </td>
                     <td style={tdStyle}>
                       <div style={customerNameStyle}>{formatClaimCustomerName(claim.fullName)}</div>
                     </td>
-                    <td style={tdStyle}><WorkCell item={workUiItem(claim)} /></td>
                     <td style={tdStyle}>
                       <AdminClaimLocalizedText text={truncate(claim.problemDescription, 220)} style={issueClampStyle} />
                     </td>
@@ -206,8 +160,6 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                         <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
                           <AdminText i18nKey="claimsAdmin.openAction" fallback="View" />
                         </Link>
-
-                        <WorkActions item={workUiItem(claim)} compact />
                         <DeleteClaimAction claimId={claim.id} returnPath={basePath} />
                       </div>
                     </td>
@@ -220,12 +172,12 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           <div className="admin-claims-cards" style={{ display: "none", gap: 12 }}>
             {!claims.length ? <p style={{ margin: 0, color: "var(--app-text-muted)" }}><AdminText i18nKey="claimsAdmin.noClaimsFound" fallback="No claims found." /></p> : null}
             {claims.map((claim, index) => (
-              <article key={claim.id} style={{ ...itemCardStyle, ...workRowStyle(claim) }}>
+              <article key={claim.id} style={itemCardStyle}>
                 <div style={{ display: "grid", gap: 10 }}>
                   <div>
                     <div style={rowMetaStyle}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /> {rowNumber(index)}</div>
                     <strong>
-                      <AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /> {formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber)}
+                      <AdminText i18nKey="claimsAdmin.claim" fallback="Claim" /> {claim.contractNumber}
                     </strong>
                     <div style={rowMetaStyle}>
                       <ClaimRequestTypeText requestType={claim.requestType} /> · <AdminText i18nKey="claimsAdmin.createdAt" fallback="Created" /> <AdminDateTime value={claim.createdAt} numeric />
@@ -235,7 +187,6 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                     <div style={customerNameStyle}>{formatClaimCustomerName(claim.fullName)}</div>
                     <div style={rowMetaStyle}><AdminText i18nKey="claimsAdmin.contractNumber" fallback="Contract" /> {claim.contractNumber}</div>
                   </div>
-                  <div style={{ borderBlock: "1px solid var(--app-border)", paddingBlock: 10 }}><AdminText i18nKey="workProcessing.processing" fallback="Processing" /><WorkCell item={workUiItem(claim)} /></div>
                   <AdminClaimLocalizedText text={truncate(claim.problemDescription, 160)} style={issueClampStyle} />
                   <div style={{ display: "grid", gap: 6 }}>
                     <span style={rowMetaStyle}><AdminText i18nKey="orderEmailDelivery.column" fallback="Email status" /></span>
@@ -245,9 +196,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                     <Link href={`/admin/claims/${claim.id}`} style={detailsLinkStyle}>
                       <AdminText i18nKey="claimsAdmin.openAction" fallback="View" />
                     </Link>
-
-                        <WorkActions item={workUiItem(claim)} compact />
-                        <DeleteClaimAction claimId={claim.id} returnPath={basePath} compact />
+                    <DeleteClaimAction claimId={claim.id} returnPath={basePath} compact />
                   </div>
                 </div>
               </article>

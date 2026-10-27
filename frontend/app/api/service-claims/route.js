@@ -1,4 +1,4 @@
-import { buildComplaintEmailText, buildPartyContactBlock, formatContactPersonName, combinePersonName, genderDisplayLabel, hasPartyContactDetails, extractAvailabilityFromDescription, splitLegacyAvailability, buildClaimItemRows, formatClaimClientAddressForEmail, buildClaimItemText, formatAttachmentFileMetaLine, formatAttachmentMetaLine, formatAttachmentLabel, buildComplaintEmailHtml, escapeHtml, buildEmailDetailSubtable, formatMultiline, buildClaimItemHtml, formatAttachmentHtml, isEmailInlineImage, formatEmailFileSize as formatClaimEmailFileSize } from "../../../lib/email/claim-notification-template.js";
+import { buildComplaintEmailText, buildPartyContactBlock, formatContactPersonName, combinePersonName, genderDisplayLabel, hasPartyContactDetails, extractAvailabilityFromDescription, splitLegacyAvailability, buildClaimItemRows, formatClaimClientAddressForEmail, buildClaimItemText, formatAttachmentFileMetaLine, formatAttachmentMetaLine, formatAttachmentLabel, buildComplaintEmailHtml, escapeHtml, buildEmailDetailSubtable, formatMultiline, buildClaimItemHtml, formatAttachmentHtml, isEmailInlineImage, formatClaimEmailFileSize } from "../../../lib/email/claim-notification-template.js";
 import { readFile } from "fs/promises";
 import http from "http";
 import path from "path";
@@ -7,7 +7,6 @@ import sharp from "sharp";
 import { resolveServiceClaimEmailCc, resolveServiceClaimEmailRecipient } from "../../../lib/service-claim-email-recipient";
 import { CLAIM_INTERNAL_PREFIXES, resolveSmtpConfigForContract, sendMailForContract } from "../../../lib/email/contract-smtp";
 import { observeClaimEmailSend } from "../../../lib/email/claim-email-tracking.js";
-import { sendClaimConfirmation } from "../../../lib/email/claim-confirmation.js";
 import { normalizeReferencePlanMarkerAppearance } from "../../../lib/reference-plan-marker-appearance";
 import { Prisma } from "@prisma/client";
 import { after, NextResponse } from "next/server";
@@ -31,9 +30,7 @@ import {
 import { formatServiceClaimProblemAreaForEmail, formatServiceClaimProblemAreaList, parseServiceClaimProblemAreas } from "../../../lib/service-claim-problem-areas";
 import { KITCHEN_AREA_FIRST_LINE_PREFIXES } from "../../../lib/service-claim-problem-description";
 import { isElectricalApplianceProblemArea } from "../../../lib/service-claim-serial-number";
-import { formatServiceClaimEmailSubject, formatServiceClaimReference } from "../../../lib/service-claim-email-subject";
-import { lockWorkProcessing } from "../../../lib/work-processing";
-import { findOpenClaim, saveClaimSubmission } from "../../../lib/service-claim-submissions";
+import { formatServiceClaimEmailSubject } from "../../../lib/service-claim-email-subject";
 import { getServiceClaimKitchenPlan } from "../../../lib/service-claim-kitchen-plan";
 import { buildServiceClaimComponentChoiceGroups } from "../../../lib/service-claim-component-choices";
 import { validateReferenceAppliances } from "../../../lib/contract-appliances";
@@ -344,7 +341,7 @@ async function sendComplaintEmailMessage(payload, attachmentParts = [], referenc
   const { receipt } = await sendMailForContract(payload.contractNumber, {
     to: recipient,
     cc,
-    subject: `${formatServiceClaimEmailSubject(payload.contractNumber, payload.claimSequence, payload.ticketNumber)}${payload.isFollowUp ? " – Ergänzung" : ""}`,
+    subject: formatServiceClaimEmailSubject(payload.contractNumber, payload.claimSequence),
     replyTo: payload.email || undefined,
     text: buildComplaintEmailText(emailPayload),
     html: buildComplaintEmailHtml(emailPayload, kitchenPreviewAttachment),
@@ -355,9 +352,7 @@ async function sendComplaintEmailMessage(payload, attachmentParts = [], referenc
   return true;
 }
 
-function formatEmailFileSize(bytes) {
-  return formatClaimEmailFileSize(bytes);
-}
+function formatEmailFileSize(bytes) { return formatClaimEmailFileSize(bytes); }
 
 
 
@@ -620,7 +615,6 @@ function buildServiceClaimInsertSql(payload, options) {
   return Prisma.sql`
     INSERT INTO "ServiceClaim" (${Prisma.join(columns)})
     VALUES (${Prisma.join(values)})
-    RETURNING "ticketNumber"
   `;
 }
 
@@ -629,10 +623,7 @@ async function insertServiceClaimRecord(prismaClient, payload) {
 
   while (true) {
     try {
-      const savedClaim = await prismaClient.$transaction(async (transaction) => {
-        await lockWorkProcessing(transaction);
-        const activeClaim = await findOpenClaim(transaction, payload.contractNumber);
-        if (activeClaim) return saveClaimSubmission(transaction, payload, activeClaim, true);
+      const claimSequence = await prismaClient.$transaction(async (transaction) => {
         // Serialize sequence allocation per contract so simultaneous submissions
         // cannot receive the same KD number.
         await transaction.$queryRaw`
@@ -655,15 +646,15 @@ async function insertServiceClaimRecord(prismaClient, payload) {
             `;
         const nextSequence = Number(rows?.[0]?.nextSequence || 1);
 
-        const inserted = await transaction.$queryRaw(buildServiceClaimInsertSql(
+        await transaction.$executeRaw(buildServiceClaimInsertSql(
           { ...payload, claimSequence: nextSequence },
           options,
         ));
-        return saveClaimSubmission(transaction, payload, { id: payload.id, claimSequence: nextSequence, ticketNumber: inserted[0].ticketNumber }, false);
-      }, { maxWait: 10000, timeout: 45000 });
+        return nextSequence;
+      });
 
-      Object.assign(payload, savedClaim);
-      return savedClaim.claimSequence;
+      payload.claimSequence = claimSequence;
+      return claimSequence;
     } catch (error) {
       // The column-support result can be cached by a dev server that was already
       // running when the migration added the required claimSequence column.
@@ -1335,7 +1326,6 @@ export async function POST(request) {
         orderKind,
         claimId: payload.id,
         claimSequence: payload.claimSequence ?? null,
-        ticketNumber: payload.ticketNumber,
       },
     });
 
@@ -1344,7 +1334,7 @@ export async function POST(request) {
     after(async () => {
       await Promise.all([
         storedAttachmentParts.length
-          ? persistServiceClaimAttachments(payload.id, storedAttachmentParts, payload.attachmentStart).catch((persistError) => {
+          ? persistServiceClaimAttachments(payload.id, storedAttachmentParts).catch((persistError) => {
               console.error("Service claim attachment persist error:", persistError);
               return false;
             })
@@ -1353,21 +1343,13 @@ export async function POST(request) {
           console.warn("Service claim email delivery failed:", formatServiceClaimErrorMessage(error));
           return false;
         }),
-        sendClaimConfirmation(payload).catch((error) => {
-          console.warn("Service claim confirmation email failed:", formatServiceClaimErrorMessage(error));
-          return false;
-        }),
         postWebhook(payload),
       ]);
     });
 
     return NextResponse.json({
       success: true,
-      message: payload.isFollowUp ? "Your submission has been added to your open ticket." : "Your complaint has been recorded successfully and is being sent.",
-      isFollowUp: payload.isFollowUp,
-      ticketNumber: payload.ticketNumber,
-      claimSequence: payload.claimSequence,
-      ticketReference: formatServiceClaimReference(payload.contractNumber, payload.claimSequence, payload.ticketNumber),
+      message: "Your complaint has been recorded successfully and is being sent.",
       notifications: {
         pending: true,
       },

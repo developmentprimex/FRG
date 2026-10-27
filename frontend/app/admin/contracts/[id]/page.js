@@ -366,7 +366,7 @@ const applianceSummaryGridStyle = {
 const applianceSummaryStyle = {
   background: "rgba(255,255,255,0.7)",
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 12,
   display: "grid",
   gap: 5,
   padding: 12,
@@ -408,7 +408,7 @@ const listItemLinkStyle = {
   display: "grid",
   gap: 8,
   padding: 14,
-  borderRadius: 8,
+  borderRadius: 10,
   border: "1px solid var(--app-border)",
   background: "rgba(255,255,255,0.86)",
   color: "var(--app-text)",
@@ -429,7 +429,7 @@ const historyItemStyle = {
   display: "grid",
   gap: 8,
   padding: 14,
-  borderRadius: 8,
+  borderRadius: 10,
   border: "1px solid var(--app-border)",
   background: "rgba(255,255,255,0.86)",
 };

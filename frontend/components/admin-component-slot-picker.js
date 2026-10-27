@@ -346,14 +346,14 @@ const compactControlStyle = {
   gridTemplateColumns: "minmax(0, 1fr) minmax(220px, 320px)",
   alignItems: "center",
   border: "1px solid rgba(172, 111, 70, 0.18)",
-  borderRadius: 8,
+  borderRadius: 14,
   background: "rgba(255,255,255,0.8)",
   padding: "8px 10px",
 };
 
 const cardStyle = {
   border: "1px solid rgba(172, 111, 70, 0.18)",
-  borderRadius: 8,
+  borderRadius: 14,
   background: "rgba(255,255,255,0.8)",
   color: "var(--app-text)",
   padding: "12px 14px",
@@ -368,7 +368,7 @@ const cardStyle = {
 const compactSelectStyle = {
   width: "100%",
   minHeight: 38,
-  borderRadius: 8,
+  borderRadius: 12,
   border: "1px solid var(--app-border-strong)",
   background: "rgba(255,255,255,0.82)",
   padding: "6px 10px",
@@ -402,7 +402,7 @@ const iconWrapStyle = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "rgba(143, 62, 44, 0.08)",
   color: "var(--app-accent)",
 };
