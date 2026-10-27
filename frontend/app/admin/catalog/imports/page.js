@@ -395,7 +395,7 @@ const optionPanelStyle = {
   gap: 12,
   padding: 14,
   border: "1px solid var(--app-border)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "var(--app-surface)",
 };
 
@@ -411,7 +411,7 @@ const syncOptionStyle = {
   gap: 10,
   padding: 12,
   border: "1px solid var(--app-border)",
-  borderRadius: 10,
+  borderRadius: 8,
   background: "var(--color-card)",
 };
 
@@ -519,7 +519,7 @@ const historyChangeGridStyle = {
   display: "grid",
   gridTemplateColumns: "minmax(90px, 0.6fr) minmax(160px, 1.4fr) minmax(90px, 0.7fr) minmax(90px, 0.7fr)",
   border: "1px solid var(--app-border)",
-  borderRadius: 10,
+  borderRadius: 8,
   background: "var(--color-card)",
   overflowX: "auto",
 };

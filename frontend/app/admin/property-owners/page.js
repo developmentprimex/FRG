@@ -506,7 +506,7 @@ const createOwnerDetailsStyle = {
   display: "grid",
   gap: 12,
   border: "1px solid rgba(143, 62, 44, 0.14)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "rgba(255, 247, 241, 0.54)",
   padding: 14,
 };

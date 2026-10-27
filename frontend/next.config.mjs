@@ -12,6 +12,9 @@ export default function nextConfig(phase) {
     turbopack: { root: projectRoot },
     devIndicators: false,
     serverExternalPackages: ["ip-location-api"],
+    outputFileTracingIncludes: {
+      "/api/admin/kitchen-specifications/*/pdf": ["./data/kitchen-specifications/pdfs/*.[pP][dD][fF]"],
+    },
     async headers() {
       return [
         {

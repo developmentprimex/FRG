@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { showAdminClaimsInNav } from "../lib/admin-claims-access";
-import { isSuperAdmin } from "../lib/admin-roles";
+import { hasFullAdminAccess } from "../lib/admin-roles";
 import { getAdminSession } from "../lib/auth";
 import { countOpenCancellationRequests } from "../lib/order-cancellations";
 import { AdminShellClient } from "./admin-shell-client";
@@ -21,7 +21,7 @@ export async function AdminShell({ adminEmail, children }) {
       adminRole={session?.role || "ADMIN"}
       initialLanguage={initialLanguage}
       showClaimsNav={showAdminClaimsInNav(adminEmail || session?.email)}
-      showUsersNav={isSuperAdmin(session)}
+      showUsersNav={hasFullAdminAccess(session)}
       openCancellationCount={openCancellationCount}
     >
       {children}

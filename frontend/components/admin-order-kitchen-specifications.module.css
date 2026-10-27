@@ -1,0 +1,37 @@
+.root { min-width: 0; }
+.heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; flex-wrap: wrap; }
+.heading h3 { margin: 0 0 12px; font-size: 1.15rem; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: var(--app-text-muted); font-size: 13px; }
+.meta strong { color: var(--app-text); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.actions a { border: 1px solid var(--app-border); background: var(--app-surface); padding: 10px 14px; border-radius: 12px; color: var(--app-accent); font-size: 13px; font-weight: 700; text-decoration: none; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 18px; padding-bottom: 14px; border-bottom: 1px solid var(--app-border); }
+.tabs button { display: flex; align-items: center; gap: 9px; border: 1px solid var(--app-border); background: var(--app-surface); color: var(--app-text-muted); border-radius: 12px; padding: 10px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--app-accent); border-color: var(--app-accent); background: var(--app-surface-muted); }
+.tabs button span:last-child:not(:first-child) { border-radius: 999px; background: var(--app-border); padding: 2px 7px; font-size: 11px; }
+.root a:focus-visible, .root button:focus-visible, .root input:focus-visible, .root summary:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 3px; }
+.notice { color: var(--app-text-muted); font-size: 13px; line-height: 1.6; margin: 0 0 16px; }
+.specifications { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 30px; margin: 0; }
+.specifications > div { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 16px; padding: 13px 0; border-bottom: 1px solid var(--app-border); align-items: flex-start; }
+.specifications dt { font-size: 13px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.specifications dd { display: flex; align-items: flex-start; gap: 10px; margin: 0; font-size: 13px; line-height: 1.5; white-space: pre-line; overflow-wrap: anywhere; }
+.specifications code { flex-shrink: 0; color: var(--app-text-muted); background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 6px; padding: 1px 5px; font-size: 11px; }
+.sourceHeader { margin-top: 20px; }
+.sourceHeader summary, .description summary { cursor: pointer; color: var(--app-accent); font-weight: 700; font-size: 13px; }
+.sourceHeader .specifications { margin-top: 10px; }
+.filter { display: flex; align-items: flex-start; gap: 24px; justify-content: space-between; flex-wrap: wrap; margin-bottom: 16px; }
+.filter p { flex: 1; min-width: 220px; }
+.filter label { display: grid; gap: 7px; font-size: 12px; font-weight: 700; width: min(100%, 300px); }
+.filter input { border: 1px solid var(--app-border); border-radius: 10px; padding: 10px 12px; background: var(--app-surface); color: var(--app-text); font: inherit; font-weight: 400; width: 100%; box-sizing: border-box; }
+.tableWrap { max-width: 100%; overflow-x: auto; border: 1px solid var(--app-border); border-radius: 14px; }
+.tableWrap table { width: 100%; min-width: 670px; border-collapse: collapse; text-align: left; font-size: 13px; }
+.tableWrap th { padding: 14px; background: var(--app-surface-muted); color: var(--app-text-muted); font-size: 12px; white-space: nowrap; }
+.tableWrap td { border-top: 1px solid var(--app-border); padding: 14px; vertical-align: top; line-height: 1.6; overflow-wrap: anywhere; max-width: 320px; }
+.tableWrap code { font-size: 12px; }
+.tableWrap small { display: block; margin-top: 5px; color: var(--app-text-muted); }
+.description { margin-top: 8px; }
+.description p { white-space: pre-line; color: var(--app-text-muted); margin: 8px 0 0; }
+.empty { padding: 18px; color: var(--app-text-muted); }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (max-width: 900px) { .specifications { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .specifications > div { grid-template-columns: minmax(0, 1fr); gap: 6px; } .tabs button { padding: 9px 10px; } }

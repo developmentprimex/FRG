@@ -11,7 +11,7 @@ export function scheduleClaimEmailAttempt(buildAttempt) {
   });
 }
 
-export function buildClaimEmailDelivery({ recipient, receipt, skipped, failed, attemptedAt }) {
+export function buildClaimEmailDelivery({ recipient, receipt, skipped, failed, attemptedAt, role = "service" }) {
   const addresses = addressparser(String(recipient || ""), { flatten: true })
     .map((item) => item.address).filter(Boolean);
   const normalize = (value) => String(typeof value === "object" ? value?.address || "" : value || "").trim().toLowerCase();
@@ -21,7 +21,7 @@ export function buildClaimEmailDelivery({ recipient, receipt, skipped, failed, a
     attemptedAt,
     messageId: String(receipt?.messageId || ""),
     recipients: (addresses.length ? addresses : [""]).map((email) => ({
-      role: "service",
+      role,
       email,
       status: skipped ? "SKIPPED" : failed ? "FAILED"
         : accepted.has(normalize(email)) ? "SENT"
@@ -32,17 +32,17 @@ export function buildClaimEmailDelivery({ recipient, receipt, skipped, failed, a
 
 // Preserve the claim sender's true/false result and its original errors.
 // Capturing the SMTP receipt only assigns a local variable; no storage runs.
-export function observeClaimEmailSend({ claimId, recipient, send, schedule = scheduleClaimEmailAttempt }) {
+export function observeClaimEmailSend({ claimId, recipient, send, kind, role, schedule = scheduleClaimEmailAttempt }) {
   let receipt;
   return observeOrderEmailSend({
     send: () => send((value) => { receipt = value; }),
     schedule,
     buildAttempt: ({ result, failed, attemptedAt }) => ({
       claimId,
-      delivery: buildClaimEmailDelivery({
+      delivery: { ...buildClaimEmailDelivery({
         recipient: typeof recipient === "function" ? recipient() : recipient,
-        receipt, skipped: result === false, failed, attemptedAt,
-      }),
+        receipt, skipped: result === false, failed, attemptedAt, role,
+      }), ...(kind ? { kind } : {}) },
     }),
   });
 }

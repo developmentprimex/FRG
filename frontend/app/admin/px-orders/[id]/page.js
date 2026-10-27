@@ -1,3 +1,6 @@
+import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
+import { loadOrderKitchenSpecifications } from "../../../../lib/kitchen-ab-runtime";
+import { AdminOrderInformation } from "../../../../components/admin-order-information";
 import Link from "next/link";
 import { OrderStatus } from "@prisma/client";
 import {
@@ -28,7 +31,7 @@ import { AdminOrderEmailDelivery } from "../../../../components/admin-order-emai
 import { attachOrderEmailDelivery } from "../../../../lib/email/order-email-store";
 import { OrderEmailReviewModal } from "../../../../components/order-email-review-modal";
 import { getFormMessage } from "../../../../lib/admin-forms";
-import { requireAdminPage } from "../../../../lib/auth";
+import { requirePxAdminPage } from "../../../../lib/admin-role-guards";
 import { getTestOrderById } from "../../../../lib/catalog";
 import { getPriceBreakdown } from "../../../../lib/price-utils";
 import { buildOrderConfirmationAttachmentLabels, buildOrderConfirmationEmailDraft, buildOrderConfirmationEmailStaticHtml } from "../../../../lib/email/order-notifications";
@@ -77,7 +80,7 @@ function ItemTypeLabel({ type }) {
 }
 
 export default async function AdminPxOrderDetailPage({ params, searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requirePxAdminPage();
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
   const [order] = await attachOrderEmailDelivery([await getTestOrderById(id)], "test");
@@ -150,34 +153,7 @@ export default async function AdminPxOrderDetailPage({ params, searchParams }) {
           ) : null}
 
           <form action={`/api/admin/px-orders/${order.id}`} method="post" style={actionPanelStyle}>
-            <div style={statusRowStyle}>
-              <div style={statusItemStyle}>
-                <span style={compactLabelStyle}><AdminText i18nKey="ordersAdmin.status" fallback="Status" /></span>
-                <AdminStatusBadge status={order.status} />
-              </div>
-              <div style={statusItemStyle}>
-                <span style={compactLabelStyle}><AdminText i18nKey="reportsAdmin.payment" fallback="Payment" /></span>
-                <PaymentStatusBadge status={order.paymentStatus} />
-              </div>
-            </div>
-            <div style={metricGridStyle}>
-              <div style={metricStyle}>
-                <span style={labelStyle}><AdminText i18nKey="ordersAdmin.total" fallback="Total" /></span>
-                <div style={{ display: "grid", gap: 2 }}>
-                  <span style={{ fontSize: 12, opacity: 0.7 }}>
-                    <AdminText i18nKey="orderDetailAdmin.priceExclVat" fallback="Price" />: {formatCurrency(getPriceBreakdown(order.totalPrice).net)}
-                  </span>
-                  <span style={{ fontSize: 12, opacity: 0.7 }}>
-                    <AdminText i18nKey="orderDetailAdmin.vatAmount" fallback="VAT (19%)" />: {formatCurrency(getPriceBreakdown(order.totalPrice).vat)}
-                  </span>
-                  <strong>{formatCurrency(order.totalPrice)}</strong>
-                </div>
-              </div>
-              <div style={metricStyle}>
-                <span style={labelStyle}><AdminText i18nKey="contractsAdmin.contract" fallback="Contract" /></span>
-                <strong>{order.contractNumber || "-"}</strong>
-              </div>
-            </div>
+            <strong><AdminText i18nKey="orderDetailAdmin.orderActions" fallback="Order actions" /></strong>
             <p style={hintStyle}>
               <AdminText
                 i18nKey="pxOrdersAdmin.testModeHint"
@@ -223,45 +199,18 @@ export default async function AdminPxOrderDetailPage({ params, searchParams }) {
                 <AdminText i18nKey="ordersAdmin.delete" fallback="Delete" />
               </OrderActionButton>
             </div>
-            <AdminOrderEmailDelivery delivery={order.confirmationEmailDelivery} />
+            <details style={{ borderTop: "1px solid var(--app-border)", paddingTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 700 }}><AdminText i18nKey="orderDetailAdmin.emailDelivery" fallback="Email delivery" /></summary>
+              <div style={{ marginTop: 12 }}><AdminOrderEmailDelivery delivery={order.confirmationEmailDelivery} /></div>
+            </details>
             <OrderActionFeedback />
           </form>
 
-          <div style={splitGridStyle}>
-            <article style={itemCardStyle}>
-              <strong style={{ fontSize: "1.1rem" }}><AdminText i18nKey="orderDetailAdmin.orderSummary" fallback="Order summary" /></strong>
-              <div style={subMetaStyle}>
-                <span><AdminKitchenDisplayName slug={order.kitchen.slug} name={order.kitchen.name} /></span>
-                <span><AdminDateTime value={order.createdAt} /></span>
-                <span>
-                  <AdminPluralText
-                    count={displayItems.length}
-                    singularKey="ordersAdmin.itemCountSingular"
-                    pluralKey="ordersAdmin.itemCountPlural"
-                    singularFallback="{count} item"
-                    pluralFallback="{count} items"
-                  />
-                </span>
-              </div>
-              <div style={detailGridStyle}>
-                <div><span style={labelStyle}><AdminText i18nKey="pxOrdersAdmin.paymentMethod" fallback="Payment method" /></span><PaymentMethodText value={order.paymentMethod} /></div>
-                <div><span style={labelStyle}><AdminText i18nKey="pxOrdersAdmin.stripeSession" fallback="Stripe session" /></span><span style={wrapStyle}>{order.stripeCheckoutSessionId || "-"}</span></div>
-                <div><span style={labelStyle}><AdminText i18nKey="orderDetailAdmin.propertyOwner" fallback="Housing company" /></span>{order.kitchenContract?.owner?.name || "-"}</div>
-                <div><span style={labelStyle}><AdminText i18nKey="contractsAdmin.project" fallback="Project" /></span>{order.kitchenContract?.project?.name || "-"}</div>
-              </div>
-            </article>
+          <AdminOrderInformation order={order} itemCount={displayItems.length} showAs400={false} />
+        </AdminSection>
 
-            <article style={itemCardStyle}>
-              <strong style={{ fontSize: "1.1rem" }}><AdminText i18nKey="orderDetailAdmin.customer" fallback="Customer" /></strong>
-              <div style={detailGridStyle}>
-                <div><span style={labelStyle}><AdminText i18nKey="kitchenDetailAdmin.name" fallback="Name" /></span>{order.firstName} {order.lastName}</div>
-                <div><span style={labelStyle}><AdminText i18nKey="adminShellLogin.email" fallback="Email" /></span><a href={`mailto:${order.email}`} style={inlineLinkStyle}>{order.email}</a></div>
-                <div><span style={labelStyle}><AdminText i18nKey="propertyOwnersAdmin.phone" fallback="Phone" /></span><a href={`tel:${order.phone}`} style={inlineLinkStyle}>{order.phone}</a></div>
-                <div><span style={labelStyle}><AdminText i18nKey="orderDetailAdmin.address" fallback="Address" /></span>{order.address1}{order.address2 ? `, ${order.address2}` : ""}, {order.postalCode} {order.city}{order.country ? `, ${order.country}` : ""}</div>
-                <div><span style={labelStyle}><AdminText i18nKey="orderDetailAdmin.notes" fallback="Notes" /></span>{order.notes || "-"}</div>
-              </div>
-            </article>
-          </div>
+        <AdminSection title={<AdminText i18nKey="kitchenSpecificationsAdmin.title" fallback="Kitchen specifications" />}>
+          <AdminOrderKitchenSpecifications details={await loadOrderKitchenSpecifications(order)} />
         </AdminSection>
 
         <AdminSection title={<AdminText i18nKey="pxOrdersAdmin.orderItems" fallback="PX order items" />}>
@@ -311,7 +260,7 @@ const actionPanelStyle = {
   display: "grid",
   gap: 14,
   border: "1px solid var(--app-border)",
-  borderRadius: 14,
+  borderRadius: 8,
   background: "linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,248,242,0.74))",
   padding: 18,
 };
@@ -348,7 +297,7 @@ const metricStyle = {
   display: "grid",
   gap: 6,
   border: "1px solid var(--app-border)",
-  borderRadius: 10,
+  borderRadius: 8,
   background: "rgba(255,255,255,0.78)",
   padding: "12px 14px",
 };
@@ -391,7 +340,7 @@ const buttonRowStyle = {
 
 const dangerButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.22)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.72)",
@@ -403,7 +352,7 @@ const dangerButtonStyle = {
 
 const paymentButtonStyle = {
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 14,
+  borderRadius: 8,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(42, 145, 85, 0.1)",
@@ -417,7 +366,7 @@ const paymentLinkPanelStyle = {
   display: "grid",
   gap: 8,
   border: "1px solid rgba(42, 145, 85, 0.24)",
-  borderRadius: 12,
+  borderRadius: 8,
   background: "rgba(42, 145, 85, 0.08)",
   padding: "12px 14px",
 };
