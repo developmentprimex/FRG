@@ -109,4 +109,4 @@ export const AB_105804_BLENDE_CALIBRATION = Object.fromEntries([
 export const AB_105804_LIGHT_DETAILS = [
   ["dishwasher-basket", [[284.64,420.04],[370.2,470.68]]],
   ["dishwasher-gs-mark", [[318.36,486.04],[335.4,507.88]]],
-].map(([key, points]) => { const b = bounds(points); return { key, componentKey: "dishwasher-base", persistWhenSelected: true, left: b.left, top: b.top, width: b.right-b.left, height: b.bottom-b.top }; });
+].map(([key, points]) => { const b = bounds(points); return { key, componentKey: "dishwasher-base", persistWhenSelected: true, preserveWhiteBackground: true, sourceLineworkOpacity: 0.08, left: b.left, top: b.top, width: b.right-b.left, height: b.bottom-b.top }; });

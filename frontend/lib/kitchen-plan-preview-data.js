@@ -25,7 +25,7 @@ import { AB_105779_HOTSPOTS } from './ab-105779-plan.js';
 import { AB_105779_LAYOUT_ALIAS_SLUGS } from './ab-105779-layout.js';
 
 export const PLAN_IMAGE_BY_SLUG = {
-  "ab-105804": "/plans/670%20105804.svg",
+  "ab-105804": "/plans/670%20105804-smooth.png",
   "ab-105793": "/plans/AB%20105793.svg",
   "ab-105796": "/plans/AB%20105796.svg",
   "ab-105799": "/plans/AB%20105799.svg",
@@ -223,8 +223,8 @@ export const PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG = {
   "ab-105800": AB_105800_LIGHT_DETAILS,
   "ab-105803": AB_105803_LIGHT_DETAILS,
   "ab-105779": [
-    { key: "dishwasher-basket", componentKey: "dishwasher-base", left: 56.208, top: 69.570, width: 8.495, height: 8.783, persistWhenSelected: true },
-    { key: "dishwasher-gs-mark", componentKey: "dishwasher-base", left: 59.671021, top: 80.759664, width: 1.683, height: 3.771428, persistWhenSelected: true },
+    { key: "dishwasher-basket", componentKey: "dishwasher-base", left: 56.208, top: 69.570, width: 8.495, height: 8.783, persistWhenSelected: true, sourceLineworkOpacity: 0.32 },
+    { key: "dishwasher-gs-mark", componentKey: "dishwasher-base", left: 59.671021, top: 80.759664, width: 1.683, height: 3.771428, persistWhenSelected: true, sourceLineworkOpacity: 0.32 },
   ],
   "ab-105789": AB_105789_LIGHT_DETAILS,
   "ab-105790": AB_105790_LIGHT_DETAILS,

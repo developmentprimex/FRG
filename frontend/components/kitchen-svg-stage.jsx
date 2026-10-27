@@ -3051,7 +3051,7 @@ export default function useKitchenSvgStage({
                       styles.planImageInteractive,
                       styles.planPersistentLightDetail,
                       isDetailComponentSelected ? styles.planPersistentSelectedDetail : "",
-                      detail.preserveWhiteBackground ? styles.planPersistentSourceLinework : "",
+                      styles.planPersistentSourceLinework,
                     ]
                       .filter(Boolean)
                       .join(" ");
@@ -3078,7 +3078,7 @@ export default function useKitchenSvgStage({
                             idSuffix={`${normalizedKitchenSlug}-${detail.key}`}
                             clipGeometry={detail}
                             className={persistentDetailClassName}
-                            style={{ inset: 0, width: "100%", height: "100%" }}
+                            style={{ inset: 0, width: "100%", height: "100%", opacity: detail.sourceLineworkOpacity }}
                           />
                         </Fragment>
                       );
@@ -3108,6 +3108,7 @@ export default function useKitchenSvgStage({
                           className={persistentDetailClassName}
                           style={{
                             ...planImageInteractiveStyle,
+                            opacity: detail.sourceLineworkOpacity,
                             clipPath,
                             WebkitClipPath: clipPath,
                           }}
