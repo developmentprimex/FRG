@@ -38,25 +38,27 @@ jobs:
             git fetch https://github.com/rinesaahmedi/fragmento.git main
             git reset --hard HEAD
 
-            # A migration created directly on the server can later become tracked
-            # upstream. Preserve those collisions outside the checkout before
-            # merging; unrelated local files (including .env) stay in place.
+            # Files installed directly on the server can later become tracked
+            # upstream (AB routes, PDFs, migrations, etc.). Preserve collisions
+            # outside the checkout before merging; unrelated local files
+            # (including .env) stay in place.
             bash <<'BASH'
             set -euo pipefail
+            git merge-base --is-ancestor HEAD FETCH_HEAD
             umask 077
             BACKUP_BASE="/var/backups/fragmento-deploy"
             BACKUP_DIR=""
-            git ls-tree -r --name-only -z FETCH_HEAD -- frontend/prisma/migrations |
-              while IFS= read -r -d '' migration; do
-                if { [ -f "$migration" ] || [ -L "$migration" ]; } &&
-                   ! git ls-files --error-unmatch -- "$migration" >/dev/null 2>&1; then
+            git diff --no-renames --diff-filter=A --name-only -z HEAD FETCH_HEAD -- |
+              while IFS= read -r -d '' incoming; do
+                if { [ -f "$incoming" ] || [ -L "$incoming" ]; } &&
+                   ! git --literal-pathspecs ls-files --error-unmatch -- "$incoming" >/dev/null 2>&1; then
                   if [ -z "$BACKUP_DIR" ]; then
                     mkdir -p "$BACKUP_BASE"
                     BACKUP_DIR=$(mktemp -d "$BACKUP_BASE/deploy-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")
                   fi
-                  mkdir -p "$BACKUP_DIR/$(dirname "$migration")"
-                  mv -- "$migration" "$BACKUP_DIR/$migration"
-                  printf 'Preserved untracked migration: %s\n' "$BACKUP_DIR/$migration"
+                  mkdir -p "$BACKUP_DIR/$(dirname "$incoming")"
+                  mv -- "$incoming" "$BACKUP_DIR/$incoming"
+                  printf 'Preserved untracked file: %s\n' "$BACKUP_DIR/$incoming"
                 fi
               done
             BASH
