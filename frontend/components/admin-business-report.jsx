@@ -33,7 +33,7 @@ export function AdminBusinessReport({ report, scope }) {
         <dd style={{ margin: "2px 0 0", fontSize: 22, lineHeight: 1.2, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{count(total[key])}</dd>
       </div>)}
     </dl>
-    <AdminReportTable style={tableWrapStyle}>
+    <AdminReportTable style={{ ...tableWrapStyle, minWidth: 0, maxWidth: "100%" }}>
       <table dir="ltr" style={{ ...tableStyle, tableLayout: "auto", minWidth: 850 }}>
         <thead><tr>
           <th scope="col" style={reportHeaderStyle}>{text("periodStarting", "Period starting")}</th>

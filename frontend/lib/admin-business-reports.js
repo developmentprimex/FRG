@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import { REPORT_TIME_ZONE } from "./admin-date-time.js";
-import { workDayStart } from "./work-processing-rules.js";
+import { reportDayStart } from "./business-report-dates.js";
 import { normalizeBusinessReportFilters, shiftReportDate } from "./business-report-filters.js";
 import { VAT_RATE } from "./price-utils.js";
 
@@ -30,8 +30,8 @@ export function buildBusinessReportSql(filters) {
   const conditions = [];
   // Prisma timestamps are UTC without a PostgreSQL timezone. Interpret them
   // explicitly, since comparing to a bound timestamptz otherwise uses the DB session zone.
-  if (filters.dateFrom) conditions.push(Prisma.sql`e."happenedAt" AT TIME ZONE 'UTC' >= ${workDayStart(filters.dateFrom)}`);
-  if (filters.dateTo) conditions.push(Prisma.sql`e."happenedAt" AT TIME ZONE 'UTC' < ${workDayStart(shiftReportDate(filters.dateTo, 1))}`);
+  if (filters.dateFrom) conditions.push(Prisma.sql`e."happenedAt" AT TIME ZONE 'UTC' >= ${reportDayStart(filters.dateFrom)}`);
+  if (filters.dateTo) conditions.push(Prisma.sql`e."happenedAt" AT TIME ZONE 'UTC' < ${reportDayStart(shiftReportDate(filters.dateTo, 1))}`);
   if (filters.contractType) conditions.push(Prisma.sql`e."contractType" = ${filters.contractType}`);
   const where = conditions.length ? Prisma.sql`WHERE ${Prisma.join(conditions, " AND ")}` : Prisma.empty;
   const grouping = { DAY: "day", WEEK: "week", MONTH: "month" }[filters.groupBy] || "day";

@@ -1,8 +1,6 @@
 /* Admin type scale: table data stays readable at a compact dashboard density.
    Use these tokens for new admin screens instead of page-specific sizes. */
 .admin-shell {
-  --admin-radius-card: 8px;
-  --admin-radius-table: 4px;
   --admin-text-title: 1.5rem;
   --admin-text-metric: 1.25rem;
   --admin-text-body: 0.875rem;
@@ -169,7 +167,7 @@
     min-height: 40px !important;
     padding: 0 !important;
     border: 0 !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     background: transparent !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
@@ -198,7 +196,7 @@
     right: auto !important;
     width: min(240px, calc(100vw - 32px)) !important;
     min-width: 0 !important;
-    border-radius: 8px !important;
+    border-radius: 14px !important;
     padding: 8px !important;
     z-index: 120 !important;
   }
@@ -206,7 +204,7 @@
   .admin-language-switcher__option {
     width: 100% !important;
     min-height: 44px !important;
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     padding: 8px 10px !important;
   }
 
@@ -235,7 +233,7 @@
 
 .analytics-dashboard .search-workspace {
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 18px;
   background: var(--color-card);
   box-shadow: var(--app-shadow-soft);
   padding: 18px;
@@ -244,7 +242,7 @@
 }
 
 .analytics-dashboard .search-workspace--compact {
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px;
   gap: 10px;
 }
@@ -262,7 +260,7 @@
 }
 
 .analytics-dashboard .search-workspace--compact .search-input-wrap {
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
 .analytics-dashboard .search-workspace--compact .input-row {
@@ -326,7 +324,7 @@
 .analytics-dashboard .search-input-wrap {
   position: relative;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--color-card);
 }
 
@@ -359,7 +357,7 @@
 .analytics-dashboard .search-button {
   min-height: 44px;
   border: 1px solid var(--color-primary);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--color-primary);
   color: #ffffff;
   padding: 0 16px;
@@ -390,7 +388,7 @@
 
 .analytics-dashboard .state-card {
   border: 1px dashed var(--color-border);
-  border-radius: 8px;
+  border-radius: 14px;
   background: #fbfaf7;
   padding: 16px;
   display: grid;
@@ -411,7 +409,7 @@
   width: fit-content;
   min-height: 38px;
   border: 1px solid var(--color-primary);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--color-primary);
   color: #ffffff;
   padding: 0 14px;
@@ -421,7 +419,7 @@
 
 .analytics-dashboard .matches-panel {
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: var(--color-card);
   padding: 14px;
   display: grid;
@@ -442,7 +440,7 @@
 
 .analytics-dashboard .match-row {
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-radius: 14px;
   background: var(--color-card);
   padding: 12px;
   display: flex;
@@ -607,7 +605,7 @@
     gap: 6px;
     min-height: 112px;
     border: 1px solid rgba(107, 79, 58, 0.18);
-    border-radius: 8px;
+    border-radius: 10px;
     background: #fffdf9;
     padding: 13px;
     box-shadow: 0 8px 22px rgba(84, 59, 40, 0.08);
@@ -787,7 +785,7 @@
   }
 
   .analytics-dashboard .mobile-search-section .search-workspace {
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 12px;
     gap: 10px;
   }
@@ -798,7 +796,7 @@
 
   .analytics-dashboard .mobile-search-section .matches-panel {
     padding: 10px;
-    border-radius: 8px;
+    border-radius: 10px;
   }
 
   .analytics-dashboard .mobile-dashboard-tabs {
@@ -810,7 +808,7 @@
     overflow-x: auto;
     padding: 5px;
     border: 1px solid rgba(107, 79, 58, 0.14);
-    border-radius: 8px;
+    border-radius: 10px;
     background: rgba(255, 253, 249, 0.96);
     box-shadow: 0 8px 20px rgba(84, 59, 40, 0.07);
     backdrop-filter: blur(12px);
@@ -843,7 +841,7 @@
   .analytics-dashboard .mobile-chart-card,
   .analytics-dashboard .mobile-tab-panel .chart-card,
   .analytics-dashboard .mobile-tab-panel .project-card {
-    border-radius: 8px !important;
+    border-radius: 10px !important;
     border-color: rgba(107, 79, 58, 0.18) !important;
     background: #fffdf9 !important;
     padding: 14px !important;
@@ -911,7 +909,7 @@
   min-width: 0;
   margin-top: 12px;
   border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border-radius: 20px;
   background:
     radial-gradient(circle at 100% 0%, rgba(121, 85, 56, 0.07), transparent 32%),
     var(--color-card);
@@ -1012,7 +1010,7 @@
   min-width: 0;
   padding: 18px;
   border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.68);
 }
 
@@ -1169,7 +1167,7 @@
   margin-top: 12px;
   padding: 16px;
   border: 1px solid rgba(107, 79, 58, 0.16);
-  border-radius: 8px;
+  border-radius: 14px;
   background: rgba(255, 255, 255, 0.72);
 }
 
@@ -1232,7 +1230,7 @@
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid rgba(107, 79, 58, 0.12);
-  border-radius: 8px;
+  border-radius: 12px;
   background: #fbf8f4;
 }
 
@@ -1270,7 +1268,7 @@
 
 .admin-catalog-editor__service-link {
   border: 1px solid rgba(107, 79, 58, 0.14);
-  border-radius: 8px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.62);
 }
 
@@ -1304,7 +1302,7 @@
   gap: 16px;
   padding: 12px 14px;
   border: 1px solid rgba(42, 145, 85, 0.2);
-  border-radius: 8px;
+  border-radius: 12px;
   background: #f2faf5;
 }
 
@@ -1327,7 +1325,7 @@
   flex: 0 0 auto;
   padding: 8px 11px;
   border: 1px solid rgba(42, 145, 85, 0.24);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
   color: #24583b;
   font-size: 0.78rem;
@@ -1354,7 +1352,7 @@
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: rgba(250, 247, 242, 0.52);
 }
 
@@ -1388,7 +1386,7 @@
   min-width: 0;
   padding: 10px 12px;
   border: 1px solid var(--app-border);
-  border-radius: 8px;
+  border-radius: 10px;
   background: #fff;
   cursor: pointer;
 }

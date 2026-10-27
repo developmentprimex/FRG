@@ -38,25 +38,27 @@ jobs:
             git fetch https://github.com/rinesaahmedi/fragmento.git main
             git reset --hard HEAD
 
-            # A migration created directly on the server can later become tracked
-            # upstream. Preserve those collisions outside the checkout before
-            # merging; unrelated local files (including .env) stay in place.
+            # Files installed directly on the server can later become tracked
+            # upstream (AB routes, PDFs, migrations, etc.). Preserve collisions
+            # outside the checkout before merging; unrelated local files
+            # (including .env) stay in place.
             bash <<'BASH'
             set -euo pipefail
+            git merge-base --is-ancestor HEAD FETCH_HEAD
             umask 077
             BACKUP_BASE="/var/backups/fragmento-deploy"
             BACKUP_DIR=""
-            git ls-tree -r --name-only -z FETCH_HEAD -- frontend/prisma/migrations |
-              while IFS= read -r -d '' migration; do
-                if { [ -f "$migration" ] || [ -L "$migration" ]; } &&
-                   ! git ls-files --error-unmatch -- "$migration" >/dev/null 2>&1; then
+            git diff --no-renames --diff-filter=A --name-only -z HEAD FETCH_HEAD -- |
+              while IFS= read -r -d '' incoming; do
+                if { [ -f "$incoming" ] || [ -L "$incoming" ]; } &&
+                   ! git --literal-pathspecs ls-files --error-unmatch -- "$incoming" >/dev/null 2>&1; then
                   if [ -z "$BACKUP_DIR" ]; then
                     mkdir -p "$BACKUP_BASE"
                     BACKUP_DIR=$(mktemp -d "$BACKUP_BASE/deploy-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXX")
                   fi
-                  mkdir -p "$BACKUP_DIR/$(dirname "$migration")"
-                  mv -- "$migration" "$BACKUP_DIR/$migration"
-                  printf 'Preserved untracked migration: %s\n' "$BACKUP_DIR/$migration"
+                  mkdir -p "$BACKUP_DIR/$(dirname "$incoming")"
+                  mv -- "$incoming" "$BACKUP_DIR/$incoming"
+                  printf 'Preserved untracked file: %s\n' "$BACKUP_DIR/$incoming"
                 fi
               done
             BASH
@@ -77,10 +79,6 @@ jobs:
             sudo -u deploy npm run geoip:update
             sudo -u deploy npm run prisma:deploy
             sudo -u deploy npm run prisma:generate
-            # Preserve imported AB versions in Postgres; repeated deploys do not
-            # replace a version already selected by an administrator.
-            sudo -u deploy npm run seed:ab-documents
-            sudo -u deploy npm run migrate:ab-pdfs
             # Seed is insert-only by default; never reconcile existing kitchens
             # during a normal deploy because their dashboard edits are live data.
             sudo -u deploy env SEED_RECONCILE_EXISTING=false npm run prisma:seed
@@ -125,41 +123,13 @@ jobs:
             WantedBy=timers.target
             EOF
 
-            # Daily processing reminders use the authenticated internal sender.
-            # Optional dedicated credentials override the application .env files.
-            cat >/etc/systemd/system/fragmento-work-reminders.service <<'EOF'
-            [Unit]
-            Description=Fragmento overdue claim reminders
-            After=network-online.target postgresql.service
-            Wants=network-online.target
-
-            [Service]
-            Type=oneshot
-            User=deploy
-            WorkingDirectory=/var/www/fragmento/frontend
-            Environment=NODE_ENV=production
-            Environment=WORK_REMINDERS_ENABLED=true
-            EnvironmentFile=-/etc/fragmento-work-reminders.env
-            ExecStart=/usr/bin/npm run report:work-reminders -- --send
-            TimeoutStartSec=90
-            EOF
-
-            cat >/etc/systemd/system/fragmento-work-reminders.timer <<'EOF'
-            [Unit]
-            Description=Run Fragmento processing reminders at 09:00 Europe/Berlin
-
-            [Timer]
-            OnCalendar=*-*-* 09:00:00 Europe/Berlin
-            Persistent=true
-            AccuracySec=1min
-            Unit=fragmento-work-reminders.service
-
-            [Install]
-            WantedBy=timers.target
-            EOF
+            # The processing-reminder feature is being rolled back. Disable its
+            # existing timer before deploying code that no longer has the script.
+            if systemctl cat fragmento-work-reminders.timer >/dev/null 2>&1; then
+              systemctl disable --now fragmento-work-reminders.timer
+            fi
 
             systemctl daemon-reload
-            systemctl enable --now fragmento-work-reminders.timer
             systemctl enable --now fragmento-contract-access-report.timer
 
             systemctl restart fragmento.service
@@ -167,8 +137,6 @@ jobs:
             systemctl --no-pager --full status fragmento.service | head -n 20
 
             curl --retry 12 --retry-delay 5 --retry-connrefused -I --max-time 20 http://127.0.0.1:5300/kitchens/ab-105806
-            # Release legacy database copies only after the disk-aware app starts.
-            sudo -u deploy npm run migrate:ab-pdfs -- --release-db-bytes
 
             cd "$APP_DIR"
             git status --short --branch

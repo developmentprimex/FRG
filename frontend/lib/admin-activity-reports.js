@@ -1,4 +1,4 @@
-import { formatServiceClaimReference } from "./service-claim-email-subject.js";
+import { formatBusinessClaimReference } from "./business-report-reference.js";
 import { getOrderReportDetails, getPurchasedReportItems, getClaimReportIssueSummary } from "./report-details.js";
 import { prisma } from "./prisma.js";
 import { normalizeContractTypeFilter } from "./contract-type-filter.js";
@@ -50,7 +50,7 @@ export function buildActivityReportRows(orders = [], claims = []) {
   const claimRows = claims.map((claim) => ({
     id: claim.id,
     type: "CLAIM",
-    reference: formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber),
+    reference: formatBusinessClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber),
     href: "/admin/claims/" + claim.id,
     createdAt: claim.createdAt,
     status: "RECEIVED",
@@ -76,7 +76,7 @@ export function buildActivityReportRows(orders = [], claims = []) {
 export async function loadActivityReportData(filters = {}, dependencies = {}) {
   const normalized = normalizeActivityReportFilters(filters);
   const loadOrders = dependencies.loadOrders || loadOrderReportData;
-  const loadClaims = dependencies.loadClaims || ((claimFilters) => queryServiceClaimsList(prisma, { ...claimFilters, includeSubmissionCount: false }));
+  const loadClaims = dependencies.loadClaims || ((claimFilters) => queryServiceClaimsList(prisma, { ...claimFilters, reportTimeZone: "Europe/Berlin" }));
   const includeOrders = normalized.type !== "CLAIM" && normalized.status !== "RECEIVED";
   const includeClaims = normalized.type !== "ORDER" && (!normalized.status || normalized.status === "RECEIVED");
   const [orderData, claims] = await Promise.all([

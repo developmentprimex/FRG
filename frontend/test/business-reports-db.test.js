@@ -71,7 +71,7 @@ test("SQL reconciles source split, first model dates, DST, send dates, recipient
     assert.equal(report.Fragmento.total.emails, 0);
     assert.equal(report.ASC.total.emailsKd, 2);
     assert.equal(report.ASC.total.emailsHbi, 1);
-    const where = buildServiceClaimListWhere({ dateFrom: "2026-10-25", dateTo: "2026-10-25", claimType: "live" });
+    const where = buildServiceClaimListWhere({ dateFrom: "2026-10-25", dateTo: "2026-10-25", claimType: "live", reportTimeZone: "Europe/Berlin" });
     const detailRows = await prisma.$queryRaw(Prisma.sql`${fixture} filtered AS (SELECT sc.id FROM "ServiceClaim" sc ${where}) SELECT * FROM filtered`);
     assert.deepEqual(detailRows.map(row => row.id), ["new-claim"]);
   } finally { await prisma.$disconnect(); }

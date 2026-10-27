@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AdminI18nProvider, AdminLanguageSwitcher, AdminText, useAdminI18n } from "./admin-i18n";
-import { canAccessPx, hasFullAdminAccess } from "../lib/admin-roles";
 
 const navSections = [
   {
@@ -19,9 +18,8 @@ const navSections = [
       { href: "/admin/orders", labelKey: "adminShellLogin.orders", fallback: "Orders", icon: OrdersIcon },
       { href: "/admin/order-cancellations", labelKey: "adminShellLogin.orderCancellations", fallback: "Cancellations", icon: WithdrawalIcon, badge: "cancellations" },
       { href: "/admin/claims", labelKey: "adminShellLogin.claims", fallback: "Claims", icon: ClaimsIcon, requiresClaimsNav: true },
-      { href: "/admin/claims/feedback", labelKey: "claimFeedbackList.title", fallback: "Customer feedback", icon: FeedbackIcon, requiresClaimsNav: true },
       {
-        id: "px", labelKey: "adminShellLogin.px", fallback: "PX", icon: PackageIcon, requiresPxAdmin: true,
+        id: "px", labelKey: "adminShellLogin.px", fallback: "PX", icon: OrdersIcon,
         children: [
           { href: "/admin/px-orders", labelKey: "adminShellLogin.pxOrders", fallback: "PX orders", icon: OrdersIcon },
           { href: "/admin/px-claims", labelKey: "adminShellLogin.pxClaims", fallback: "PX claims", icon: ClaimsIcon, requiresClaimsNav: true },
@@ -36,7 +34,6 @@ const navSections = [
         id: "kitchens", labelKey: "adminShellLogin.kitchenSetup", fallback: "Kitchen setup", icon: KitchenIcon,
         children: [
           { href: "/admin/kitchens", labelKey: "adminShellLogin.kitchens", fallback: "Kitchens", icon: KitchenIcon },
-          { href: "/admin/ab-imports", labelKey: "abImportsAdmin.title", fallback: "AB imports", icon: ContractsIcon, requiresSuperAdmin: true },
           { href: "/admin/contracts", labelKey: "adminShellLogin.contracts", fallback: "Contract numbers", icon: ContractsIcon },
           { href: "/admin/property-owners", labelKey: "adminShellLogin.owners", fallback: "Housing Companies", icon: OwnersIcon },
         ],
@@ -122,8 +119,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   const isNavItemVisible = (item) => {
     if (item.requiresClaimsNav && !showClaimsNav) return false;
     if (item.requiresUsersNav && !showUsersNav) return false;
-    if (item.requiresSuperAdmin && !hasFullAdminAccess({ role: adminRole })) return false;
-    if (item.requiresPxAdmin && !canAccessPx({ role: adminRole })) return false;
+    if (item.requiresSuperAdmin && adminRole !== "SUPERADMIN") return false;
     return true;
   };
   const visibleNavSections = navSections.map((section) => ({
@@ -186,7 +182,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
         }}
         style={{
           ...(mobile ? mobileSidebarLinkStyle : sidebarLinkStyle),
-          ...(nested ? { padding: "8px 12px", minHeight: 38, fontSize: 13, borderRadius: 8 } : {}),
+          ...(nested ? { padding: "8px 12px", minHeight: 38, fontSize: 13, borderRadius: 6 } : {}),
           background: active ? "var(--color-primary-soft)" : "transparent",
           color: active ? "var(--app-accent)" : "var(--app-text)",
           borderColor: active ? "var(--app-border-strong)" : "transparent",
@@ -647,7 +643,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               min-height: 40px !important;
               padding: 0 !important;
               border: 0 !important;
-              border-radius: 8px !important;
+              border-radius: 10px !important;
               background: transparent !important;
               box-shadow: none !important;
               backdrop-filter: none !important;
@@ -676,7 +672,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               right: auto !important;
               width: min(240px, calc(100vw - 32px)) !important;
               min-width: 0 !important;
-              border-radius: 8px !important;
+              border-radius: 14px !important;
               padding: 8px !important;
               z-index: 120 !important;
             }
@@ -684,7 +680,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
             .admin-language-switcher__option {
               width: 100% !important;
               min-height: 44px !important;
-              border-radius: 8px !important;
+              border-radius: 10px !important;
               padding: 8px 10px !important;
             }
 
@@ -819,9 +815,10 @@ function KitchenIcon({ active }) {
 function OrdersIcon({ active }) {
   return (
     <IconFrame active={active}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 20V3l2 1 2-1 2 1 2-1 2 1 2-1v17a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-3h10v3a2 2 0 0 0 4 0" />
-        <path d="M9 8h1m3 0h2M9 12h1m3 0h2" />
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="3" y="2.5" width="10" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M5.5 6H10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M5.5 9H10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     </IconFrame>
   );
@@ -830,9 +827,10 @@ function OrdersIcon({ active }) {
 function WithdrawalIcon({ active }) {
   return (
     <IconFrame active={active}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8l-5-5Z" />
-        <path d="M14 3v5h5M9 12l6 6m0-6-6 6" />
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="3" y="2.5" width="10" height="11" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M6.25 6.25L9.75 9.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M9.75 6.25L6.25 9.75" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     </IconFrame>
   );
@@ -854,31 +852,12 @@ function ReportsIcon({ active }) {
 function ClaimsIcon({ active }) {
   return (
     <IconFrame active={active}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 14a4 4 0 0 1-4 4H9l-6 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4v7Z" />
-        <path d="M12 7v4m0 3h.01" />
-      </svg>
-    </IconFrame>
-  );
-}
-
-function FeedbackIcon({ active }) {
-  return (
-    <IconFrame active={active}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 15a3 3 0 0 1-3 3H8l-5 4V6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v9Z" />
-        <path d="m12 6 1.4 2.8 3.1.5-2.2 2.2.5 3.1-2.8-1.5-2.8 1.5.5-3.1L7.5 9.3l3.1-.5L12 6Z" strokeWidth="1.5" />
-      </svg>
-    </IconFrame>
-  );
-}
-
-function PackageIcon({ active }) {
-  return (
-    <IconFrame active={active}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="m12 3 9 5v9l-9 5-9-5V8l9-5Z" />
-        <path d="m3 8 9 5 9-5M12 13v9M7.5 5.5l9 5V14" />
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M5 2.5H11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M6 2.5H10V4H6V2.5Z" fill="currentColor" />
+        <rect x="3" y="3.5" width="10" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M5.5 7H10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M5.5 9.5H10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     </IconFrame>
   );

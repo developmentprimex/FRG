@@ -25,7 +25,7 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
     href: path + "?" + buildBusinessReportQuery(normalizeBusinessReportFilters({ ...filters, period }), activityFilters),
   }));
   return <AdminShell adminEmail={admin.email}>
-    <div style={{ ...pageGridStyle, gap: 12 }}>
+    <div style={{ ...pageGridStyle, gap: 12, minWidth: 0, gridTemplateColumns: "minmax(0, 1fr)" }}>
       <AdminSection compact title={scope === "FRG" ? "Fragmento" : "ASC"}
         actions={<>
           <AdminReportScopeLink compact href={"/admin/reports?" + query}><AdminText i18nKey="reportsAdmin.backToReports" fallback="Back to reports" /></AdminReportScopeLink>

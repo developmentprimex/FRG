@@ -164,7 +164,7 @@ const builderStyle = {
   gap: 10,
   padding: 12,
   border: "1px solid rgba(143, 62, 44, 0.12)",
-  borderRadius: 8,
+  borderRadius: 10,
   background: "linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,247,240,0.62))",
 };
 
@@ -206,7 +206,7 @@ const draftCardStyle = {
   display: "grid",
   gap: 10,
   padding: 12,
-  borderRadius: 8,
+  borderRadius: 10,
   border: "1px solid rgba(45, 108, 121, 0.12)",
   background: "rgba(255,255,255,0.78)",
 };

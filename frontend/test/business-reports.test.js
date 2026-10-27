@@ -5,8 +5,6 @@ import { normalizeBusinessReportFilters, buildBusinessReportQuery } from "../lib
 import * as businessFilterHelpers from "../lib/business-report-filters.js";
 import { assembleBusinessReport, buildBusinessReportSql, getBusinessReportSheets } from "../lib/admin-business-reports.js";
 import { buildStandardExcelWorkbook } from "../lib/standard-excel.js";
-import { sendClaimConfirmation } from "../lib/email/claim-confirmation.js";
-import { attachClaimEmailDelivery } from "../lib/email/claim-email-store.js";
 
 const now = new Date("2026-10-25T23:30:00Z"); // Monday in Berlin, after the DST change.
 test("calendar presets and custom ranges use Berlin days and Monday weeks", () => {
@@ -164,22 +162,3 @@ test("business period dates stay sortable and display dd/mm/yyyy without timezon
   }
 });
 
-test("ASC customer confirmations log real delivery receipts independently of service delivery status", async () => {
-  const attempts = [];
-  const payload = { id: "claim", contractNumber: "670123456", claimSequence: 1, email: "customer@example.com" };
-  const env = { SMTP_HOST: "smtp.example.invalid", SMTP_FROM: "sender@example.com" };
-  const options = {
-    env, schedule: build => attempts.push(build()),
-    send: async () => ({ receipt: { accepted: [payload.email], rejected: [], messageId: "confirmation" } }),
-  };
-  assert.equal(await sendClaimConfirmation(payload, options), true);
-  assert.equal(attempts[0].delivery.kind, "customer-confirmation");
-  assert.equal(attempts[0].delivery.recipients[0].status, "SENT");
-  const smtpError = new Error("SMTP failed");
-  await assert.rejects(sendClaimConfirmation(payload, { ...options, send: async () => { throw smtpError; } }), smtpError);
-  assert.equal(attempts[1].delivery.recipients[0].status, "FAILED");
-  let query;
-  const client = { $transaction: async callback => callback({ $executeRaw: async () => {}, $queryRaw: async (strings) => { query = strings.join("?"); return []; } }) };
-  await attachClaimEmailDelivery([{ id: "claim" }], client);
-  assert(query.includes("<> 'customer-confirmation'"));
-});

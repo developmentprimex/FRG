@@ -4,7 +4,7 @@ export function PageHero({ eyebrow, title, description, actions, stats }) {
   return (
     <section
       style={{
-        borderRadius: "var(--admin-radius-card, 22px)",
+        borderRadius: 22,
         padding: "32px",
         background: "var(--app-hero-overlay), var(--app-hero-gradient)",
         color: "var(--app-accent-contrast)",
@@ -32,7 +32,7 @@ export function PageHero({ eyebrow, title, description, actions, stats }) {
 
 export function AdminSection({ title, description, actions, children, compact = false }) {
   return (
-    <section style={compact ? { ...panelStyle, padding: 14, gap: 10 } : panelStyle}>
+    <section style={compact ? { ...panelStyle, padding: 14, gap: 10, minWidth: 0 } : panelStyle}>
       {(title || description || actions) ? (
         <div style={compact ? { ...sectionHeaderStyle, gap: 8 } : sectionHeaderStyle}>
           <div style={{ display: "grid", gap: compact ? 3 : 6 }}>
@@ -60,7 +60,7 @@ export function FlashMessage({ tone, message }) {
         color: palette.color,
         background: palette.background,
         border: `1px solid ${palette.border}`,
-        borderRadius: "var(--admin-radius-card, 16px)",
+        borderRadius: 16,
         padding: "14px 18px",
         boxShadow: "var(--app-shadow-soft)",
       }}
@@ -75,7 +75,7 @@ export function MetricCard({ label, value, detail }) {
     <div
       style={{
         padding: "18px 20px",
-        borderRadius: "var(--admin-radius-card, 18px)",
+        borderRadius: 18,
         background: "linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))",
         border: "1px solid rgba(255,255,255,0.14)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
@@ -121,7 +121,7 @@ export function TypeBadge({ label }) {
   return <span style={typePillStyle}>{label}</span>;
 }
 
-export const pageGridStyle = { display: "grid", gap: 24, minWidth: 0, gridTemplateColumns: "minmax(0, 1fr)" };
+export const pageGridStyle = { display: "grid", gap: 24 };
 export const splitGridStyle = {
   display: "grid",
   gap: 24,
@@ -141,10 +141,8 @@ export const denseGridStyle = {
 export const checkboxRowStyle = { display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" };
 export const actionRowStyle = { display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" };
 export const tableWrapStyle = {
-  minWidth: 0,
-  maxWidth: "100%",
   overflowX: "auto",
-  borderRadius: "var(--admin-radius-table, 18px)",
+  borderRadius: 18,
   border: "1px solid var(--app-border)",
   background: "var(--color-card)",
   boxShadow: "var(--app-shadow-soft)",
@@ -185,7 +183,7 @@ export const inputStyle = {
   textTransform: "none",
   width: "100%",
   minHeight: 52,
-  borderRadius: "var(--admin-radius-card, 14px)",
+  borderRadius: 14,
   border: "1px solid var(--app-border-strong)",
   background: "var(--color-card)",
   padding: "13px 15px",
@@ -195,7 +193,7 @@ export const inputStyle = {
 };
 export const textareaStyle = {
   width: "100%",
-  borderRadius: "var(--admin-radius-card, 14px)",
+  borderRadius: 14,
   border: "1px solid var(--app-border-strong)",
   background: "var(--color-card)",
   padding: "13px 15px",
@@ -206,7 +204,7 @@ export const textareaStyle = {
 };
 export const primaryButtonStyle = {
   border: "1px solid var(--color-primary)",
-  borderRadius: "var(--admin-radius-card, 14px)",
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--color-primary)",
@@ -218,7 +216,7 @@ export const primaryButtonStyle = {
 };
 export const secondaryButtonStyle = {
   border: "1px solid var(--app-border-strong)",
-  borderRadius: "var(--admin-radius-card, 14px)",
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--color-card)",
@@ -230,7 +228,7 @@ export const secondaryButtonStyle = {
 };
 export const dangerButtonStyle = {
   border: "1px solid rgba(217, 92, 92, 0.24)",
-  borderRadius: "var(--admin-radius-card, 14px)",
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--app-danger-bg)",
@@ -245,7 +243,7 @@ export const subMetaStyle = { display: "flex", gap: 10, flexWrap: "wrap", color:
 export const cardListStyle = { display: "grid", gap: 16 };
 export const itemCardStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: "var(--admin-radius-card, 18px)",
+  borderRadius: 18,
   padding: 20,
   background: "var(--color-card)",
   display: "grid",
@@ -272,9 +270,7 @@ export const codePillStyle = {
 };
 
 const panelStyle = {
-  minWidth: 0,
-  gridTemplateColumns: "minmax(0, 1fr)",
-  borderRadius: "var(--admin-radius-card, 20px)",
+  borderRadius: 20,
   padding: 24,
   background: "var(--color-card)",
   border: "1px solid var(--app-border)",
@@ -319,7 +315,7 @@ const eyebrowStyle = {
 
 const linkButtonStyle = {
   textDecoration: "none",
-  borderRadius: "var(--admin-radius-card, 14px)",
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "var(--color-card)",
@@ -333,7 +329,7 @@ const linkButtonStyle = {
 
 const secondaryLinkStyle = {
   textDecoration: "none",
-  borderRadius: "var(--admin-radius-card, 14px)",
+  borderRadius: 14,
   minHeight: 50,
   padding: "13px 18px",
   background: "rgba(255,255,255,0.1)",

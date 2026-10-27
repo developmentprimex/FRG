@@ -27,19 +27,6 @@ test("claim page clamps out-of-range requests and counts with the same filters",
   }
 });
 
-test("reports can omit the unused per-claim submission count", async () => {
-  resetServiceClaimQueryColumnSupportCache();
-  let selected = "";
-  const db = { $queryRaw: async (strings, ...values) => {
-    const sql = renderSqlTemplate(strings, values);
-    if (!sql.includes("information_schema")) selected = sql;
-    return [];
-  } };
-  await queryServiceClaimsList(db, { includeSubmissionCount: false, claimType: "live" });
-  assert(selected.includes('FROM "ServiceClaim" sc'));
-  assert(!selected.includes('ServiceClaimSubmission'));
-});
-
 function renderSqlTemplate(strings, values) {
   let output = "";
   for (let index = 0; index < strings.length; index += 1) {
@@ -68,24 +55,6 @@ function missingColumnError(columnName) {
     meta: { message },
   };
 }
-
-test("admin queries select both numbers and search the ticket or full reference", async () => {
-  for (const q of ["1020", "#1020", "#1020 670105809 KD 02"]) {
-    resetServiceClaimQueryColumnSupportCache();
-    let captured = "";
-    const db = { $queryRaw: async (strings, ...values) => {
-      const sql = renderSqlTemplate(strings, values);
-      if (sql.includes("information_schema")) return [];
-      captured = sql;
-      return [];
-    } };
-    await queryServiceClaimsList(db, { q });
-    assert.ok(captured.includes('sc."ticketNumber"'));
-    assert.ok(captured.includes('sc."claimSequence"'));
-    assert.ok(captured.includes(`ILIKE %${q}%`));
-    assert.ok(captured.includes(`::text = ${q.replace(/^#/, "")}`));
-  }
-});
 
 test("queryServiceClaimsList retries without missing optional contact columns", async () => {
   resetServiceClaimQueryColumnSupportCache();
@@ -244,47 +213,6 @@ test("queryServiceClaimsList excludes PX claims from the live claims page", asyn
   assert.match(queries[1], /REGEXP_REPLACE\(COALESCE\(sc\."contractNumber", ''\), '\[\[:space:\]\]\+', '', 'g'\) NOT LIKE '111%'/);
 });
 
-test("queryServiceClaimsList keeps kitchen and Berlin calendar dates from overview links", async () => {
-  resetServiceClaimQueryColumnSupportCache();
-  const queries = [];
-  const prisma = {
-    async $queryRaw(strings, ...values) {
-      const sql = renderSqlTemplate(strings, values);
-      queries.push(sql);
-      if (sql.includes(`FROM "information_schema"."columns"`)) return [];
-      return [];
-    },
-  };
-
-  await queryServiceClaimsList(prisma, {
-    claimType: "live", kitchenId: "kitchen-1", dateFrom: "2026-10-24", dateTo: "2026-10-25",
-  });
-
-  assert.match(queries[1], /kc\."kitchenId" = kitchen-1/);
-  assert.match(queries[1], /sc\."createdAt" AT TIME ZONE 'UTC' >= 2026-10-23T22:00:00\.000Z/);
-  assert.match(queries[1], /sc\."createdAt" AT TIME ZONE 'UTC' < 2026-10-25T23:00:00\.000Z/);
-});
-
-test("overview drilldowns filter exact contracts and normalized contacts", async () => {
-  resetServiceClaimQueryColumnSupportCache();
-  const queries = [];
-  const prisma = {
-    async $queryRaw(strings, ...values) {
-      const sql = renderSqlTemplate(strings, values);
-      queries.push(sql);
-      if (sql.includes(`FROM "information_schema"."columns"`)) return [];
-      return [];
-    },
-  };
-
-  await queryServiceClaimsList(prisma, { contractNumber: "670123", contactKey: "email:alex@example.com" });
-  await queryServiceClaimsList(prisma, { contactKey: "phone:49123456" });
-
-  assert.match(queries[1], /BTRIM\(sc\."contractNumber"\) = 670123/);
-  assert.match(queries[1], /LOWER\(REGEXP_REPLACE\(BTRIM\(COALESCE\(sc\."email", ''\)\), '\[\[:space:\]\]\+', ' ', 'g'\)\) = alex@example\.com/);
-  assert.match(queries[2], /NULLIF\(BTRIM\(COALESCE\(sc\."email", ''\)\), ''\) IS NULL/);
-  assert.match(queries[2], /REGEXP_REPLACE\(REGEXP_REPLACE\(COALESCE\(sc\."phone", ''\), '\[\^0-9\]', '', 'g'\), '\^00', ''\) = 49123456/);
-});
 
 test("claim contract type constrains both the count and page query", async () => {
   for (const contractType of ["ARC", "FRG"]) {

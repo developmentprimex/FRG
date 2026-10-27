@@ -418,6 +418,6 @@ const summaryItemStyle = {
   gap: 6,
   padding: 16,
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "var(--app-surface)",
 };

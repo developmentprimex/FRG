@@ -2,14 +2,10 @@ import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/adm
 import { requireAdminClaimsApi } from "../../../../../lib/admin-claims-access";
 import { prisma } from "../../../../../lib/prisma";
 import { deleteServiceClaimAttachments } from "../../../../../lib/service-claim-attachments-storage";
-import { NextResponse } from "next/server";
-import { canAccessClaim } from "../../../../../lib/admin-roles";
 
 export async function POST(request, { params }) {
-  const admin = await requireAdminClaimsApi();
+  await requireAdminClaimsApi();
   const { id } = await params;
-  const claim = await prisma.serviceClaim.findUnique({ where: { id }, select: { contractNumber: true } });
-  if (claim && !canAccessClaim(admin, claim.contractNumber)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   let returnPath = `/admin/claims/${id}`;
 
   try {

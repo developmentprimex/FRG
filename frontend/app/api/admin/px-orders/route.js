@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../lib/admin-forms";
-import { requirePxAdminApi } from "../../../../lib/admin-role-guards";
+import { requireAdminApi } from "../../../../lib/auth";
 import { getTestOrdersForAdmin } from "../../../../lib/catalog";
 import { deleteAllTestOrders } from "../../../../lib/orders";
 
 export async function GET(request) {
-  try { await requirePxAdminApi(); }
-  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
+  await requireAdminApi();
   const { searchParams } = new URL(request.url);
   const orders = await getTestOrdersForAdmin({
     kitchenId: searchParams.get("kitchenId") || "",
@@ -20,8 +19,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  try { await requirePxAdminApi(); }
-  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
+  await requireAdminApi();
 
   try {
     const formData = await request.formData();

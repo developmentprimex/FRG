@@ -1,18 +1,5 @@
 export const ADMIN_ROLES = ["SUPERADMIN", "PX_ADMIN", "ADMIN", "USER"];
 
-export function hasFullAdminAccess(admin) {
-  return ["SUPERADMIN", "PX_ADMIN"].includes(admin?.role);
-}
-
-export function canAccessPx(admin) {
-  return hasFullAdminAccess(admin);
-}
-
-export function canAccessClaim(admin, contractNumber) {
-  const isPx = String(contractNumber || "").replace(/\s+/g, "").startsWith("111");
-  return Boolean(admin) && (!isPx || canAccessPx(admin));
-}
-
 export function isSuperAdmin(admin) {
   return admin?.role === "SUPERADMIN";
 }

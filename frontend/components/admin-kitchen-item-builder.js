@@ -323,7 +323,7 @@ const structureGridStyle = {
 const structurePreviewStyle = {
   display: "grid",
   gap: 14,
-  borderRadius: 8,
+  borderRadius: 16,
   padding: 16,
   border: "1px solid var(--app-border)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(250,245,239,0.88))",
@@ -331,7 +331,7 @@ const structurePreviewStyle = {
 
 const structureCanvasStyle = {
   padding: 16,
-  borderRadius: 8,
+  borderRadius: 14,
   border: "1px solid rgba(143, 62, 44, 0.12)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(247,240,232,0.74))",
   overflow: "auto",
@@ -340,7 +340,7 @@ const structureCanvasStyle = {
 const slotListWrapStyle = {
   display: "grid",
   gap: 14,
-  borderRadius: 8,
+  borderRadius: 16,
   padding: 16,
   border: "1px solid var(--app-border)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,249,245,0.88))",
@@ -355,7 +355,7 @@ const slotListStyle = {
 
 const slotCardStyle = {
   border: "1px solid rgba(47, 124, 104, 0.16)",
-  borderRadius: 8,
+  borderRadius: 12,
   padding: "12px 14px",
   background: "rgba(244, 252, 249, 0.92)",
   display: "grid",
@@ -397,7 +397,7 @@ const selectionSummaryStyle = {
   display: "grid",
   gap: 6,
   padding: "14px 16px",
-  borderRadius: 8,
+  borderRadius: 14,
   border: "1px solid rgba(143, 62, 44, 0.12)",
   background: "rgba(255, 248, 242, 0.88)",
 };

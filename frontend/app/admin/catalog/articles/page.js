@@ -898,7 +898,7 @@ const programCatalogNavStyle = {
   flexWrap: "wrap",
   padding: 18,
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 16,
   background: "var(--color-card)",
   boxShadow: "var(--app-shadow-soft)",
 };
@@ -929,7 +929,7 @@ const programCatalogTabStyle = {
   minWidth: 150,
   padding: "11px 16px",
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "var(--app-surface)",
   color: "var(--app-text)",
   textDecoration: "none",
@@ -960,7 +960,7 @@ const addonFormStyle = {
   marginTop: 10,
   padding: 16,
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 14,
   background: "var(--color-card)",
   boxShadow: "var(--app-shadow-soft)",
 };
@@ -976,7 +976,7 @@ const catalogArticlesTableStyle = {
 
 const productInfoDetailsStyle = {
   border: "1px solid var(--app-border)",
-  borderRadius: 8,
+  borderRadius: 12,
   background: "rgba(255,255,255,0.62)",
   overflow: "hidden",
 };

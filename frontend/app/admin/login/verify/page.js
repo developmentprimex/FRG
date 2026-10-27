@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import AdminLoginVerifyPanel from "../../../../components/admin-login-verify-panel";
-import { maskAdminEmail, resolveAdminLoginVerificationRecipient } from "../../../../lib/admin-login-verification";
+import { maskAdminEmail } from "../../../../lib/admin-login-verification";
 import { getAdminSession, getPendingAdminLogin } from "../../../../lib/auth";
 import { getFormMessage } from "../../../../lib/admin-forms";
 
@@ -44,7 +44,7 @@ export default async function AdminLoginVerifyPage({ searchParams }) {
   return (
     <AdminLoginVerifyPanel
       errorMessage={errorMessage}
-      maskedEmail={maskAdminEmail(resolveAdminLoginVerificationRecipient(pendingAdmin.email))}
+      maskedEmail={maskAdminEmail(pendingAdmin.email)}
     />
   );
 }

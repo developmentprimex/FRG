@@ -38,7 +38,7 @@ export function AdminOrderSummaryTable({ order }) {
       .order-overview > table tr:first-child td { font-weight:650; }
       .order-overview a { color:#694b34; text-underline-offset:3px; }
       .order-overview details { margin-top:14px; }
-      .order-overview summary { cursor:pointer; font-size:13px; font-weight:600; color:#66513e; background:#f4eee7; padding:10px 12px; border-radius: 8px; }
+      .order-overview summary { cursor:pointer; font-size:13px; font-weight:600; color:#66513e; background:#f4eee7; padding:10px 12px; border-radius:8px; }
       .order-overview summary:focus-visible { outline:2px solid #806044; outline-offset:3px; }
       .order-overview details table { margin-top:8px; table-layout:fixed; }
       @media(max-width:700px) {

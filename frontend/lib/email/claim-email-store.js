@@ -19,7 +19,6 @@ export async function attachClaimEmailDelivery(claims, client) {
       SELECT DISTINCT ON ("claimId") "claimId", "delivery"
       FROM "ServiceClaimEmailAttempt"
       WHERE "claimId" IN (${Prisma.join(ids)})
-        AND COALESCE("delivery"->>'kind', '') <> 'customer-confirmation'
       ORDER BY "claimId", "attemptedAt" DESC, "createdAt" DESC, "id" DESC
     `, client);
     const byClaim = new Map(attempts.map((attempt) => [attempt.claimId, attempt.delivery]));

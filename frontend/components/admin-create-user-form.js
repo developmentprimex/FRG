@@ -59,30 +59,22 @@ export default function AdminCreateUserForm() {
   }
 
   return (
-    <form action="/api/admin/users" method="post" style={{ ...formGridStyle, gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }} onSubmit={handleSubmit}>
-      <FormField label={<AdminText i18nKey="usersAdmin.email" fallback="Email" />}>
-        <input name="email" type="email" required autoComplete="off" style={compactInputStyle} disabled={isPending} />
+    <form action="/api/admin/users" method="post" style={formGridStyle} onSubmit={handleSubmit}>
+      <FormField label={<AdminText i18nKey="usersAdmin.email" fallback="Email" />} wide>
+        <input name="email" type="email" required autoComplete="off" style={inputStyle} disabled={isPending} />
         <span style={helperTextStyle}>
           <AdminText i18nKey="usersAdmin.emailHelper" fallback="Used as the login username." />
         </span>
       </FormField>
 
-      <FormField label={<AdminText i18nKey="usersAdmin.role" fallback="Role" />}>
-        <AdminSelect name="role" defaultValue="ADMIN" required disabled={isPending} style={compactInputStyle}>
-          {ADMIN_ROLES.map((role) => (
-            <option key={role} value={role}>{formatAdminRoleLabel(role)}</option>
-          ))}
-        </AdminSelect>
-      </FormField>
-
-      <FormField label={<AdminText i18nKey="usersAdmin.password" fallback="Password" />}>
+      <FormField label={<AdminText i18nKey="usersAdmin.password" fallback="Password" />} wide>
         <input
           name="password"
           type="password"
           required
           minLength={8}
           autoComplete="new-password"
-          style={compactInputStyle}
+          style={inputStyle}
           disabled={isPending}
         />
         <span style={helperTextStyle}>
@@ -90,19 +82,29 @@ export default function AdminCreateUserForm() {
         </span>
       </FormField>
 
-      <FormField label={<AdminText i18nKey="usersAdmin.confirmPassword" fallback="Confirm password" />}>
+      <FormField label={<AdminText i18nKey="usersAdmin.confirmPassword" fallback="Confirm password" />} wide>
         <input
           name="confirmPassword"
           type="password"
           required
           minLength={8}
           autoComplete="new-password"
-          style={compactInputStyle}
+          style={inputStyle}
           disabled={isPending}
         />
         <span style={helperTextStyle}>
           <AdminText i18nKey="usersAdmin.confirmPasswordHelper" fallback="Re-enter the password to confirm." />
         </span>
+      </FormField>
+
+      <FormField label={<AdminText i18nKey="usersAdmin.role" fallback="Role" />} wide>
+        <AdminSelect name="role" defaultValue="ADMIN" required disabled={isPending}>
+          {ADMIN_ROLES.map((role) => (
+            <option key={role} value={role}>
+              {formatAdminRoleLabel(role)}
+            </option>
+          ))}
+        </AdminSelect>
       </FormField>
 
       {errorMessage ? (
@@ -115,9 +117,6 @@ export default function AdminCreateUserForm() {
           disabled={isPending}
           style={{
             ...primaryButtonStyle,
-            minHeight: 42,
-            padding: "9px 14px",
-            fontWeight: 600,
             opacity: isPending ? 0.72 : 1,
             cursor: isPending ? "wait" : "pointer",
           }}
@@ -132,5 +131,3 @@ export default function AdminCreateUserForm() {
     </form>
   );
 }
-
-const compactInputStyle = { ...inputStyle, minHeight: 42, padding: "9px 11px", borderRadius: 8, boxShadow: "none" };
