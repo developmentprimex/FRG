@@ -9,8 +9,10 @@ import { loadPublicVisitReportData } from "../../../../../../lib/public-visit-re
 import { buildStandardExcelWorkbook } from "../../../../../../lib/standard-excel";
 import { loadBusinessReportData, getBusinessReportSheets } from "../../../../../../lib/admin-business-reports";
 import { normalizeBusinessReportFilters } from "../../../../../../lib/business-report-filters";
-import { loadBusinessReportDetails, buildBusinessReportDetailSheet } from "../../../../../../lib/business-report-details";
 import { prisma } from "../../../../../../lib/prisma";
+import { loadFrgMonthlyReport, loadFrgMonthlySales, getFrgMonthlySheets } from "../../../../../../lib/frg-monthly-report.js";
+import { loadAscKitchenReport, getAscKitchenReportSheets } from "../../../../../../lib/asc-kitchen-report.js";
+import { loadAscClaimReport, loadAscClaimDetails, getAscClaimReportSheets } from "../../../../../../lib/asc-claim-report.js";
 
 function money(value) {
   return Math.round(Number(value || 0) * 100) / 100;
@@ -45,24 +47,38 @@ export async function GET(request) {
   if (scope && !["FRG", "ASC"].includes(scope)) {
     return NextResponse.json({ error: "Invalid report scope." }, { status: 400 });
   }
+  if (scope === "FRG") {
+    const now = new Date();
+    const { report, orders } = await prisma.$transaction(async db => {
+      const report = await loadFrgMonthlyReport(params, db, now);
+      const orders = await loadFrgMonthlySales(report.filters, db);
+      return { report, orders };
+    }, { isolationLevel: "RepeatableRead", timeout: 30_000 });
+    return excelResponse(buildStandardExcelWorkbook({
+      description: `REPORT_FRG_${report.filters.exportPeriod}`,
+      timeZone: REPORT_TIME_ZONE,
+      initials: getInitials(admin?.email), now,
+      sheets: getFrgMonthlySheets(report, orders),
+    }));
+  }
   if (scope) {
     // Summary and individual records must represent the same database snapshot.
-    const { report, details } = await prisma.$transaction(async db => {
-      const [report, details] = await Promise.all([
-        loadBusinessReportData(businessFilters, db),
-        loadBusinessReportDetails(businessFilters, scope, db),
+    const now = new Date();
+    const { report, details, kitchens } = await prisma.$transaction(async db => {
+      const [report, kitchens] = await Promise.all([
+        loadAscClaimReport(params, db, now),
+        loadAscKitchenReport(params, db, now),
       ]);
-      return { report, details };
-    }, { isolationLevel: "RepeatableRead" });
-    const sheetName = scope === "FRG" ? "Fragmento" : "ASC";
+      const details = await loadAscClaimDetails(report.filters, db);
+      return { report, details, kitchens };
+    }, { isolationLevel: "RepeatableRead", timeout: 30_000 });
+    const [kitchenSheet] = getAscKitchenReportSheets(kitchens);
     return excelResponse(buildStandardExcelWorkbook({
-      description: `REPORT_${scope}`,
+      description: `REPORT_ASC_${report.filters.exportPeriod}`,
       timeZone: REPORT_TIME_ZONE,
       initials: getInitials(admin?.email),
-      sheets: [
-        ...getBusinessReportSheets(report).filter(sheet => sheet.name === sheetName),
-        buildBusinessReportDetailSheet(details, scope, report.filters),
-      ],
+      now,
+      sheets: [kitchenSheet, ...getAscClaimReportSheets(report, details)],
     }));
   }
   const filters = normalizeActivityReportFilters({ ...params, ...businessFilters });

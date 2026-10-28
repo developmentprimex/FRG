@@ -374,6 +374,7 @@ model Order {
   status                  OrderStatus      @default(NEW)
   contractNumber          String?
   as400Number             String?
+  confirmedAt             DateTime?
   firstName               String
   lastName                String
   email                   String
@@ -459,6 +460,7 @@ model TestOrder {
   kitchenContractId       String?
   kitchenContract         KitchenContract? @relation(fields: [kitchenContractId], references: [id], onDelete: SetNull)
   status                  OrderStatus      @default(NEW)
+  confirmedAt             DateTime?
   contractNumber          String?
   firstName               String
   lastName                String

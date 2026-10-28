@@ -12,15 +12,16 @@ export const FRAGMENTO_REPORT_COLUMNS = [
   ["kitchens", "Kitchen models added"], ["contracts", "Kitchen contracts added"], ["emails", "Emails sent (recipients)"],
 ];
 export const ASC_REPORT_COLUMNS = [
-  ["claims", "Claims"], ["frgKitchens", "FRG kitchen models added"], ["arcKitchens", "ARC kitchen models added"],
+  ["claims", "Claims"], ["frgKitchens", "FRG kitchen models added"], ["arcKitchens", "ARC kitchens added"],
   ["emailsKd", "Emails to kd@myarchitecto.de"], ["emailsHbi", "Emails to verwaltung@hbi-wohnen.de"],
 ];
 
 export const BUSINESS_REPORT_NOTES = [
   "Periods use Europe/Berlin. Weeks start on Monday. Test contracts starting with 111 are excluded.",
   "Business tables use the date range and contract type; the type/status filters apply only to the order/claim detail table.",
-  "Kitchen models are counted once per source (FRG or ARC), when the first live contract is added. Contracts count individual kitchen assignments. A model shared by FRG and ARC appears once in each source.",
-  "ASC kitchen additions use contract creation dates: FRG contracts are available in ASC through the shared kitchen database. A separate historical transfer date is not recorded.",
+  "FRG kitchen models are counted once when the first live contract is added, using the later of the model creation date and first live contract creation date. FRG contracts count individual kitchen assignments.",
+  "ARC kitchens are counted individually by live ARC contract creation date, including uploaded plans that share a technical kitchen model. Updating or re-uploading a plan for an existing contract does not count it again.",
+  "FRG contracts are available in ASC through the shared kitchen database. A separate historical transfer date is not recorded.",
   "Orders and claims use creation dates. Cancellation requests use their received date and include all statuses (received, approved and rejected), including requests not yet matched to an order. Only periods with activity are listed.",
   "Emails count successful recipient deliveries on the logged send date, including successful resends. Fragmento includes order and cancellation emails. ASC counts recorded claim emails to kd@myarchitecto.de and verwaltung@hbi-wohnen.de separately; other recipients, feedback invitations and redirected local test emails are excluded. Failed, skipped, unknown and historical unlogged deliveries are not included.",
   "Fragmento sales use the stored gross prices of the same orders included in the order count, across all statuses. Net sales are calculated per order using 19% VAT and rounded to cents before summing. Service costs are applied separately.",
@@ -66,10 +67,12 @@ export function buildBusinessReportSql(filters) {
       FROM live_contracts c WHERE c."contractType" = 'FRG'
       UNION ALL
       SELECT GREATEST(k."createdAt", c."firstAt"), c."contractType", s.scope,
-        CASE WHEN s.scope = 'Fragmento' THEN 'kitchens' WHEN c."contractType" = 'FRG' THEN 'frgKitchens' ELSE 'arcKitchens' END, 1
-      FROM (SELECT "kitchenId", "contractType", MIN("createdAt") AS "firstAt" FROM live_contracts GROUP BY "kitchenId", "contractType") c
+        CASE WHEN s.scope = 'Fragmento' THEN 'kitchens' ELSE 'frgKitchens' END, 1
+      FROM (SELECT "kitchenId", "contractType", MIN("createdAt") AS "firstAt" FROM live_contracts WHERE "contractType" = 'FRG' GROUP BY "kitchenId", "contractType") c
       JOIN "Kitchen" k ON k.id = c."kitchenId" CROSS JOIN (VALUES ('Fragmento'), ('ASC')) s(scope)
-      WHERE c."contractType" IN ('FRG', 'ARC') AND (s.scope = 'ASC' OR c."contractType" = 'FRG')
+      UNION ALL
+      SELECT c."createdAt", c."contractType", 'ASC', 'arcKitchens', 1
+      FROM live_contracts c WHERE c."contractType" = 'ARC'
       UNION ALL
       SELECT sc."createdAt", sc."contractType", 'ASC', 'claims', 1 FROM live_claims sc
       UNION ALL

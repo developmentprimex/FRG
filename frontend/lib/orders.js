@@ -30,6 +30,7 @@ import {
   getOrderKindForContractNumber,
 } from "./order-kind";
 import { prisma } from "./prisma";
+import { orderStatusUpdateData } from "./order-confirmation-date.js";
 import { assertContractAllowsRepurchase } from "./contract-repurchase-restrictions";
 import { resolveProductInformation } from "./product-information";
 import {
@@ -1080,9 +1081,11 @@ export async function retryOrderWebhook(orderId) {
 
 export async function updateOrderStatus(orderId, status, orderKind = ORDER_KIND_LIVE) {
   const nextStatus = Object.values(OrderStatus).includes(status) ? status : OrderStatus.NEW;
+  const order = nextStatus === OrderStatus.CONFIRMED
+    ? await getOrderDelegate(prisma, orderKind).findUnique({ where: { id: orderId }, select: { status: true, confirmedAt: true } }) : {};
   return getOrderDelegate(prisma, orderKind).update({
     where: { id: orderId },
-    data: { status: nextStatus },
+    data: orderStatusUpdateData(nextStatus, order || {}),
   });
 }
 
@@ -1123,7 +1126,7 @@ export async function confirmOrder(orderId, emailOverrides = {}) {
 
   await getOrderDelegate(prisma, orderKind).update({
     where: { id: orderId },
-    data: { status: OrderStatus.CONFIRMED },
+    data: orderStatusUpdateData(OrderStatus.CONFIRMED, orderRecord),
   });
 
   return order;

@@ -4,18 +4,23 @@ import { AdminShell } from "./admin-shell";
 import { AdminSection, inputStyle, pageGridStyle, primaryButtonStyle } from "./admin-ui";
 import { AdminText } from "./admin-i18n";
 import AdminSelect from "./admin-select";
-import { AdminBusinessReport } from "./admin-business-report";
+import { AdminFrgMonthlyReportPage } from "./admin-frg-monthly-report";
+import { AdminAscKitchenReport } from "./admin-asc-kitchen-report";
+import { loadAscKitchenReport, normalizeAscKitchenFilters } from "../lib/asc-kitchen-report.js";
+import { AdminAscClaimReport } from "./admin-asc-claim-report";
+import { loadAscClaimReport } from "../lib/asc-claim-report.js";
 import { AdminBusinessReportPeriods } from "./admin-business-report-periods";
 import { AdminReportScopeLink } from "./admin-report-scope-link";
 import { requireAdminPage } from "../lib/auth";
 import { normalizeActivityReportFilters } from "../lib/admin-activity-reports";
-import { loadBusinessReportData } from "../lib/admin-business-reports";
 import { normalizeBusinessReportFilters, buildBusinessReportQuery, getActiveBusinessReportPeriod, BUSINESS_REPORT_PERIODS } from "../lib/business-report-filters";
 
 export async function AdminBusinessReportPage({ scope, searchParams }) {
+  if (scope === "FRG") return AdminFrgMonthlyReportPage({ searchParams });
   const admin = await requireAdminPage();
   const params = (await searchParams) || {};
-  const filters = normalizeBusinessReportFilters(params);
+  const now = new Date();
+  const filters = normalizeAscKitchenFilters(params, now);
   const activityFilters = normalizeActivityReportFilters(params);
   const path = scope === "FRG" ? "/admin/reports/frg" : "/admin/reports/asc";
   const activePeriod = getActiveBusinessReportPeriod(filters, params.preset);
@@ -39,15 +44,11 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
           <input type="hidden" name="status" value={activityFilters.status} />
           <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span><input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={compactInputStyle} /></label>
           <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span><input name="dateTo" type="date" defaultValue={filters.dateTo} style={compactInputStyle} /></label>
-          <label style={fieldStyle}><span><AdminText i18nKey="contractsAdmin.contractType" fallback="Contract type" /></span>
+          <label style={fieldStyle}><span><AdminText i18nKey="ascKitchenReport.source" fallback="Kitchen source" /></span>
             <AdminSelect name="contractType" defaultValue={filters.contractType} style={compactInputStyle}>
-              <option value=""><AdminText i18nKey="contractsAdmin.allContractTypes" fallback="All contract types" /></option>
-              <option value="FRG">FRG</option><option value="ARC">ARC</option>
-            </AdminSelect>
-          </label>
-          <label style={fieldStyle}><span><AdminText i18nKey="businessReports.groupBy" fallback="Group by" /></span>
-            <AdminSelect name="groupBy" defaultValue={filters.groupBy} style={compactInputStyle}>
-              {["DAY", "WEEK", "MONTH"].map(group => <option key={group} value={group}><AdminText i18nKey={`businessReports.${group}`} fallback={group} /></option>)}
+              <option value=""><AdminText i18nKey="ascKitchenReport.allSources" fallback="All sources" /></option>
+              <option value="FRG"><AdminText i18nKey="ascKitchenReport.fromFragmento" fallback="Kitchens from Fragmento" /></option>
+              <option value="ARC"><AdminText i18nKey="ascKitchenReport.otherSource" fallback="Other kitchens" /></option>
             </AdminSelect>
           </label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -57,15 +58,18 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
         </form>
       </AdminSection>
       <Suspense key={query} fallback={<AdminSection compact><p role="status" style={{ margin: 0, color: "var(--app-text-muted)", padding: "24px 0" }}><AdminText i18nKey="businessReports.updating" fallback="Updating report…" /></p></AdminSection>}>
-        <BusinessReportContent filters={filters} scope={scope} />
+        <BusinessReportContent filters={filters} now={now} />
       </Suspense>
     </div>
   </AdminShell>;
 }
 
-async function BusinessReportContent({ filters, scope }) {
-  const report = await loadBusinessReportData(filters);
-  return <AdminBusinessReport report={report} scope={scope === "FRG" ? "Fragmento" : "ASC"} />;
+async function BusinessReportContent({ filters, now }) {
+  const [claims, kitchens] = await Promise.all([loadAscClaimReport(filters, undefined, now), loadAscKitchenReport(filters, undefined, now)]);
+  return <>
+    <AdminAscKitchenReport report={kitchens} />
+    <AdminAscClaimReport report={claims} />
+  </>;
 }
 
 const linkStyle = { display: "inline-flex", alignItems: "center", justifyContent: "center", textDecoration: "none", minHeight: 34, padding: "6px 10px", borderRadius: 6, border: "1px solid var(--app-border)", color: "var(--app-accent)", background: "var(--app-surface)", fontSize: 13 };
