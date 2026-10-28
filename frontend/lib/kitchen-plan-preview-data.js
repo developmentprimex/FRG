@@ -355,6 +355,8 @@ AB_105760_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
 AB_105761_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
   PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG[slug] = PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG["ab-105761"];
 });
+// This layout family shares the revised PDF's smooth vector contours.
+PLAN_IMAGE_BY_SLUG["ab-105846"] = "/plans/AB%20105846-view.svg?v=3";
 AB_105846_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
   PLAN_IMAGE_BY_SLUG[slug] = PLAN_IMAGE_BY_SLUG["ab-105846"];
 });
