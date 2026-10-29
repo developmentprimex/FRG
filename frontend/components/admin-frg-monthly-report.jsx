@@ -6,6 +6,7 @@ import { AdminText, AdminMonth } from "./admin-i18n";
 import { AdminReportScopeLink } from "./admin-report-scope-link";
 import { AdminReportTable } from "./admin-report-table";
 import { AdminBusinessReportPeriods } from "./admin-business-report-periods";
+import { AdminDatePicker } from "./admin-date-picker";
 import { BUSINESS_REPORT_PERIODS } from "../lib/business-report-filters.js";
 import { requireAdminPage } from "../lib/auth";
 import { normalizeFrgMonthlyFilters, buildFrgMonthlyQuery, loadFrgMonthlyReport, reportDisplayDate } from "../lib/frg-monthly-report.js";
@@ -14,7 +15,8 @@ const text = (key, fallback, values) => <AdminText i18nKey={`frgMonthlyReport.${
 const count = value => new Intl.NumberFormat("de-DE").format(value);
 const money = value => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
 const buttonStyle = { ...primaryButtonStyle, minHeight: 34, padding: "6px 12px", fontSize: 13, textDecoration: "none", display: "inline-flex", alignItems: "center" };
-const cellStyle = { padding: "16px 14px", border: "1px solid var(--app-border)", verticalAlign: "middle" };
+const cellStyle = { padding: "16px 12px", verticalAlign: "middle" };
+const headerStyle = { ...thStyle, whiteSpace: "nowrap" };
 
 export async function AdminFrgMonthlyReportPage({ searchParams }) {
   const admin = await requireAdminPage();
@@ -41,10 +43,10 @@ export async function AdminFrgMonthlyReportPage({ searchParams }) {
           <form action="/admin/reports/frg" method="get" key={query} style={filterFormStyle}>
             <input type="hidden" name="period" value="CUSTOM" />
             <label style={fieldStyle}><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" />
-              <input type="date" name="dateFrom" defaultValue={filters.dateFrom} max={current.asOfDate} style={filterInputStyle} />
+              <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} max={current.asOfDate} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
             </label>
             <label style={fieldStyle}><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" />
-              <input type="date" name="dateTo" defaultValue={filters.dateTo} max={current.asOfDate} style={filterInputStyle} />
+              <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} max={current.asOfDate} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
             </label>
             <button type="submit" style={buttonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
             <AdminReportScopeLink compact href="/admin/reports/frg"><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></AdminReportScopeLink>
@@ -52,15 +54,11 @@ export async function AdminFrgMonthlyReportPage({ searchParams }) {
           <form action="/admin/reports/frg" method="get" key={filters.month} style={filterFormStyle}>
             <label style={fieldStyle}>
               {text("month", "Report month")}
-              <input type="month" name="month" defaultValue={filters.month} max={current.month} required style={filterInputStyle} />
+              <AdminDatePicker type="month" name="month" defaultValue={filters.month} max={current.month} required style={filterInputStyle} labelKey="frgMonthlyReport.month" label="Report month" />
             </label>
             <button type="submit" style={buttonStyle}>{text("viewMonth", "View month")}</button>
           </form>
         </div>
-        <p style={{ margin: "12px 0 0", fontSize: 13, color: "var(--app-text-muted)" }}>
-          {filters.dateFrom ? text("period", "FRG kitchens and orders. Period: {from} – {to} (Europe/Berlin).", { from: reportDisplayDate(filters.dateFrom), to: reportDisplayDate(filters.asOfDate) })
-            : text("throughPeriod", "FRG kitchens and orders. Through {date} (Europe/Berlin).", { date: reportDisplayDate(filters.asOfDate) })}
-        </p>
       </AdminSection>
       <Suspense key={query} fallback={<AdminSection compact><p role="status">{text("loading", "Loading monthly report…")}</p></AdminSection>}>
         <MonthlyContent filters={filters} now={now} />
@@ -77,20 +75,20 @@ async function MonthlyContent({ filters, now }) {
 export function AdminFrgMonthlyReport({ report }) {
   const { filters } = report;
   return <AdminSection compact title={<ReportPeriod filters={filters} />}>
-    <AdminReportTable style={tableWrapStyle}>
+    <AdminReportTable style={{ ...tableWrapStyle, borderRadius: 4 }}>
       <table dir="ltr" style={{ ...tableStyle, minWidth: 740 }}>
         <thead><tr>
-          <th scope="col" style={{ ...thStyle, ...cellStyle }}>{text("description", "Description")}</th>
-          <th scope="col" style={{ ...thStyle, ...cellStyle }}>{filters.previousDate
+          <th scope="col" style={headerStyle}>{text("description", "Description")}</th>
+          <th scope="col" style={headerStyle}>{filters.previousDate
             ? text("previous", "Through {date}", { date: reportDisplayDate(filters.previousDate) })
             : text("beforePeriod", "Before selected period")}</th>
-          <th scope="col" style={{ ...thStyle, ...cellStyle }}><ReportPeriod filters={filters} /></th>
-          <th scope="col" style={{ ...thStyle, ...cellStyle, background: "var(--app-surface-soft)" }}>{text("cumulative", "Total")}</th>
+          <th scope="col" style={headerStyle}><ReportPeriod filters={filters} /></th>
+          <th scope="col" style={headerStyle}>{text("cumulative", "Total")}</th>
         </tr></thead>
         <tbody>{report.metrics.map(([key, label, format]) => <tr key={key}>
           <th scope="row" style={{ ...tdStyle, ...cellStyle, textAlign: "left", fontWeight: 500 }}>{text(key, label)}</th>
           {["previous", "current", "total"].map(bucket => <td key={bucket} style={{ ...tdStyle, ...cellStyle, textAlign: "right", whiteSpace: "nowrap", fontVariantNumeric: "tabular-nums",
-            ...(bucket === "total" ? { fontWeight: 700, background: "var(--app-surface-soft)" } : {}) }}>
+            ...(bucket === "total" ? { fontWeight: 700 } : {}) }}>
             {format === "currency" ? money(report[bucket][key]) : count(report[bucket][key])}
           </td>)}
         </tr>)}</tbody>

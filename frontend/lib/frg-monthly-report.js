@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { inferApplianceBrand, getContractApplianceBrandLabel } from "./contract-appliances.js";
 import { VAT_RATE } from "./price-utils.js";
 import { formatAdminMonth } from "./admin-date-time.js";
+import { getPurchasedReportItems } from "./report-details.js";
 
 // Optional existing AB metadata enriches report articles without installing the
 // separate AB import/sync feature or requiring its files on main.
@@ -85,7 +86,7 @@ export const FRG_MONTHLY_NOTES = [
   "Sales include only orders currently CONFIRMED, by their recorded confirmation date. For historical orders without that date, the creation date is used and explicitly marked as a historical fallback. This is a current-state report, not a frozen accounting close.",
   "Amounts use stored order prices. Net is rounded per order using the system VAT rate of 19%; VAT equals gross minus rounded net. Updating catalog prices does not change stored order prices.",
   "Cancellation requests count once on their received date, across all request statuses. A request alone does not deduct a sale. Successful order and cancellation email recipient deliveries count on their logged send date, including resends; failed, skipped, unknown and unlogged historical deliveries are excluded.",
-  "Order details contain one row per order. Item details contain one row per stored order item; base kitchen items have zero sales value. Unknown manufacturers are shown as Not recorded. Item-level net rounding can differ from order-level rounding.",
+  "Order details contain one row per order. Item details contain one row per purchased order item; base kitchen items are excluded. Unknown manufacturers are shown as Not recorded. Item-level net rounding can differ from order-level rounding.",
 ];
 
 const one = value => String(Array.isArray(value) ? value[0] || "" : value || "");
@@ -261,32 +262,31 @@ export function getFrgMonthlySheets(report, orders = []) {
     const customer = [order.firstName, order.lastName].filter(Boolean).join(" ");
     const gross = Math.round(Number(order.totalPrice) * 100);
     const net = Math.round(gross / (1 + VAT_RATE));
-    const specifications = buildOrderKitchenSpecifications(order);
-    const salesItems = (order.items || []).filter(item => !item.kitchenItem?.isLocked);
+    const salesItems = getPurchasedReportItems(order);
+    const specifications = buildOrderKitchenSpecifications({ ...order, items: salesItems });
     salesRows.push([order.saleAt, order.createdAt, order.orderNumber, customer, order.email, order.phone,
       order.contractNumber || contract.contractNumber || "", project.housingCompany?.name || "",
-      [order.address1, order.address2, order.postalCode, order.city, order.country].filter(Boolean).join(", "),
+      [order.address1, order.address2].filter(Boolean).join(", "), order.postalCode || "", order.city || "", order.country || "",
       order.paidAt, order.preferredDeliveryDate,
       salesItems.reduce((sum, item) => sum + item.quantity, 0), net / 100, (gross - net) / 100, gross / 100]);
-    for (const [index, item] of (order.items || []).entries()) {
+    for (const [index, item] of salesItems.entries()) {
       const details = specifications.orderedItems[index];
-      const base = !!item.kitchenItem?.isLocked;
-      const unitCents = base ? 0 : Math.round(Number(item.priceSnapshot) * 100);
+      const unitCents = Math.round(Number(item.priceSnapshot) * 100);
       const lineGross = unitCents * item.quantity;
       const lineNet = Math.round(lineGross / (1 + VAT_RATE));
-      itemRows.push([order.saleAt, customer, order.contractNumber || contract.contractNumber || "", details.articleNumber, details.name,
+      itemRows.push([order.saleAt, customer, order.orderNumber, details.articleNumber, details.name,
         itemCategory(item), details.manufacturer || "Not recorded", item.quantity,
         lineNet / 100, (lineGross - lineNet) / 100, lineGross / 100]);
     }
   }
   return [summary, {
     name: "Order details", title: `ORDERS | ${range}`,
-    headers: ["Sale date (Berlin)", "Order created", "Order", "Customer", "Email", "Phone", "Contract number", "Company", "Customer address",
+    headers: ["Sale date (Berlin)", "Order created", "Order", "Customer", "Email", "Phone", "Contract number", "Company", "Customer address", "Postal code", "City", "Country",
       "Paid at", "Requested delivery", "Purchased units", "Net (EUR)", "VAT (EUR)", "Gross (EUR)"],
-    rows: salesRows, highlightHeader: true, currencyColumns: [12, 13, 14],
+    rows: salesRows, highlightHeader: true, currencyColumns: [15, 16, 17],
   }, {
     name: "Item details", title: `ORDERED ITEMS | ${range}`,
-    headers: ["Sale date (Berlin)", "Customer", "Contract number", "Article number", "Product", "Category", "Manufacturer",
+    headers: ["Sale date (Berlin)", "Customer", "Order", "Article number", "Product", "Category", "Manufacturer",
       "Quantity", "Line net (EUR)", "Line VAT (EUR)", "Line gross (EUR)"],
     rows: itemRows, highlightHeader: true, currencyColumns: [8, 9, 10],
   }];

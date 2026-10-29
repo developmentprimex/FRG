@@ -10,6 +10,7 @@ import {
   thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
+import { AdminDatePicker } from "../../../components/admin-date-picker";
 import {
   AdminCountryName,
   AdminDateTime,
@@ -92,11 +93,11 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
           <form action="/admin/claim-activity" method="get" style={filterPanelStyle}>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
-              <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
+              <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
             </label>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span>
-              <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
+              <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
             </label>
             <div style={filterActionsStyle}>
               <button type="submit" style={filterApplyButtonStyle}>

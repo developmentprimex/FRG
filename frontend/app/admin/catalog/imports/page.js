@@ -20,6 +20,7 @@ import {
 } from "../../../../components/admin-ui";
 import { Fragment } from "react";
 import { AdminShell } from "../../../../components/admin-shell";
+import { AdminDatePicker } from "../../../../components/admin-date-picker";
 import AdminConfirmSubmitButton from "../../../../components/admin-confirm-submit-button";
 import AdminFileInput from "../../../../components/admin-file-input";
 import AdminSelect from "../../../../components/admin-select";
@@ -175,7 +176,7 @@ export default async function AdminCatalogImportsPage({ searchParams }) {
                 </AdminSelect>
               </FormField>
               <FormField label={<AdminText i18nKey="catalogImportsAdmin.startDate" fallback="Start date" />}>
-                <input name="effectiveFrom" type="date" defaultValue={todayInputValue()} required style={inputStyle} />
+                <AdminDatePicker name="effectiveFrom" defaultValue={todayInputValue()} required style={inputStyle} labelKey="catalogImportsAdmin.startDate" label="Start date" />
               </FormField>
               <FormField label={<AdminText i18nKey="catalogImportsAdmin.priceListFile" fallback="Price list file" />}>
                 <AdminFileInput name="catalogFile" accept=".xlsx" required style={inputStyle} />

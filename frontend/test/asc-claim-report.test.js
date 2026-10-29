@@ -119,6 +119,7 @@ test("follow-ups remain within their original case, skip duplicate initial paylo
 
 function detailedFixture() {
   const old = { id: "old", createdAt: new Date("2026-09-10"), contractNumber: "670000001", contractType: "FRG", fullName: "Customer A", claimSequence: 1, ticketNumber: 1001,
+    clientAddress: "Example street 1", clientPostalCode: "01067", clientCity: "Dresden", clientCountry: "Germany",
     requestType: "complaint", problemDescription: "Oven does not heat", serialNumber: "SERIAL-A",
     problemAreasJson: JSON.stringify([{ componentId: "component-claim-oven", name: "Amica oven", code: "OVEN-A", serialNumber: "SERIAL-A", detail: "Does not heat" }]),
     kitchenClaimOrdinal: 1, kitchenClaimsTotal: 2, kitchenClaimsInPeriod: 1,
@@ -148,22 +149,27 @@ function detailedFixture() {
   return { report, data: { claims: [old, current, upload], deliveries } };
 }
 
-test("ASC Excel keeps only the requested claim columns and four sheets, preserving products and manufacturers from follow-ups", () => {
+test("ASC Excel keeps three sheets without email deliveries, preserving claim columns and follow-up products", () => {
   const { report, data } = detailedFixture();
   const sheets = getAscClaimReportSheets(report, data);
-  assert.deepEqual(sheets.map(sheet => sheet.name), ["ASC", "Claim details", "Email deliveries"]);
+  assert.deepEqual(sheets.map(sheet => sheet.name), ["ASC", "Claim details"]);
   assert.deepEqual(sheets[0].rows.map(row => row.slice(1)), [[1, 2, 3], [1, 2, 3], [0, 1, 1]]);
   const claims = sheets[1];
   assert.equal(claims.rows.length, 3);
   assert(claims.rows.every(row => row.length === claims.headers.length));
   const value = (sheet, row, label) => sheet.rows[row][sheet.headers.indexOf(label)];
-  assert.deepEqual(claims.headers, ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address",
+  assert.deepEqual(claims.headers, ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address", "Postal code", "City", "Country",
     "Categories", "Affected products", "Manufacturers", "Serial number(s)",
     "Email sent to kd@myarchitecto.de", "Email sent to verwaltung@hbi-wohnen.de"]);
   assert.equal(value(claims, 0, "Claim reference"), "#1001 670000001 KD 01");
   assert.equal(value(claims, 0, "Contract number"), "670000001");
   assert.equal(value(claims, 0, "Company"), "Company A");
   assert.equal(value(claims, 0, "Customer"), "Customer A");
+  assert.equal(value(claims, 0, "Customer address"), "Example street 1");
+  assert.equal(value(claims, 0, "Postal code"), "01067");
+  assert.equal(value(claims, 0, "City"), "Dresden");
+  assert.equal(value(claims, 0, "Country"), "Germany");
+  assert.deepEqual(claims.rows[1].slice(7, 11), ["", "", "", ""]);
   assert.equal(value(claims, 0, "Categories"), "Electrical appliances / Cabinets");
   assert.equal(value(claims, 1, "Categories"), "Not recorded");
   assert.equal(value(claims, 0, "Manufacturers"), "Amica / Burger");
@@ -171,11 +177,10 @@ test("ASC Excel keeps only the requested claim columns and four sheets, preservi
   assert.equal(value(claims, 0, "Serial number(s)"), "SERIAL-A\nSERIAL-B");
   assert.deepEqual(claims.rows.map(row => row.slice(-2)), [["Yes", "Yes"], ["No", "No"], ["No", "No"]]);
   assert.equal(value(claims, 2, "Manufacturers"), "BOSCH");
-  assert.equal(sheets[2].rows.length, 4);
   const [kitchenSheet] = getAscKitchenReportSheets(assembleAscKitchenReport([], filters));
   const { buffer } = buildStandardExcelWorkbook({ description: "ASC_CLAIMS", sheets: [kitchenSheet, ...sheets], now, timeZone: "Europe/Berlin" });
   const book = XLSX.read(buffer, { type: "buffer", cellNF: true });
-  assert.deepEqual(book.SheetNames, ["ASC kitchens", "ASC", "Claim details", "Email deliveries"]);
+  assert.deepEqual(book.SheetNames, ["ASC kitchens", "ASC", "Claim details"]);
   assert.equal(book.Sheets.ASC.C7.v, 1);
   assert.equal(book.Sheets.ASC.D7.v, 2);
   assert.equal(book.Sheets.ASC.E7.v, 3);
@@ -184,9 +189,15 @@ test("ASC Excel keeps only the requested claim columns and four sheets, preservi
   assert.equal(rows[6][0], 1);
   assert.equal(rows[6][2], "#1001 670000001 KD 01");
   assert.equal(typeof rows[6][1], "number"); // sortable Excel timestamp
-  assert.equal(rows[8][11], "BOSCH");
+  assert.equal(rows[8][claims.headers.indexOf("Manufacturers") + 1], "BOSCH");
+  const claimSheet = book.Sheets["Claim details"];
+  assert.equal(claimSheet.I7.v, "Example street 1");
+  assert.equal(claimSheet.J7.v, "01067");
+  assert.equal(claimSheet.J7.t, "s");
+  assert.equal(claimSheet.K7.v, "Dresden");
+  assert.equal(claimSheet.L7.v, "Germany");
+  assert.equal(claimSheet["!autofilter"].ref, "A6:R9");
   assert.deepEqual(rows[6].slice(-2), ["Yes", "Yes"]);
-  assert.equal(book.Sheets["Email deliveries"]["!autofilter"].ref, "A6:J10");
 });
 
 test("each email flag uses only that case and recipient, including successful deliveries before the selected month", () => {
@@ -199,9 +210,9 @@ test("each email flag uses only that case and recipient, including successful de
     { bucket: "previous", metric: "claims", value: 1 }, { bucket: "current", metric: "claims", value: 2 },
     { bucket: "previous", metric: "emailsKd", value: 1 }, { bucket: "current", metric: "emailsHbi", value: 1 },
   ], filters);
-  const [, details, deliveries] = getAscClaimReportSheets(report, data);
+  const [summary, details] = getAscClaimReportSheets(report, data);
   assert.deepEqual(details.rows.map(row => row.slice(-2)), [["Yes", "No"], ["No", "No"], ["No", "Yes"]]);
-  assert.equal(deliveries.rows.length, 2);
+  assert.deepEqual(summary.rows.map(row => row.slice(1)), [[1, 2, 3], [1, 0, 1], [0, 1, 1]]);
 });
 
 test("exports reject a mismatch between cumulative totals and the supporting cases or deliveries", () => {

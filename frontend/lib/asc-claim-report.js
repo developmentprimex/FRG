@@ -56,7 +56,7 @@ export const ASC_CLAIM_METRICS = [["claims", "Claims"], ["emailsKd", `Emails to 
 export const ASC_CLAIM_NOTES = [
   "Claims count distinct retained cases by their original creation date. Follow-up submissions within the same open case do not create another claim. Test contract numbers starting with 111 and test ticket series are excluded.",
   "Emails count successful logged recipient deliveries on their actual send dates, independently of the claim creation date. The two listed recipients are counted separately. Successful resends count again; duplicate entries for the same recipient within one attempt count once. Customer confirmations, other recipients, failed, skipped, unknown and historical unlogged deliveries are excluded.",
-  "Claim details has one row per case up to the report cutoff, combining affected products, manufacturers and serial numbers from its submissions, including follow-ups. Each recipient's Yes/No flag indicates whether a successful delivery was recorded through the cutoff, including previous periods. No means no recorded successful delivery, not proof that an unlogged email was never sent. Email deliveries retains the individual successful sends and their dates.",
+  "Claim details has one row per case up to the report cutoff, combining affected products, manufacturers and serial numbers from its submissions, including follow-ups. Each recipient's Yes/No flag indicates whether a successful delivery was recorded through the cutoff, including previous periods. No means no recorded successful delivery, not proof that an unlogged email was never sent.",
   "Kitchen claim totals include cases up to the report cutoff: Fragmento contracts sharing a Kitchen record are grouped together; other uploaded kitchens use their individual contract identity, never their shared technical shell. Case ordinal is the chronological case number within that kitchen, not the highest stored contract sequence.",
   "Manufacturers use recorded claim data or an exact article match against the kitchen AB/product/inventory metadata. Electrical claims without a real article code can also match a single installed appliance type in that contract's saved inventory, including legacy appliance labels. Lookup sources are shown; current metadata is not a historical manufacturer snapshot. Missing or ambiguous manufacturers/categories are marked Not recorded. No default brand is assumed for uploaded kitchens.",
   "Processing status and completion date are current operational data at export time, not reconstructed historical status. Historical repeat counts and submissions are bounded by the report cutoff.",
@@ -234,7 +234,6 @@ export function claimReportSubmissions(claim, cutoff) {
 }
 
 const reference = claim => formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber);
-const sourceLabel = claim => claim.contractType === "FRG" ? "Fragmento" : claim.contractType === "ARC" ? "Other kitchens" : "Not recorded";
 const periodOf = (date, filters) => filters.start && new Date(date) < filters.start ? "Previous" : "Selected period";
 
 export function getAscClaimReportSheets(report, data = { claims: [], deliveries: [] }) {
@@ -243,7 +242,7 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
   const summary = { name: "ASC", title: `CLAIMS AND EMAILS | ${range}`,
     headers: ["Description", filters.previousDate ? `Through ${reportDisplayDate(filters.previousDate)}` : "Before selected period", frgReportPeriodLabel(filters), "Total"],
     rows: report.metrics.map(([key, label]) => [label, report.previous[key], report.current[key], report.total[key]]), highlightHeader: true };
-  const claimRows = [], deliveryRows = [];
+  const claimRows = [];
   const observed = [];
   const sentByClaim = new Map();
   const claimById = new Map(data.claims.map(claim => [claim.id, claim]));
@@ -257,8 +256,6 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
     const counts = sentByClaim.get(claim.id);
     counts[key] = (counts[key] || 0) + 1;
     observed.push({ bucket, metric: key, value: 1 });
-    deliveryRows.push([periodOf(delivery.attemptedAt, filters), delivery.attemptedAt, reference(claim), claim.contractNumber, sourceLabel(claim),
-      delivery.recipient, "SENT", delivery.attemptId, delivery.kind]);
   }
   for (const claim of data.claims) {
     const contract = claim.contract || {}, project = contract.project || {};
@@ -273,7 +270,7 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
     }
     const sent = sentByClaim.get(claim.id) || {};
     claimRows.push([claim.createdAt, reference(claim), claim.contractNumber, project.housingCompany?.name || "",
-      claim.fullName, claim.email || "", claim.phone || "", [claim.clientAddress, claim.clientPostalCode, claim.clientCity, claim.clientCountry].filter(Boolean).join(", "),
+      claim.fullName, claim.email || "", claim.phone || "", claim.clientAddress || "", claim.clientPostalCode || "", claim.clientCity || "", claim.clientCountry || "",
       unique(products.map(product => product.category)).join(" / "), unique(products.map(product => product.product)).join("\n"),
       unique(products.map(product => product.manufacturer)).join(" / "), unique([clean(claim.serialNumber), ...products.map(product => product.serialNumber)]).join("\n"),
       sent.emailsKd ? "Yes" : "No", sent.emailsHbi ? "Yes" : "No"]);
@@ -284,11 +281,8 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
   }
   return [summary, {
     name: "Claim details", title: `CLAIM DETAILS | ${range}`, highlightHeader: true,
-    headers: ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address",
+    headers: ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address", "Postal code", "City", "Country",
       "Categories", "Affected products", "Manufacturers", "Serial number(s)",
       ...ASC_CLAIM_RECIPIENTS.map(email => `Email sent to ${email}`)], rows: claimRows,
-  }, {
-    name: "Email deliveries", title: `SUCCESSFUL CLAIM EMAIL DELIVERIES | ${range}`, highlightHeader: true,
-    headers: ["Delivery period", "Sent (Berlin)", "Claim reference", "Contract number", "Kitchen source", "Recipient", "Status", "Attempt ID", "Email kind"], rows: deliveryRows,
   }];
 }

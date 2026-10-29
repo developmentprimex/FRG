@@ -70,7 +70,7 @@ test("standard workbook writes fonts, borders, freeze panes, and A4 print settin
   assert(styles.includes('horizontal="center" vertical="center" wrapText="1"'));
   assert(styles.includes('style="medium"'));
   assert(styles.includes('style="thin"'));
-  assert(sheet.includes('r="3" ht="24"'));
+  assert(Number(sheet.match(/<row r="3" ht="([^"]+)"/)[1]) >= 24);
   assert(sheet.includes('showGridLines="0"'));
   assert(sheet.includes('xSplit="2" ySplit="6" topLeftCell="C7"'));
   assert(sheet.includes('paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"'));
@@ -82,6 +82,25 @@ test("standard workbook writes fonts, borders, freeze panes, and A4 print settin
   assert(book.includes('_xlnm.Print_Titles'));
   assert(book.includes('$6:$6'));
   assert(book.includes('$A$1:$H$10'));
+});
+
+test("long report titles fit narrow summary sheets and preserve complete headers", () => {
+  const title = "CLAIMS AND EMAILS | October 2026; All sources; Europe/Berlin; cutoff 2026-10-28T14:59:17.035Z";
+  const headers = ["Description", "Through 30/09/2026", "October 2026", "Total"];
+  const sheets = [{ name: "ASC", title, headers, highlightHeader: true,
+    rows: [["Claims", 5, 6, 11], ["Emails to verwaltung@hbi-wohnen.de", 0, 5, 5]] }];
+  const { buffer } = fixture(sheets);
+  const sheetXml = readXml(buffer, "xl/worksheets/sheet1.xml");
+  const sheet = XLSX.read(buffer, { type: "buffer", cellStyles: true }).Sheets.ASC;
+  assert.equal(sheet.A3.v, title);
+  assert.equal(XLSX.utils.encode_range(sheet["!merges"][0]), "A3:E3");
+  assert(Number(sheetXml.match(/<row r="3" ht="([^"]+)"/)[1]) >= 50);
+  assert.equal(sheet.C6.v, "THROUGH 30/09/2026");
+  assert(sheet["!cols"][2].wch >= headers[1].length + 4);
+  assert.equal(sheet.C7.v, 5);
+
+  const multiline = fixture([{ name: "Report", title: "Report title\nReporting period\nExport cutoff", headers: ["Type"], rows: [] }]);
+  assert(Number(readXml(multiline.buffer, "xl/worksheets/sheet1.xml").match(/<row r="3" ht="([^"]+)"/)[1]) >= 72);
 });
 
 test("empty exports retain header, numbered blank rows, and portrait printing", () => {

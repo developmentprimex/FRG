@@ -10,6 +10,7 @@ import { loadAscKitchenReport, normalizeAscKitchenFilters } from "../lib/asc-kit
 import { AdminAscClaimReport } from "./admin-asc-claim-report";
 import { loadAscClaimReport } from "../lib/asc-claim-report.js";
 import { AdminBusinessReportPeriods } from "./admin-business-report-periods";
+import { AdminDatePicker } from "./admin-date-picker";
 import { AdminReportScopeLink } from "./admin-report-scope-link";
 import { requireAdminPage } from "../lib/auth";
 import { normalizeActivityReportFilters } from "../lib/admin-activity-reports";
@@ -21,6 +22,7 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
   const params = (await searchParams) || {};
   const now = new Date();
   const filters = normalizeAscKitchenFilters(params, now);
+  const latestReportDate = normalizeAscKitchenFilters({}, now).asOfDate;
   const activityFilters = normalizeActivityReportFilters(params);
   const path = scope === "FRG" ? "/admin/reports/frg" : "/admin/reports/asc";
   const activePeriod = getActiveBusinessReportPeriod(filters, params.preset);
@@ -42,8 +44,8 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
           <input type="hidden" name="period" value="CUSTOM" />
           <input type="hidden" name="type" value={activityFilters.type} />
           <input type="hidden" name="status" value={activityFilters.status} />
-          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span><input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={compactInputStyle} /></label>
-          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span><input name="dateTo" type="date" defaultValue={filters.dateTo} style={compactInputStyle} /></label>
+          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span><AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} max={latestReportDate} style={compactInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" /></label>
+          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span><AdminDatePicker name="dateTo" defaultValue={filters.dateTo} max={latestReportDate} style={compactInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" /></label>
           <label style={fieldStyle}><span><AdminText i18nKey="ascKitchenReport.source" fallback="Kitchen source" /></span>
             <AdminSelect name="contractType" defaultValue={filters.contractType} style={compactInputStyle}>
               <option value=""><AdminText i18nKey="ascKitchenReport.allSources" fallback="All sources" /></option>

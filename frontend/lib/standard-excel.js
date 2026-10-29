@@ -7,6 +7,24 @@ const dateStamp = (date) => pad(date.getUTCDate()) + "." + pad(date.getUTCMonth(
 const columnName = (index) => XLSX.utils.encode_col(index);
 const isDate = (value) => Object.prototype.toString.call(value) === "[object Date]";
 
+// Excel does not autofit merged titles. Allow for word wrapping and the larger
+// title font when setting an explicit row height.
+function wrappedLineCount(value, width) {
+  const capacity = Math.max(1, Math.floor(width));
+  return String(value).split(/\r?\n/).reduce((total, line) => {
+    let lines = 1, used = 0;
+    for (const word of line.split(/\s+/).filter(Boolean)) {
+      if (used && used + 1 + word.length <= capacity) used += 1 + word.length;
+      else {
+        if (used) lines += 1;
+        lines += Math.floor((word.length - 1) / capacity);
+        used = ((word.length - 1) % capacity) + 1;
+      }
+    }
+    return total + lines;
+  }, 0);
+}
+
 function makeStyles() {
   const borders = ["<border><left/><right/><top/><bottom/><diagonal/></border>"];
   const borderIds = new Map();
@@ -76,7 +94,8 @@ function prepareSheet(spec, timeZone) {
       const value = isDate(row[column]) ? (spec.dateColumns?.includes(column - 1) ? "00/00/0000" : "00.00.0000 00:00") : String(row[column] ?? "");
       for (const line of value.split(/\r?\n/)) longest = Math.max(longest, line.length);
     }
-    const width = Math.min(45, Math.max(10, longest + 2));
+    // Reserve space for the filter button beside the bold header text.
+    const width = Math.min(45, Math.max(10, longest + 2, header.length + 5));
     return { width, wch: width };
   });
   return { spec, worksheet, rows, headers, lastDataRow, finalRow };
@@ -90,7 +109,10 @@ function formatSheet(sheetXml, prepared, styles, now, initials) {
     if (address) existingCells.set(address, match[0]);
   }
   const title = existingCells.get("A3").replace(/<c\b/, '<c s="1"');
-  let sheetData = '<sheetData><row r="3" ht="24" customHeight="1">' + title + '</row>';
+  const titleWidth = prepared.worksheet["!cols"].reduce((sum, column) => sum + column.wch, 0);
+  const titleLines = wrappedLineCount(spec.title, (titleWidth - 4) / 1.6);
+  const titleHeight = Math.min(409, Math.max(24, titleLines * 22 + 6));
+  let sheetData = '<sheetData><row r="3" ht="' + titleHeight + '" customHeight="1">' + title + '</row>';
   for (let row = 6; row <= finalRow; row += 1) {
     const isTotal = spec.totalRows?.includes(row - 7);
     const tone = row === 6 && spec.highlightHeader ? "header" : isTotal ? "total" : "";
@@ -102,7 +124,8 @@ function formatSheet(sheetXml, prepared, styles, now, initials) {
       const width = prepared.worksheet["!cols"][column].wch;
       const text = isDate(value) ? (spec.dateColumns?.includes(column - 1) ? "00/00/0000" : "00.00.0000 00:00") : String(value ?? "");
       const usableWidth = Math.max(width - (row === 6 ? 5 : 3), 1);
-      const lineCount = text.split(/\r?\n/).reduce((count, line) => count + Math.max(1, Math.ceil(line.length / usableWidth)), 0);
+      const lineCount = row === 6 ? wrappedLineCount(text, usableWidth / 1.1)
+        : text.split(/\r?\n/).reduce((count, line) => count + Math.max(1, Math.ceil(line.length / usableWidth)), 0);
       maxLines = Math.max(maxLines, lineCount);
       const style = styles.cellStyle({
         left: column === 0 ? "medium" : "thin",

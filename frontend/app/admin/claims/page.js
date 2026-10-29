@@ -11,6 +11,7 @@ import {
   thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
+import { AdminDatePicker } from "../../../components/admin-date-picker";
 import { AdminEmailDeliveryStatus } from "../../../components/admin-order-email-delivery";
 import { attachClaimEmailDelivery } from "../../../lib/email/claim-email-store";
 import { AdminPagination } from "../../../components/admin-pagination";
@@ -106,11 +107,11 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               </label>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
-                <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
+                <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
               </label>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span>
-                <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
+                <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
               </label>
               <div style={filterActionsStyle}>
                 <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>

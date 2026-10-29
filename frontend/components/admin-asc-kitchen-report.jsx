@@ -5,8 +5,9 @@ import { reportDisplayDate } from "../lib/frg-monthly-report.js";
 
 const text = (key, fallback, values) => <AdminText i18nKey={`ascKitchenReport.${key}`} fallback={fallback} values={values} />;
 const count = value => new Intl.NumberFormat("de-DE").format(value);
-const cellStyle = { padding: "16px 14px", border: "1px solid var(--app-border)", verticalAlign: "middle" };
-const totalStyle = { background: "var(--app-surface-soft)", fontWeight: 700 };
+const cellStyle = { padding: "16px 12px", verticalAlign: "middle" };
+const headerStyle = { ...thStyle, whiteSpace: "nowrap" };
+const totalStyle = { fontWeight: 700 };
 
 export function AdminAscKitchenReport({ report }) {
   return <AdminAscComparisonReport report={report} rows={report.categories} title={text("title", "ASC — kitchens by source")} showCombined />;
@@ -15,15 +16,15 @@ export function AdminAscKitchenReport({ report }) {
 export function AdminAscComparisonReport({ report, rows, title, showCombined = false, label }) {
   const { filters } = report;
   return <AdminSection compact title={title}>
-    <AdminReportTable style={tableWrapStyle}>
+    <AdminReportTable style={{ ...tableWrapStyle, borderRadius: 4 }}>
       <table dir="ltr" style={{ ...tableStyle, minWidth: 740 }}>
         <thead><tr>
-          <th scope="col" style={{ ...thStyle, ...cellStyle }}>{label || text("category", "Category")}</th>
-          <th scope="col" style={{ ...thStyle, ...cellStyle }}>{filters.previousDate
+          <th scope="col" style={headerStyle}>{label || text("category", "Category")}</th>
+          <th scope="col" style={headerStyle}>{filters.previousDate
             ? text("previous", "Through {date}", { date: reportDisplayDate(filters.previousDate) })
             : text("beforePeriod", "Before selected period")}</th>
-          <th scope="col" style={{ ...thStyle, ...cellStyle }}><ReportPeriod filters={filters} /></th>
-          <th scope="col" style={{ ...thStyle, ...cellStyle, ...totalStyle }}>{text("total", "Total")}</th>
+          <th scope="col" style={headerStyle}><ReportPeriod filters={filters} /></th>
+          <th scope="col" style={headerStyle}>{text("total", "Total")}</th>
         </tr></thead>
         <tbody>{rows.map(([key, label]) => <tr key={key}>
           <th scope="row" style={{ ...tdStyle, ...cellStyle, textAlign: "left", fontWeight: 500 }}>{text(key, label)}</th>

@@ -1,4 +1,15 @@
 {
+  "reportCalendar": {
+    "selectDate": "Select date",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "previousYear": "Previous year",
+    "nextYear": "Next year",
+    "chooseMonth": "Choose month",
+    "clear": "Clear",
+    "today": "Today",
+    "thisMonth": "This month"
+  },
   "orderEmailDelivery": {
     "column": "Email status",
     "notSent": "Not sent",
