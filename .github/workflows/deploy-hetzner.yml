@@ -111,10 +111,10 @@ jobs:
 
             cat >/etc/systemd/system/fragmento-contract-access-report.timer <<'EOF'
             [Unit]
-            Description=Run Fragmento contract and ASC access reports every day at 08:00 Europe/Berlin
+            Description=Run Fragmento contract and ASC access reports Monday-Friday at 08:00 Europe/Berlin
 
             [Timer]
-            OnCalendar=*-*-* 08:00:00 Europe/Berlin
+            OnCalendar=Mon..Fri *-*-* 08:00:00 Europe/Berlin
             Persistent=true
             AccuracySec=1min
             Unit=fragmento-contract-access-report.service
@@ -131,6 +131,7 @@ jobs:
 
             systemctl daemon-reload
             systemctl enable --now fragmento-contract-access-report.timer
+            systemctl restart fragmento-contract-access-report.timer
 
             systemctl restart fragmento.service
             systemctl is-active fragmento.service

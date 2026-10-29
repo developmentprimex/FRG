@@ -9,15 +9,18 @@ async function main() {
     throw new Error("Contract access report is disabled outside the Hetzner report service.");
   }
 
-  const [{ prisma }, { sendAscAccessReport, sendContractAccessReport }] = await Promise.all([
-    import("../lib/prisma.js"),
-    import("../lib/email/contract-access-report.js"),
-  ]);
+  const { isContractAccessReportDay, sendAscAccessReport, sendContractAccessReport } = await import("../lib/email/contract-access-report.js");
+  const now = new Date();
+  if (!isContractAccessReportDay(now)) {
+    console.log("Contract and ASC access reports skipped: weekend in Europe/Berlin.");
+    return;
+  }
+  const { prisma } = await import("../lib/prisma.js");
 
   try {
-    const result = await sendContractAccessReport({ db: prisma });
+    const result = await sendContractAccessReport({ db: prisma, now });
     console.log(`Contract access report sent to ${result.recipients.join(", ")}: ${result.count} attempts.`);
-    const ascResult = await sendAscAccessReport({ db: prisma });
+    const ascResult = await sendAscAccessReport({ db: prisma, now });
     console.log(`ASC access report sent to ${ascResult.recipients.join(", ")}: ${ascResult.count} lookups.`);
   } finally {
     await prisma.$disconnect();
