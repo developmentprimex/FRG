@@ -34,6 +34,10 @@ export default function AdminCreateUserForm() {
   const [isPending, setIsPending] = useState(false);
 
   function handleSubmit(event) {
+    if (isPending) {
+      event.preventDefault();
+      return;
+    }
     const form = event.currentTarget;
     const formData = new FormData(form);
     const password = String(formData.get("password") || "");
@@ -62,7 +66,7 @@ export default function AdminCreateUserForm() {
   return (
     <form action="/api/admin/users" method="post" style={formGridStyle} onSubmit={handleSubmit}>
       <FormField label={<AdminText i18nKey="usersAdmin.email" fallback="Email" />} wide>
-        <input name="email" type="email" required autoComplete="off" style={inputStyle} disabled={isPending} />
+        <input name="email" type="email" required autoComplete="off" style={inputStyle} readOnly={isPending} />
         <span style={helperTextStyle}>
           <AdminText i18nKey="usersAdmin.emailHelper" fallback="Used as the login username." />
         </span>
@@ -76,7 +80,7 @@ export default function AdminCreateUserForm() {
           minLength={8}
           autoComplete="new-password"
           style={inputStyle}
-          disabled={isPending}
+          readOnly={isPending}
         />
         <span style={helperTextStyle}>
           <AdminText i18nKey="usersAdmin.passwordHelper" fallback="Minimum 8 characters." />
@@ -91,7 +95,7 @@ export default function AdminCreateUserForm() {
           minLength={8}
           autoComplete="new-password"
           style={inputStyle}
-          disabled={isPending}
+          readOnly={isPending}
         />
         <span style={helperTextStyle}>
           <AdminText i18nKey="usersAdmin.confirmPasswordHelper" fallback="Re-enter the password to confirm." />
@@ -99,7 +103,7 @@ export default function AdminCreateUserForm() {
       </FormField>
 
       <FormField label={<AdminText i18nKey="usersAdmin.role" fallback="Role" />} wide>
-        <AdminSelect name="role" defaultValue="ADMIN" required disabled={isPending}>
+        <AdminSelect name="role" defaultValue="ADMIN" required>
           {ADMIN_ROLES.map((role) => (
             <option key={role} value={role}>
               {formatAdminRoleLabel(role)}
@@ -108,7 +112,7 @@ export default function AdminCreateUserForm() {
         </AdminSelect>
       </FormField>
 
-      <AdminPermissionFields disabled={isPending} />
+      <AdminPermissionFields />
       {errorMessage ? (
         <div style={{ ...errorTextStyle, gridColumn: "1 / -1" }}>{errorMessage}</div>
       ) : null}
