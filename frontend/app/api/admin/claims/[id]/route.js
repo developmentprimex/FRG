@@ -1,9 +1,10 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
 import { requireAdminClaimsApi } from "../../../../../lib/admin-claims-access";
 import { prisma } from "../../../../../lib/prisma";
 import { deleteServiceClaimAttachments } from "../../../../../lib/service-claim-attachments-storage";
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminClaimsApi();
   const { id } = await params;
   let returnPath = `/admin/claims/${id}`;
@@ -34,3 +35,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, returnPath, "error", mapAdminMutationError(error, "Reklamation"));
   }
 }
+
+export const POST = withAdminPermission("ASC_MANAGE", handlePOST);

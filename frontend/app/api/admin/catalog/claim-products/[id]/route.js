@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash, validateClaimProductInput } from "../../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../../lib/auth";
 import { prisma } from "../../../../../../lib/prisma";
@@ -57,7 +58,7 @@ async function syncClaimProductInformationToKitchenItems(claimProducts) {
   }));
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
 
@@ -105,3 +106,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, "/admin/catalog/articles", "error", mapAdminMutationError(error, "Claim product"));
   }
 }
+
+export const POST = withAdminPermission("ASC_MANAGE", handlePOST);

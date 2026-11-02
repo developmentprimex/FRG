@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
 import { prisma } from "../../../../../lib/prisma";
@@ -10,7 +11,7 @@ function requireProgramId(value) {
   return programmId;
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   await requireAdminApi();
 
   try {
@@ -39,3 +40,5 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/catalog/imports", "error", mapAdminMutationError(error, "Programm ID"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

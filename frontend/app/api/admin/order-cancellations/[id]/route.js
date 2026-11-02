@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
 import { processCancellationRequest, retryCancellationEmails } from "../../../../../lib/order-cancellations";
@@ -16,7 +17,7 @@ function safeReturnPath(value, fallback) {
   return path.startsWith("/admin") ? path : fallback;
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   let returnPath = "/admin/order-cancellations";
@@ -47,3 +48,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, returnPath, "error", message);
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

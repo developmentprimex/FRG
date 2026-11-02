@@ -1,3 +1,4 @@
+import { AdminContractActivityLinks } from "../../../../components/admin-contract-activity-links";
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import { AdminOrderSummaryTable } from "../../../../components/admin-order-summary-table";
 import { OrderStatus } from "@prisma/client";
@@ -154,7 +155,7 @@ function PaymentStatusBadge({ status }) {
 }
 
 export default async function AdminOrderDetailPage({ params, searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
   const reportsReturnHref = getReportsReturnHref(resolvedSearchParams.returnTo);
@@ -203,7 +204,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
           actions={
             <div style={actionRowStyle}>
               {!reportsReturnHref && <ActionLink href="/admin/orders"><AdminText i18nKey="orderDetailAdmin.backToOrders" fallback="Back to orders" /></ActionLink>}
-              <ActionLink href={`/kitchens/${order.kitchen.slug}`}><AdminText i18nKey="orderDetailAdmin.viewKitchen" fallback="View kitchen" /></ActionLink>
+              <AdminContractActivityLinks admin={admin} contractNumber={order.kitchenContract?.contractNumber} target="claims" /><ActionLink href={`/kitchens/${order.kitchen.slug}`}><AdminText i18nKey="orderDetailAdmin.viewKitchen" fallback="View kitchen" /></ActionLink>
             </div>
           }
         >

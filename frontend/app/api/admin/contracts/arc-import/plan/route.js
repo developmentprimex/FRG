@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import arcImportCore from "../../../../../../lib/arc-kitchen-import-core.cjs";
 import { requireAdminApi } from "../../../../../../lib/auth";
@@ -10,7 +11,7 @@ function errorResponse(error) {
   return NextResponse.json({ error: error?.message || "ARC import plan failed." }, { status });
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     await requireAdminApi();
     const payload = await request.json();
@@ -20,3 +21,5 @@ export async function POST(request) {
     return errorResponse(error);
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

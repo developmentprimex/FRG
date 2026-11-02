@@ -1,10 +1,11 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { prepareKitchenItemMutation } from "../../../../../../lib/admin-kitchen-items";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../../lib/auth";
 import { prisma } from "../../../../../../lib/prisma";
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   try {
@@ -35,3 +36,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, `/admin/kitchens/${id}`, "error", mapAdminMutationError(error, "Item"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

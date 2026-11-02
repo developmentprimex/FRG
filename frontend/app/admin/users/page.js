@@ -1,23 +1,23 @@
+import { AdminPermissionFields } from "../../../components/admin-permission-fields";
+import { ADMIN_PERMISSIONS } from "../../../lib/admin-permissions";
 import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
   FlashMessage,
-  PageHero,
   StatusBadgeLabel,
-  TypeBadge,
   actionRowStyle,
   dangerButtonStyle,
   emptyStateStyle,
-  mutedTextStyle,
   pageGridStyle,
   secondaryButtonStyle,
-  splitGridStyle,
+  primaryButtonStyle,
   tableStyle,
   tableWrapStyle,
   tdStyle,
   thStyle,
 } from "../../../components/admin-ui";
+import AdminCreateUserPanel from "../../../components/admin-create-user-panel";
 import AdminCreateUserForm from "../../../components/admin-create-user-form";
 import { AdminFormSubmitButton } from "../../../components/admin-form-submit-button";
 import { AdminShell } from "../../../components/admin-shell";
@@ -70,7 +70,7 @@ export default async function AdminUsersPage({ searchParams }) {
   };
 
   const users = await prisma.adminUser.findMany({
-    orderBy: [{ role: "asc" }, { email: "asc" }],
+    orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: {
       id: true,
       email: true,
@@ -80,79 +80,37 @@ export default async function AdminUsersPage({ searchParams }) {
       updatedAt: true,
     },
   });
+  const permissionRows = await prisma.appSetting.findMany({ where: { key: { startsWith: "admin.permissions." } } });
+  const permissionMap = new Map(permissionRows.map(row => { let value = []; try { value = JSON.parse(row.value); } catch {} return [row.key, Array.isArray(value) ? value : []]; }));
   const filteredUsers = filterAdminUsers(users, filters);
   const hasActiveFilters = Boolean(filters.query || filters.role || filters.status);
 
   return (
     <AdminShell adminEmail={currentAdmin.email}>
       <div style={pageGridStyle}>
-        <PageHero
-          eyebrow={<AdminText i18nKey="usersAdmin.workspace" fallback="Administration" />}
+        <AdminSection
           title={<AdminText i18nKey="usersAdmin.title" fallback="User management" />}
-          description={
-            <AdminText
-              i18nKey="usersAdmin.description"
-              fallback="Create admin accounts and assign roles. Only superadmins can access this page."
-            />
-          }
-        />
+
+        >
+          <AdminCreateUserPanel>
+            <AdminSection
+              title={<AdminText i18nKey="usersAdmin.createUser" fallback="Create user" />}
+              description={<AdminText i18nKey="usersAdmin.createUserDescription" fallback="Add a new admin account with an email, password, and role." />}
+            >
+              <AdminCreateUserForm />
+            </AdminSection>
+          </AdminCreateUserPanel>
+        </AdminSection>
 
         {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
         {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-        <div style={splitGridStyle}>
-          <AdminSection
-            title={<AdminText i18nKey="usersAdmin.createUser" fallback="Create user" />}
-            description={
-              <AdminText
-                i18nKey="usersAdmin.createUserDescription"
-                fallback="Add a new admin account with an email, password, and role."
-              />
-            }
-          >
-            <AdminCreateUserForm />
-          </AdminSection>
-
-          <AdminSection
-            title={<AdminText i18nKey="usersAdmin.roleGuide" fallback="Role guide" />}
-            description={
-              <AdminText
-                i18nKey="usersAdmin.roleGuideDescription"
-                fallback="Detailed permissions will be added later. For now, all roles can use the existing admin workflows."
-              />
-            }
-          >
-            <div style={{ display: "grid", gap: 14 }}>
-              {ADMIN_ROLES.map((role) => (
-                <div key={role} style={roleGuideRowStyle}>
-                  <TypeBadge label={formatAdminRoleLabel(role)} />
-                  <p style={mutedTextStyle}>
-                    <AdminText i18nKey={`usersAdmin.roleDescription.${role}`} fallback={roleDescriptionFallback(role)} />
-                  </p>
-                </div>
-              ))}
-            </div>
-          </AdminSection>
-        </div>
-
         <AdminSection
           title={<AdminText i18nKey="usersAdmin.allUsers" fallback="All users" />}
-          description={
-            <AdminText
-              i18nKey="usersAdmin.allUsersDescription"
-              fallback="Update roles or deactivate accounts. You cannot modify your own role or deactivate yourself."
-            />
-          }
+
         >
           <AdminFilterForm action="/admin/users" style={filterPanelStyle}>
-            <div style={filterHeaderStyle}>
-              <span style={filterEyebrowStyle}>
-                <AdminText i18nKey="usersAdmin.filters" fallback="Filters" />
-              </span>
-              <span style={filterHintStyle}>
-                <AdminText i18nKey="usersAdmin.searchHint" fallback="Search by email and narrow by role or status." />
-              </span>
-            </div>
+
             <div className="users-filter-grid" style={filterGridStyle}>
               <FilterField label={<AdminText i18nKey="usersAdmin.search" fallback="Search" />}>
                 <AdminTranslatedInput
@@ -205,8 +163,17 @@ export default async function AdminUsersPage({ searchParams }) {
             />
           </p>
 
-          <div style={tableWrapStyle}>
-            <table style={tableStyle}>
+          <div className="users-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
+            <table style={{ ...tableStyle, minWidth: 1050 }}>
+              <colgroup>
+                <col style={{ width: "4%" }} />
+                <col style={{ width: "19%" }} />
+                <col style={{ width: "14%" }} />
+                <col style={{ width: "14%" }} />
+                <col style={{ width: "9%" }} />
+                <col style={{ width: "17%" }} />
+                <col style={{ width: "23%" }} />
+              </colgroup>
               <thead>
                 <tr>
                   <th style={{ ...thStyle, width: 72 }}>
@@ -217,6 +184,9 @@ export default async function AdminUsersPage({ searchParams }) {
                   </th>
                   <th style={thStyle}>
                     <AdminText i18nKey="usersAdmin.role" fallback="Role" />
+                  </th>
+                  <th style={thStyle}>
+                    <AdminText i18nKey="permissions.title" fallback="Workspace permissions" />
                   </th>
                   <th style={thStyle}>
                     <AdminText i18nKey="usersAdmin.status" fallback="Status" />
@@ -231,24 +201,30 @@ export default async function AdminUsersPage({ searchParams }) {
               </thead>
               <tbody>
                 {filteredUsers.length ? filteredUsers.map((user, index) => {
-                  const isSelf = user.id === currentAdmin.id;
                   const restrictions = getAdminUserActionRestrictions(user, currentAdmin.id, users);
 
                   return (
                     <tr key={user.id}>
                       <td style={{ ...tdStyle, ...orderNrCellStyle }}>{index + 1}</td>
                       <td style={tdStyle}>
-                        <strong>{user.email}</strong>
-                        {isSelf ? (
-                          <div style={{ marginTop: 6 }}>
-                            <TypeBadge label={<AdminText i18nKey="usersAdmin.you" fallback="You" />} />
-                          </div>
-                        ) : null}
+                        <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                          <strong>{user.email}</strong>
+                          {user.id === currentAdmin.id && (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "2px 7px", borderRadius: 6, background: "var(--app-surface-muted)", color: "var(--app-accent)", border: "1px solid var(--app-border)", fontSize: "var(--admin-text-label, 0.75rem)", fontWeight: 600, lineHeight: 1.5, whiteSpace: "nowrap" }}>
+                              <span aria-hidden="true" style={{ width: 5, height: 5, borderRadius: "50%", background: "currentColor" }} />
+                              <AdminText i18nKey="usersAdmin.you" fallback="You" />
+                            </span>
+                          )}
+                        </div>
+
                       </td>
                       <td style={tdStyle}>
-                        <form action={`/api/admin/users/${user.id}`} method="post" style={inlineFormStyle}>
+                        <form action={`/api/admin/users/${user.id}`} method="post" id={`user-edit-${user.id}`} style={inlineFormStyle}>
                           <input type="hidden" name="intent" value="update" />
+                          <input type="hidden" name="includePermissions" value="1" />
+                          {!restrictions.canChangeRole && <input type="hidden" name="role" value={user.role} />} 
                           <AdminSelect
+                            portal
                             name="role"
                             defaultValue={user.role}
                             disabled={!restrictions.canChangeRole}
@@ -267,19 +243,11 @@ export default async function AdminUsersPage({ searchParams }) {
                               </option>
                             ))}
                           </AdminSelect>
-                          {restrictions.canChangeRole ? (
-                            <AdminFormSubmitButton secondary pendingKey="usersAdmin.saving" pendingLabel="Saving..." style={compactButtonStyle}>
-                              <AdminText i18nKey="usersAdmin.saveRole" fallback="Save role" />
-                            </AdminFormSubmitButton>
-                          ) : restrictions.changeRoleReasonKey ? (
-                            <span style={disabledHintStyle} title={actionReasonFallback(restrictions.changeRoleReasonKey)}>
-                              <AdminText
-                                i18nKey={restrictions.changeRoleReasonKey}
-                                fallback={actionReasonFallback(restrictions.changeRoleReasonKey)}
-                              />
-                            </span>
-                          ) : null}
+
                         </form>
+                      </td>
+                      <td style={tdStyle}>
+                        <AdminPermissionFields compact form={`user-edit-${user.id}`} permissions={user.role === "SUPERADMIN" ? ADMIN_PERMISSIONS : permissionMap.get(`admin.permissions.${user.id}`) || []} disabled={user.role === "SUPERADMIN"} />
                       </td>
                       <td style={tdStyle}>
                         <StatusBadgeLabel
@@ -298,6 +266,11 @@ export default async function AdminUsersPage({ searchParams }) {
                       </td>
                       <td style={tdStyle}>
                         <div style={actionColumnStyle}>
+                          {(restrictions.canChangeRole || user.role !== "SUPERADMIN") && (
+                            <button type="submit" form={`user-edit-${user.id}`} style={primaryButtonStyle}>
+                              <AdminText i18nKey="common.save" fallback="Save" />
+                            </button>
+                          )}
                           {restrictions.canReactivate ? (
                             <form action={`/api/admin/users/${user.id}`} method="post" style={{ margin: 0 }}>
                               <input type="hidden" name="intent" value="reactivate" />
@@ -320,8 +293,6 @@ export default async function AdminUsersPage({ searchParams }) {
                                   <AdminText i18nKey="usersAdmin.deactivate" fallback="Deactivate" />
                                 </AdminFormSubmitButton>
                               </form>
-                            ) : restrictions.deactivateReasonKey ? (
-                              <DisabledActionHint reasonKey={restrictions.deactivateReasonKey} />
                             ) : null
                           ) : null}
 
@@ -337,7 +308,9 @@ export default async function AdminUsersPage({ searchParams }) {
                               </AdminFormSubmitButton>
                             </form>
                           ) : restrictions.deleteReasonKey ? (
-                            <DisabledActionHint reasonKey={restrictions.deleteReasonKey} />
+                            <button type="button" disabled style={{ ...compactButtonStyle, ...dangerButtonStyle, opacity: 0.35, cursor: "not-allowed" }}>
+                              <AdminText i18nKey="usersAdmin.delete" fallback="Delete" />
+                            </button>
                           ) : null}
                         </div>
                       </td>
@@ -345,7 +318,7 @@ export default async function AdminUsersPage({ searchParams }) {
                   );
                 }) : (
                   <tr>
-                    <td colSpan={6} style={tdStyle}>
+                    <td colSpan={7} style={tdStyle}>
                       <p style={emptyStateStyle}>
                         {hasActiveFilters ? (
                           <AdminText
@@ -366,6 +339,14 @@ export default async function AdminUsersPage({ searchParams }) {
       </div>
 
       <style>{`
+        .users-table table { font-size: var(--admin-text-body, 13px); }
+        .users-table th { padding: 12px 10px !important; font-size: var(--admin-text-label, 0.75rem) !important; }
+        .users-table td { padding: 14px 10px !important; vertical-align: top; }
+        .users-table td strong { font-weight: 600; }
+        .users-table tbody tr:hover { background: var(--app-surface-muted); }
+        .users-table select { min-height: 34px !important; padding: 6px 10px !important; border-radius: 8px !important; font-size: var(--admin-text-meta, 0.8125rem) !important; }
+        .users-table button { white-space: nowrap; flex-shrink: 0; min-height: 36px !important; padding: 8px 10px !important; border-radius: 8px !important; font-size: var(--admin-text-meta, 0.8125rem) !important; box-shadow: none !important; }
+
         @media (max-width: 900px) {
           .users-filter-grid {
             grid-template-columns: 1fr !important;
@@ -394,36 +375,16 @@ function FilterField({ label, children }) {
   );
 }
 
-function roleDescriptionFallback(role) {
-  switch (role) {
-    case "SUPERADMIN":
-      return "Full access, including user management.";
-    case "ADMIN":
-      return "Standard admin access to the current dashboard.";
-    case "USER":
-      return "Basic admin access with the same workflows for now.";
-    default:
-      return "";
-  }
-}
-
 const orderNrCellStyle = {
   color: "var(--app-text-muted)",
   fontWeight: 700,
   fontVariantNumeric: "tabular-nums",
 };
 
-const roleGuideRowStyle = {
-  display: "grid",
-  gap: 8,
-  padding: "14px 0",
-  borderBottom: "1px solid var(--app-border)",
-};
-
 const inlineFormStyle = {
   display: "grid",
-  gap: 10,
-  maxWidth: 280,
+  gap: 8,
+  maxWidth: 220,
 };
 
 const compactButtonStyle = {
@@ -523,9 +484,11 @@ const resultsMetaStyle = {
 };
 
 const actionColumnStyle = {
-  display: "grid",
-  gap: 10,
-  minWidth: 160,
+  display: "flex",
+  flexWrap: "nowrap",
+  alignItems: "center",
+  gap: 8,
+  minWidth: 0,
 };
 
 const disabledHintStyle = {

@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { redirectWithFlash } from "../../../../../lib/admin-forms";
 import { setAdminLoginVerificationEnabled } from "../../../../../lib/admin-settings";
 import { requireAdminApi } from "../../../../../lib/auth";
@@ -20,7 +21,7 @@ function getMessage(request, key) {
   return MESSAGES[language][key] || MESSAGES.en[key];
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     await requireAdminApi();
     const formData = await request.formData();
@@ -41,3 +42,5 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/settings", "error", message);
   }
 }
+
+export const POST = withAdminPermission("SUPERADMIN", handlePOST);

@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { requireAdminApi } from "../../../../../../../lib/auth";
@@ -164,7 +165,7 @@ async function listCurrentProgramPriceRows(programmId) {
   return [...articles, ...blenden, ...services];
 }
 
-export async function GET(_request, { params }) {
+async function handleGET(_request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   const entry = await prisma.catalogPriceListImport.findUnique({
@@ -214,3 +215,5 @@ export async function GET(_request, { params }) {
     },
   });
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);

@@ -1,3 +1,4 @@
+import { hasPermission } from "../lib/admin-permissions";
 import AdminFilterForm from "./admin-filter-form";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -19,7 +20,7 @@ import { normalizeBusinessReportFilters, buildBusinessReportQuery, getActiveBusi
 
 export async function AdminBusinessReportPage({ scope, searchParams }) {
   if (scope === "FRG") return AdminFrgMonthlyReportPage({ searchParams });
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("ASC_VIEW");
   const params = (await searchParams) || {};
   const now = new Date();
   const filters = normalizeAscKitchenFilters(params, now);
@@ -37,7 +38,7 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
       <AdminSection compact title={scope === "FRG" ? "Fragmento" : "ASC"}
         actions={<>
           <AdminReportScopeLink compact href={"/admin/reports?" + query}><AdminText i18nKey="reportsAdmin.backToReports" fallback="Back to reports" /></AdminReportScopeLink>
-          <AdminReportScopeLink compact href={(scope === "FRG" ? "/admin/reports/asc?" : "/admin/reports/frg?") + query}>{scope === "FRG" ? "ASC" : "FRG"}</AdminReportScopeLink>
+          {hasPermission(admin, "FRG_VIEW") && <AdminReportScopeLink compact href={(scope === "FRG" ? "/admin/reports/asc?" : "/admin/reports/frg?") + query}>{scope === "FRG" ? "ASC" : "FRG"}</AdminReportScopeLink>}
           <Link href={"/api/admin/reports/orders/export?scope=" + scope + "&" + query} prefetch={false} style={{ ...compactButtonStyle, textDecoration: "none" }}><AdminText i18nKey="reportsAdmin.exportExcel" fallback="Export Excel" /></Link>
         </>}>
         <AdminBusinessReportPeriods periods={periods} activePeriod={activePeriod} />

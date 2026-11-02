@@ -118,7 +118,7 @@ async function listCatalogImportHistory() {
 }
 
 export default async function AdminCatalogImportsPage({ searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = await searchParams;
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");

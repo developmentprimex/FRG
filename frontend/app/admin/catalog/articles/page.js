@@ -403,7 +403,7 @@ function formatDimensions(article) {
 }
 
 export default async function AdminCatalogArticlesPage({ searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = await searchParams;
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");

@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { REPORT_TIME_ZONE } from "../../../../../../lib/admin-date-time";
 import { NextResponse } from "next/server";
 import {
@@ -39,11 +40,13 @@ function excelResponse({ buffer, filename }) {
   });
 }
 
-export async function GET(request) {
+async function handleGET(request) {
   const admin = await requireAdminApi();
   const params = Object.fromEntries(request.nextUrl.searchParams.entries());
   const businessFilters = normalizeBusinessReportFilters(params);
   const scope = String(params.scope || "").trim().toUpperCase();
+  await requireAdminApi(scope === "ASC" ? "ASC_VIEW" : "FRG_VIEW");
+  if (!scope) await requireAdminApi("ASC_VIEW");
   if (scope && !["FRG", "ASC"].includes(scope)) {
     return NextResponse.json({ error: "Invalid report scope." }, { status: 400 });
   }
@@ -152,3 +155,5 @@ export async function GET(request) {
 
   return excelResponse({ buffer, filename });
 }
+
+export const GET = withAdminPermission(["FRG_VIEW", "ASC_VIEW"], handleGET);

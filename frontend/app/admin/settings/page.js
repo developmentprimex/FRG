@@ -21,7 +21,7 @@ import { requireAdminPage } from "../../../lib/auth";
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage({ searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("SETTINGS_MANAGE");
   const resolvedSearchParams = (await searchParams) || {};
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
@@ -32,7 +32,7 @@ export default async function AdminSettingsPage({ searchParams }) {
     deliveryLeadTimeWeeks,
   ] = await Promise.all([
     getDirectOrderConfirmationEnabled(),
-    getAdminLoginVerificationEnabled(),
+    admin.role === "SUPERADMIN" ? getAdminLoginVerificationEnabled() : Promise.resolve(false),
     getDeliveryMinOrderSettings(),
     getDeliveryLeadTimeWeeks(),
   ]);
@@ -75,6 +75,7 @@ export default async function AdminSettingsPage({ searchParams }) {
             </form>
           </AdminSection>
 
+          {admin.role === "SUPERADMIN" ? (
           <AdminSection
             title={<AdminText i18nKey="settingsAdmin.loginVerificationTitle" fallback="Login verification" />}
             description={<AdminText i18nKey="settingsAdmin.loginVerificationDescription" fallback="Control whether admin sign-in requires an emailed verification code after the password step." />}
@@ -105,6 +106,7 @@ export default async function AdminSettingsPage({ searchParams }) {
               </div>
             </form>
           </AdminSection>
+          ) : null}
 
           <AdminSection
             title={<AdminText i18nKey="settingsAdmin.deliveryMinOrderTitle" fallback="Delivery minimum order value" />}

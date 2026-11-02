@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { requireAdminApi } from "../../../../../lib/auth";
@@ -58,7 +59,7 @@ function appendSheet(workbook, name, rows, widths) {
   XLSX.utils.book_append_sheet(workbook, sheet, name);
 }
 
-export async function GET(request) {
+async function handleGET(request) {
   await requireAdminApi();
 
   const filters = normalizeFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
@@ -122,3 +123,5 @@ export async function GET(request) {
     },
   });
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);

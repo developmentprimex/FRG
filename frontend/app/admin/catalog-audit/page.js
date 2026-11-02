@@ -313,7 +313,7 @@ function AuditWarningText({ warnings = [] }) {
 }
 
 export default async function AdminCatalogAuditPage() {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const { counts, audit } = await loadCatalogAuditData();
 
   return (

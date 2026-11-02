@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
@@ -35,7 +36,7 @@ function parseEffectiveFrom(formData) {
   return date;
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   const admin = await requireAdminApi();
   const formData = await request.formData();
   const intent = String(formData.get("_intent") || "preview");
@@ -88,3 +89,5 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/catalog/imports", "error", mapAdminMutationError(error, "Catalog import"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

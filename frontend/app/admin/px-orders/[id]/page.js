@@ -77,7 +77,7 @@ function ItemTypeLabel({ type }) {
 }
 
 export default async function AdminPxOrderDetailPage({ params, searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("PX_FRG_VIEW");
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
   const [order] = await attachOrderEmailDelivery([await getTestOrderById(id)], "test");

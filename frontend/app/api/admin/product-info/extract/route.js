@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import fs from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -21,7 +22,7 @@ function sanitizeFileName(value) {
   return `${safeName || "product-info"}.pdf`;
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     await requireAdminApi();
 
@@ -76,3 +77,5 @@ export async function POST(request) {
     );
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

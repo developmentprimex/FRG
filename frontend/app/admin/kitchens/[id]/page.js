@@ -420,7 +420,7 @@ function ProductInformationFields({ item = {}, compact = false, placeholders = f
 }
 
 export default async function AdminKitchenDetailPage({ params, searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
   const kitchen = await getKitchenById(id);

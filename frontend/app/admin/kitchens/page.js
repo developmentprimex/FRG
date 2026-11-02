@@ -39,7 +39,7 @@ const numberCellStyle = { width: 64, textAlign: "center", whiteSpace: "nowrap", 
 const KITCHEN_STATUS_OPTIONS = Object.values(KitchenStatus);
 
 export default async function AdminKitchensPage({ searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = (await searchParams) || {};
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");

@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { prisma } from "./prisma";
+import { canAccess } from "./admin-permissions";
 
 const SESSION_COOKIE = "fragmento_admin_session";
 const PENDING_LOGIN_COOKIE = "fragmento_admin_login_pending";
@@ -133,15 +134,19 @@ export const getAdminSession = cache(async function getAdminSession() {
     return null;
   }
 
-  return admin;
+  const access = await prisma.appSetting.findUnique({ where: { key: `admin.permissions.${admin.id}` } });
+  let permissions = [];
+  try { permissions = JSON.parse(access?.value || "[]"); } catch {}
+  return { ...admin, permissions: Array.isArray(permissions) ? permissions : [] };
 });
 
-export async function requireAdminPage() {
+export async function requireAdminPage(required) {
   try {
   const admin = await getAdminSession();
   if (!admin) {
     redirect("/admin/login");
   }
+  if (!canAccess(admin, required)) redirect("/admin/access-denied");
   return admin;
   } catch (error) {
     if (error instanceof Error && error.message.includes("ADMIN_SESSION_SECRET")) {
@@ -151,12 +156,17 @@ export async function requireAdminPage() {
   }
 }
 
-export async function requireAdminApi() {
+export async function requireAdminApi(required) {
   try {
     const admin = await getAdminSession();
     if (!admin) {
       const error = new Error("Unauthorized");
       error.status = 401;
+      throw error;
+    }
+    if (!canAccess(admin, required)) {
+      const error = new Error("Forbidden");
+      error.status = 403;
       throw error;
     }
     return admin;
@@ -166,4 +176,24 @@ export async function requireAdminApi() {
     }
     throw error;
   }
+}
+
+export function withAdminPermission(required, handler) {
+  return async (...args) => {
+    try {
+      const admin = await requireAdminApi(required);
+      const claimId = (await args[1]?.params)?.id;
+      if (claimId && ["ASC_VIEW", "ASC_MANAGE"].includes(required) && !["SUPERADMIN", "PX_ADMIN"].includes(admin.role)) {
+        const rows = await prisma.$queryRaw`SELECT "contractNumber" FROM "ServiceClaim" WHERE "id" = ${claimId}`;
+        if (String(rows[0]?.contractNumber || "").replace(/\s/g, "").startsWith("111")) {
+          return Response.json({ error: "Forbidden" }, { status: 403 });
+        }
+      }
+      return await handler(...args);
+    }
+    catch (error) {
+      if (error?.status === 401 || error?.status === 403) return Response.json({ error: error.message }, { status: error.status });
+      throw error;
+    }
+  };
 }

@@ -1,10 +1,11 @@
+import { withAdminPermission } from "../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../lib/auth";
 import { getOrdersForAdmin } from "../../../../lib/catalog";
 import { deleteAllOrders } from "../../../../lib/orders";
 
-export async function GET(request) {
+async function handleGET(request) {
   await requireAdminApi();
   const { searchParams } = new URL(request.url);
   const orders = await getOrdersForAdmin({
@@ -18,7 +19,7 @@ export async function GET(request) {
   return NextResponse.json(orders);
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   await requireAdminApi();
 
   try {
@@ -41,3 +42,6 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/orders", "error", message);
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

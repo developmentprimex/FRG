@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminPermissionFields } from "./admin-permission-fields";
 import { useState } from "react";
 import {
   FormField,
@@ -107,6 +108,7 @@ export default function AdminCreateUserForm() {
         </AdminSelect>
       </FormField>
 
+      <AdminPermissionFields disabled={isPending} />
       {errorMessage ? (
         <div style={{ ...errorTextStyle, gridColumn: "1 / -1" }}>{errorMessage}</div>
       ) : null}

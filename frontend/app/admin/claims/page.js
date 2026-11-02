@@ -44,7 +44,7 @@ function truncate(value, max = 140) {
 }
 
 export default async function AdminClaimsPage({ searchParams = {}, pxOnly = false }) {
-  const admin = await requireAdminClaimsPage();
+  const admin = await requireAdminClaimsPage(pxOnly);
   const resolvedSearchParams = (await searchParams) || {};
   const basePath = pxOnly ? "/admin/px-claims" : "/admin/claims";
   const filters = {

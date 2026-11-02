@@ -1,3 +1,6 @@
+import { cookies as workspaceCookies } from "next/headers";
+import { redirect as workspaceRedirect } from "next/navigation";
+import { resolveWorkspace } from "../../../lib/admin-permissions";
 import AdminFilterForm from "../../../components/admin-filter-form";
 import { AdminClaimLocalizedText } from "../../../components/admin-claim-localized-text";
 import { REPORT_TIME_ZONE } from "../../../lib/admin-date-time";
@@ -48,7 +51,7 @@ function getExportHref(filters, businessFilters) {
 }
 
 export default async function AdminReportsPage({ searchParams = {} }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage(["FRG_VIEW", "ASC_VIEW"]);
   const resolvedSearchParams = (await searchParams) || {};
   const businessFilters = normalizeBusinessReportFilters(resolvedSearchParams);
   const filters = normalizeActivityReportFilters({ ...resolvedSearchParams, ...businessFilters });

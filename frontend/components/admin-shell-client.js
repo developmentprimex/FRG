@@ -1,5 +1,6 @@
 "use client";
 
+import { hasPermission, canAccess, routePermission } from "../lib/admin-permissions";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -77,12 +78,14 @@ const navSections = [
 ];
 const DESKTOP_SIDEBAR_WIDTH = "clamp(260px, 18vw, 300px)";
 
-export function AdminShellClient({ adminEmail, adminRole = "ADMIN", initialLanguage = "en", showClaimsNav = false, showUsersNav = false, openCancellationCount = 0, children }) {
+export function AdminShellClient({ adminEmail, adminRole = "ADMIN", initialLanguage = "en", access = {}, initialWorkspace = null, showClaimsNav = false, showUsersNav = false, openCancellationCount = 0, children }) {
   return (
     <AdminI18nProvider initialLanguage={initialLanguage}>
       <AdminShellContent
         adminEmail={adminEmail}
         adminRole={adminRole}
+        access={access}
+        initialWorkspace={initialWorkspace}
         showClaimsNav={showClaimsNav}
         showUsersNav={showUsersNav}
         openCancellationCount={openCancellationCount}
@@ -98,9 +101,16 @@ function getNavBadgeCount(item, { openCancellationCount }) {
   return 0;
 }
 
-function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav, openCancellationCount = 0, children }) {
+function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, showClaimsNav, showUsersNav, openCancellationCount = 0, children }) {
   const pathname = usePathname();
   const router = useRouter();
+  const routeScope = /\/admin\/(claims|px-claims|reports\/asc)(\/|$)/.test(pathname) ? "ASC" : /\/admin\/(orders|px-orders|order-cancellations|reports\/frg)(\/|$)/.test(pathname) ? "FRG" : null;
+  const workspace = routeScope || initialWorkspace;
+  useEffect(() => {
+    if (routeScope && routeScope !== initialWorkspace && hasPermission(access, `${routeScope}_VIEW`)) {
+      fetch("/api/admin/workspace", { method: "POST", headers: { accept: "application/json" }, body: new URLSearchParams({ scope: routeScope }) }).catch(() => {});
+    }
+  }, [routeScope, initialWorkspace]);
   const { translate } = useAdminI18n();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState("");
@@ -117,6 +127,9 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
     if (href !== pathname) setPendingHref(href);
   }
   const isNavItemVisible = (item) => {
+    if (item.href && !canAccess(access, routePermission(item.href))) return false;
+    if (item.href && workspace === "FRG" && /\/(claims|px-claims)(\/|$)/.test(item.href)) return false;
+    if (item.href && workspace === "ASC" && /\/(orders|px-orders|order-cancellations|kitchens|contracts|property-owners|catalog)(\/|$)/.test(item.href)) return false;
     if (item.requiresClaimsNav && !showClaimsNav) return false;
     if (item.requiresUsersNav && !showUsersNav) return false;
     if (item.requiresSuperAdmin && adminRole !== "SUPERADMIN") return false;
@@ -124,7 +137,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   };
   const visibleNavSections = navSections.map((section) => ({
     ...section,
-    items: section.items.filter(isNavItemVisible).map((item) => (
+    items: section.items.map(item => item.href === "/admin/reports" || item.href === "/admin" ? { ...item, href: workspace ? `/admin/reports/${workspace.toLowerCase()}` : "/admin/access-denied" } : item).filter(isNavItemVisible).map((item) => (
       item.children ? { ...item, children: item.children.filter(isNavItemVisible) } : item
     )).filter((item) => !item.children || item.children.length > 0),
   })).filter((section) => section.items.length > 0);
@@ -464,6 +477,9 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 6 }} aria-label="Workspace">
+                  {["FRG", "ASC"].filter(scope => hasPermission(access, `${scope}_VIEW`)).map(scope => <form key={scope} action="/api/admin/workspace" method="post"><input type="hidden" name="scope" value={scope} /><button type="submit" aria-pressed={workspace === scope} style={{ padding: "6px 12px", fontWeight: workspace === scope ? 800 : 400, border: "1px solid var(--app-border)", borderRadius: 6, background: workspace === scope ? "var(--color-primary-soft)" : "var(--app-surface)", color: "var(--app-text)" }}>{scope}</button></form>)}
+                </div>
                 <AdminLanguageSwitcher />
                 <div
                   style={{

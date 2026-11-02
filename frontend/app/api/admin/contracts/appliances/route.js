@@ -1,9 +1,10 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { requireAdminApi } from "../../../../../lib/auth";
 import { prisma } from "../../../../../lib/prisma";
 import { loadContractApplianceInventory } from "../../../../../lib/contract-appliance-inventory";
 
-export async function GET(request) {
+async function handleGET(request) {
   await requireAdminApi();
   const params = new URL(request.url).searchParams;
   const contractId = params.get("contractId");
@@ -22,3 +23,5 @@ export async function GET(request) {
   };
   return NextResponse.json(await loadContractApplianceInventory(contract), { headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);

@@ -1,9 +1,10 @@
+import { withAdminPermission } from "../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../lib/admin-forms";
 import { requireAdminClaimsApi } from "../../../../lib/admin-claims-access";
 import { prisma } from "../../../../lib/prisma";
 import { deleteServiceClaimAttachments } from "../../../../lib/service-claim-attachments-storage";
 
-export async function POST(request) {
+async function handlePOST(request) {
   await requireAdminClaimsApi();
 
   try {
@@ -40,3 +41,5 @@ export async function POST(request) {
     );
   }
 }
+
+export const POST = withAdminPermission("PX_ASC_MANAGE", handlePOST);

@@ -1,3 +1,6 @@
+import { cookies as workspaceCookies } from "next/headers";
+import { redirect as workspaceRedirect } from "next/navigation";
+import { resolveWorkspace } from "../../lib/admin-permissions";
 ﻿import { getPriceBreakdown } from "../../lib/price-utils";
 import { AdminShell } from "../../components/admin-shell";
 import { AdminDashboardCharts } from "../../components/admin-dashboard-charts";
@@ -966,6 +969,8 @@ const hasKitchenItemArticleNumberColumn = cache(async function hasKitchenItemArt
 
 export default async function AdminDashboardPage({ searchParams = {} }) {
   const admin = await requireAdminPage();
+  const workspace = resolveWorkspace(admin, (await workspaceCookies()).get("adminWorkspace")?.value);
+  workspaceRedirect(workspace ? `/admin/reports/${workspace.toLowerCase()}` : "/admin/access-denied");
   const params = await searchParams;
   const period = getPeriod(normalizeParam(params.period));
   const kitchenId = normalizeParam(params.kitchenId);
@@ -1511,7 +1516,7 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <AdminDashboardCharts
-        showClaimsLink={showAdminClaimsInNav(admin.email)}
+        showClaimsLink={showAdminClaimsInNav(admin)}
         kpis={kpis}
         periodOptions={PERIOD_OPTIONS.map(({ value, labelKey, fallbackLabel }) => ({ value, labelKey, fallbackLabel }))}
         selectedPeriod={period.value}

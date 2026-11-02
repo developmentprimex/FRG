@@ -39,7 +39,7 @@ function usageLabel(orderCount) {
 
 
 export default async function AdminContractsPage({ searchParams = {} }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {
     contractType: normalizeContractTypeFilter(resolvedSearchParams.contractType),

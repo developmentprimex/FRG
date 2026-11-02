@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash, validateCatalogArticleInput } from "../../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../../lib/auth";
 import {
@@ -9,7 +10,7 @@ import {
 } from "../../../../../../lib/catalog-program-admin";
 import { prisma } from "../../../../../../lib/prisma";
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   let programmId = "IP 2200";
@@ -71,3 +72,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, catalogProgramPath(programmId), "error", mapAdminMutationError(error, "Article"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

@@ -1,9 +1,10 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash, validateCatalogAddonInput } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
 import { catalogProgramPath, requireCatalogProgramId, splitProgramPrice } from "../../../../../lib/catalog-program-admin";
 import { prisma } from "../../../../../lib/prisma";
 
-export async function POST(request) {
+async function handlePOST(request) {
   await requireAdminApi();
   let programmId = "IP 2200";
 
@@ -30,3 +31,5 @@ export async function POST(request) {
     return redirectWithFlash(request, catalogProgramPath(programmId), "error", mapAdminMutationError(error, "Blende"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

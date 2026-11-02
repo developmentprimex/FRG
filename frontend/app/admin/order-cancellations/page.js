@@ -38,7 +38,7 @@ function getFilterHref(status, q = "") {
 }
 
 export default async function AdminOrderCancellationsPage({ searchParams = {} }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = (await searchParams) || {};
   const requestedStatus = normalizeParam(resolvedSearchParams.status).trim().toUpperCase();
   const activeStatus = ["RECEIVED", "APPROVED", "REJECTED", "ALL"].includes(requestedStatus) ? requestedStatus : "RECEIVED";

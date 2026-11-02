@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { syncDishwasherClaimPartsForAdminItem } from "../../../../../lib/admin-dishwasher-claim-parts";
 import { prepareKitchenItemMutation } from "../../../../../lib/admin-kitchen-items";
@@ -5,7 +6,7 @@ import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/adm
 import { requireAdminApi } from "../../../../../lib/auth";
 import { prisma } from "../../../../../lib/prisma";
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   let kitchenId = "";
@@ -84,3 +85,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, fallbackPath, "error", mapAdminMutationError(error, "Item"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

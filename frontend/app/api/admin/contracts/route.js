@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { mapAdminMutationError, redirectWithFlash, validateKitchenContractInput, validatePropertyObjectInput } from "../../../../lib/admin-forms";
@@ -13,7 +14,7 @@ import {
 } from "../../../../lib/contract-claim-plan-assets";
 import { saveContractApplianceInventory } from "../../../../lib/contract-appliance-inventory";
 
-export async function GET(request) {
+async function handleGET(request) {
   await requireAdminApi();
   const { searchParams } = new URL(request.url);
   return NextResponse.json(await listKitchenContractsForAdmin({
@@ -101,7 +102,7 @@ function validateInlineObjectInput(formData) {
   return data;
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   await requireAdminApi();
   let returnPath = "/admin/contracts";
 
@@ -208,3 +209,6 @@ export async function POST(request) {
     return redirectWithFlash(request, errorPath, "error", mapAdminMutationError(error, "Contract number"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

@@ -184,11 +184,12 @@
     "creatingUser": "Creating user...",
     "role": "Role",
     "roleGuide": "Role guide",
-    "roleGuideDescription": "Detailed permissions will be added later. For now, all roles can use the existing admin workflows.",
+    "roleGuideDescription": "Workspace access is assigned separately below. Superadmins have full access.",
     "roleDescription": {
       "SUPERADMIN": "Full access, including user management.",
-      "ADMIN": "Standard admin access to the current dashboard.",
-      "USER": "Basic admin access with the same workflows for now."
+      "ADMIN": "Access follows the assigned workspace permissions.",
+      "USER": "Access follows the assigned workspace permissions.",
+      "PX_ADMIN": "Access follows the assigned workspace permissions."
     },
     "allUsers": "All users",
     "allUsersDescription": "Update roles or deactivate accounts. Protected actions are disabled with an explanation.",
@@ -1709,5 +1710,18 @@
     "emailNote": "Emails count recorded successful recipient deliveries, including resends. Cancellation requests count received requests across all statuses.",
     "historicalNote": "{count} historical sales have no recorded confirmation date and use their creation date. These are marked in Excel. Historical months reflect current order statuses.",
     "exportNote": "Excel includes this summary, individual orders, ordered items with manufacturers, and report definitions."
+  },
+  "permissions": {
+    "title": "Workspace permissions",
+    "FRG_VIEW": "FRG: view orders and reports",
+    "FRG_MANAGE": "FRG: manage orders and setup",
+    "ASC_VIEW": "ASC: view claims and reports",
+    "ASC_MANAGE": "ASC: manage claims",
+    "save": "Save permissions",
+    "denied": "You do not have access to this workspace. Ask a superadmin to assign permissions.",
+    "relatedClaim": "Claim for this contract",
+    "relatedOrder": "Order for this contract",
+    "FRG": "FRG access: view and manage",
+    "ASC": "ASC access: view and manage"
   }
 }

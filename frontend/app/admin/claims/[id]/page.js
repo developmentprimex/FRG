@@ -1,3 +1,4 @@
+import { AdminContractActivityLinks } from "../../../../components/admin-contract-activity-links";
 import { ClaimEmailReview } from "../../../../components/claim-email-review";
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import {
@@ -147,6 +148,9 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
 
   const claims = await queryServiceClaimById(prisma, id);
 
+  if (claims[0] && String(claims[0].contractNumber || "").replace(/\s/g, "").startsWith("111")) {
+    await requireAdminClaimsPage(true);
+  }
   const [claim] = await attachClaimEmailDelivery(claims);
 
   if (!claim) {
@@ -218,7 +222,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
         <AdminSection
           title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: claim.contractNumber }} />}
           description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted claim." />}
-          actions={<><ClaimEmailReview claimId={claim.id} />{!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}</>}
+          actions={<><AdminContractActivityLinks admin={admin} contractNumber={claim.contractNumber} target="orders" /><ClaimEmailReview claimId={claim.id} />{!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}</>}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}

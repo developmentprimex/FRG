@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { randomUUID } from "crypto";
 import { mapAdminMutationError, redirectWithFlash, validatePropertyObjectInput } from "../../../../../../lib/admin-forms";
 import { isAddressVerificationRecordValid } from "../../../../../../lib/address-verification-server";
@@ -27,7 +28,7 @@ function parseAddressVerificationRecord(formData) {
   }
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id: rawId } = await params;
   const id = normalizeRouteId(rawId);
@@ -70,3 +71,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, `${detailPath}?createObject=1`, "error", mapAdminMutationError(error, "Property object"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

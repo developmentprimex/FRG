@@ -111,7 +111,7 @@ function DeleteAllPxOrdersAction() {
 }
 
 export default async function AdminOrdersPage({ searchParams = {}, pxOnly = false }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage(pxOnly ? "PX_FRG_VIEW" : "FRG_VIEW");
   const basePath = pxOnly ? "/admin/px-orders" : "/admin/orders";
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {

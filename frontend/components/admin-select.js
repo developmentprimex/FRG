@@ -1,6 +1,7 @@
 "use client";
 
 import { Children, isValidElement, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useOptionalAdminI18n } from "./admin-i18n";
 import { useAdminFilterChange } from "./admin-filter-form";
 
@@ -20,6 +21,7 @@ export default function AdminSelect({
   ariaLabelKey,
   ariaLabelValues,
   label,
+  portal = false,
   ...triggerProps
 }) {
   const adminI18n = useOptionalAdminI18n();
@@ -28,6 +30,8 @@ export default function AdminSelect({
   const listboxId = `${id || generatedId}-listbox`;
   const buttonRef = useRef(null);
   const menuRef = useRef(null);
+  const popupRef = useRef(null);
+  const [popupStyle, setPopupStyle] = useState(null);
   const controlled = value !== undefined;
   const [internalValue, setInternalValue] = useState(defaultValue || "");
   const [open, setOpen] = useState(false);
@@ -73,7 +77,7 @@ export default function AdminSelect({
     if (!open) return;
 
     function handlePointerDown(event) {
-      if (!menuRef.current?.contains(event.target) && !buttonRef.current?.contains(event.target)) {
+      if (!menuRef.current?.contains(event.target) && !popupRef.current?.contains(event.target) && !buttonRef.current?.contains(event.target)) {
         setOpen(false);
       }
     }
@@ -81,6 +85,31 @@ export default function AdminSelect({
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [open]);
+
+  useEffect(() => {
+    if (!open || !portal) return;
+    function positionPopup() {
+      const rect = buttonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const below = window.innerHeight - rect.bottom - 12;
+      const above = rect.top - 12;
+      const upward = below < 220 && above > below;
+      setPopupStyle({
+        position: "fixed", left: rect.left, width: rect.width,
+        top: upward ? "auto" : rect.bottom + 6,
+        bottom: upward ? window.innerHeight - rect.top + 6 : "auto",
+        maxHeight: Math.min(300, Math.max(80, upward ? above : below)),
+        overflowY: "auto", zIndex: 10000,
+      });
+    }
+    positionPopup();
+    window.addEventListener("resize", positionPopup);
+    window.addEventListener("scroll", positionPopup, true);
+    return () => {
+      window.removeEventListener("resize", positionPopup);
+      window.removeEventListener("scroll", positionPopup, true);
+    };
+  }, [open, portal]);
 
   useEffect(() => {
     if (!open) return;
@@ -189,8 +218,8 @@ export default function AdminSelect({
         <span className={`admin-select__value${selectedValue ? "" : " is-placeholder"}`}>{displayLabel}</span>
         <span className="admin-select__chevron" aria-hidden="true" />
       </button>
-      {open ? (
-        <span className="admin-select__menu" id={listboxId} role="listbox" aria-label={translatedAriaLabel || (typeof label === "string" ? label : undefined)}>
+      {open ? (() => {
+        const menu = <span ref={popupRef} style={portal ? { ...popupStyle, visibility: popupStyle ? "visible" : "hidden" } : undefined} className="admin-select__menu" id={listboxId} role="listbox" aria-label={translatedAriaLabel || (typeof label === "string" ? label : undefined)}>
           {options.map((option, index) => {
             const selected = option.value === selectedValue;
             const active = index === activeIndex;
@@ -211,8 +240,9 @@ export default function AdminSelect({
               </button>
             );
           })}
-        </span>
-      ) : null}
+        </span>;
+        return portal ? createPortal(menu, document.body) : menu;
+      })() : null}
     </span>
   );
 }

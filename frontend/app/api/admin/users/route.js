@@ -1,6 +1,8 @@
+import { withAdminPermission } from "../../../../lib/auth";
 import { redirectWithFlash } from "../../../../lib/admin-forms";
 import { parseAdminRole } from "../../../../lib/admin-roles";
 import { requireSuperAdminApi } from "../../../../lib/admin-role-guards";
+import { parsePermissions } from "../../../../lib/admin-permissions";
 import { hashPassword } from "../../../../lib/auth";
 import { prisma } from "../../../../lib/prisma";
 
@@ -12,7 +14,7 @@ function requiredTrimmed(value, label) {
   return nextValue;
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   try {
     await requireSuperAdminApi();
     const formData = await request.formData();
@@ -33,7 +35,9 @@ export async function POST(request) {
       return redirectWithFlash(request, "/admin/users", "error", "Password and confirmation do not match.");
     }
 
-    await prisma.adminUser.create({
+    const permissions = parsePermissions(formData.getAll("permissions"));
+    await prisma.$transaction(async tx => {
+    const user = await tx.adminUser.create({
       data: {
         email,
         passwordHash: await hashPassword(password),
@@ -41,6 +45,8 @@ export async function POST(request) {
       },
     });
 
+    await tx.appSetting.create({ data: { key: `admin.permissions.${user.id}`, value: JSON.stringify(permissions) } });
+    });
     return redirectWithFlash(request, "/admin/users", "success", "User created.");
   } catch (error) {
     if (error?.status === 401) {
@@ -60,3 +66,5 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/users", "error", message);
   }
 }
+
+export const POST = withAdminPermission("SUPERADMIN", handlePOST);

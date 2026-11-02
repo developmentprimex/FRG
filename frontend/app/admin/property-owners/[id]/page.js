@@ -58,7 +58,7 @@ function buildOwnerDetailPath(ownerId, searchValues = {}) {
 }
 
 export default async function AdminPropertyOwnerDetailPage({ params, searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const { id: rawId } = await params;
   const id = normalizeRouteId(rawId);
   const resolvedSearchParams = (await searchParams) || {};

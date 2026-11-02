@@ -126,7 +126,7 @@ function getExportHref(filters) {
 }
 
 export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {
     query: normalizeParam(resolvedSearchParams.q).trim(),

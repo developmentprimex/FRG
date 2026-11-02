@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash, validateKitchenContractInput } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
@@ -14,7 +15,7 @@ function getReturnPath(formData, fallback) {
   return rawPath.startsWith("/admin/") ? rawPath : fallback;
 }
 
-export async function GET(_request, { params }) {
+async function handleGET(_request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   const contract = await prisma.kitchenContract.findUnique({
@@ -117,7 +118,7 @@ export async function GET(_request, { params }) {
   });
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   let kitchenId = "";
@@ -271,3 +272,6 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, pathname, "error", mapAdminMutationError(error, "Contract number"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

@@ -184,11 +184,12 @@
     "creatingUser": "Benutzer wird erstellt...",
     "role": "Rolle",
     "roleGuide": "Rollenübersicht",
-    "roleGuideDescription": "Detaillierte Berechtigungen folgen später. Vorerst können alle Rollen die bestehenden Admin-Workflows nutzen.",
+    "roleGuideDescription": "Der Zugriff auf Arbeitsbereiche wird unten separat zugewiesen. Superadmins haben vollen Zugriff.",
     "roleDescription": {
       "SUPERADMIN": "Voller Zugriff, einschließlich Benutzerverwaltung.",
-      "ADMIN": "Standard-Admin-Zugriff auf das aktuelle Dashboard.",
-      "USER": "Basis-Admin-Zugriff mit denselben Workflows vorerst."
+      "ADMIN": "Der Zugriff richtet sich nach den zugewiesenen Arbeitsbereich-Berechtigungen.",
+      "USER": "Der Zugriff richtet sich nach den zugewiesenen Arbeitsbereich-Berechtigungen.",
+      "PX_ADMIN": "Der Zugriff richtet sich nach den zugewiesenen Arbeitsbereich-Berechtigungen."
     },
     "allUsers": "Alle Benutzer",
     "allUsersDescription": "Rollen aktualisieren oder Konten deaktivieren. Geschützte Aktionen sind deaktiviert und erklärt.",
@@ -1709,5 +1710,18 @@
     "emailNote": "E-Mails zählen protokollierte erfolgreiche Empfängerzustellungen einschließlich erneutem Versand. Stornierungsanfragen zählen nach Eingang unabhängig vom Status.",
     "historicalNote": "Für {count} historische Verkäufe fehlt das Bestätigungsdatum; stattdessen wird das Erstellungsdatum verwendet. Diese sind in Excel gekennzeichnet. Historische Monate spiegeln den aktuellen Bestellstatus wider.",
     "exportNote": "Excel enthält diese Übersicht, einzelne Bestellungen, bestellte Artikel mit Herstellern und Berichtsdefinitionen."
+  },
+  "permissions": {
+    "title": "Arbeitsbereich-Berechtigungen",
+    "FRG_VIEW": "FRG: Bestellungen und Berichte ansehen",
+    "FRG_MANAGE": "FRG: Bestellungen und Einrichtung verwalten",
+    "ASC_VIEW": "ASC: Reklamationen und Berichte ansehen",
+    "ASC_MANAGE": "ASC: Reklamationen verwalten",
+    "save": "Berechtigungen speichern",
+    "denied": "Sie haben keinen Zugriff auf diesen Arbeitsbereich. Bitten Sie einen Superadmin, Berechtigungen zuzuweisen.",
+    "relatedClaim": "Reklamation zu diesem Vertrag",
+    "relatedOrder": "Bestellung zu diesem Vertrag",
+    "FRG": "FRG-Zugriff: Ansehen und Verwalten",
+    "ASC": "ASC-Zugriff: Ansehen und Verwalten"
   }
 }
