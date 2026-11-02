@@ -1,12 +1,10 @@
+import AdminSettingsForm from "../../../components/admin-settings-form";
 import { AdminText } from "../../../components/admin-i18n";
 import { AdminShell } from "../../../components/admin-shell";
 import {
   AdminSection,
   FlashMessage,
-  actionRowStyle,
-  mutedTextStyle,
   pageGridStyle,
-  primaryButtonStyle,
 } from "../../../components/admin-ui";
 import { getFormMessage } from "../../../lib/admin-forms";
 import {
@@ -43,12 +41,13 @@ export default async function AdminSettingsPage({ searchParams }) {
         {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
         {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-        <div style={compactWrapStyle}>
+        <AdminSection title={<AdminText i18nKey="settingsAdmin.settings" fallback="Settings" />} />
+
+        <div className="settings-rows" style={settingsRowsStyle}>
           <AdminSection
-            title={<AdminText i18nKey="settingsAdmin.settings" fallback="Settings" />}
-            description={<AdminText i18nKey="settingsAdmin.orderConfirmationDescription" fallback="Control how public kitchen orders are confirmed." />}
+            title={<AdminText i18nKey="settingsAdmin.directOrderConfirmation" fallback="Send order confirmations automatically" />}
           >
-            <form action="/api/admin/settings/order-confirmation" method="post" style={formStyle}>
+            <AdminSettingsForm action="/api/admin/settings/order-confirmation" style={formStyle}>
               <label style={toggleCardStyle}>
                 <input
                   name="directOrderConfirmationEnabled"
@@ -58,61 +57,18 @@ export default async function AdminSettingsPage({ searchParams }) {
                 />
                 <span style={toggleTextStyle}>
                   <strong><AdminText i18nKey="settingsAdmin.directOrderConfirmation" fallback="Send order confirmations automatically" /></strong>
-                  <span style={mutedTextStyle}>
-                    <AdminText
-                      i18nKey="settingsAdmin.directOrderConfirmationHelp"
-                      fallback="When enabled, the customer confirmation email is sent immediately after public checkout and the order is marked confirmed after the email succeeds. The agent webhook still runs."
-                    />
-                  </span>
                 </span>
               </label>
 
-              <div style={actionRowStyle}>
-                <button type="submit" style={primaryButtonStyle}>
-                  <AdminText i18nKey="settingsAdmin.saveSettings" fallback="Save settings" />
-                </button>
-              </div>
-            </form>
+            </AdminSettingsForm>
           </AdminSection>
 
-          {admin.role === "SUPERADMIN" ? (
-          <AdminSection
-            title={<AdminText i18nKey="settingsAdmin.loginVerificationTitle" fallback="Login verification" />}
-            description={<AdminText i18nKey="settingsAdmin.loginVerificationDescription" fallback="Control whether admin sign-in requires an emailed verification code after the password step." />}
-          >
-            <form action="/api/admin/settings/login-verification" method="post" style={formStyle}>
-              <label style={toggleCardStyle}>
-                <input
-                  name="adminLoginVerificationEnabled"
-                  type="checkbox"
-                  defaultChecked={loginVerificationEnabled}
-                  style={checkboxStyle}
-                />
-                <span style={toggleTextStyle}>
-                  <strong><AdminText i18nKey="settingsAdmin.loginVerificationEnabled" fallback="Require verification code for admin login" /></strong>
-                  <span style={mutedTextStyle}>
-                    <AdminText
-                      i18nKey="settingsAdmin.loginVerificationEnabledHelp"
-                      fallback="When enabled, admins must enter the 6-digit code emailed after a valid password. When disabled, a valid password signs in directly."
-                    />
-                  </span>
-                </span>
-              </label>
 
-              <div style={actionRowStyle}>
-                <button type="submit" style={primaryButtonStyle}>
-                  <AdminText i18nKey="settingsAdmin.saveSettings" fallback="Save settings" />
-                </button>
-              </div>
-            </form>
-          </AdminSection>
-          ) : null}
 
           <AdminSection
             title={<AdminText i18nKey="settingsAdmin.deliveryMinOrderTitle" fallback="Delivery minimum order value" />}
-            description={<AdminText i18nKey="settingsAdmin.deliveryMinOrderDescription" fallback="Set a minimum order value required when the customer selects Delivery, Carry-in, Assembly and Installation." />}
           >
-            <form action="/api/admin/settings/delivery-min-order" method="post" style={formStyle}>
+            <AdminSettingsForm action="/api/admin/settings/delivery-min-order" style={formStyle}>
               <label style={toggleCardStyle}>
                 <input
                   name="deliveryMinOrderEnabled"
@@ -122,12 +78,6 @@ export default async function AdminSettingsPage({ searchParams }) {
                 />
                 <span style={toggleTextStyle}>
                   <strong><AdminText i18nKey="settingsAdmin.deliveryMinOrderEnabled" fallback="Enable minimum order value for delivery" /></strong>
-                  <span style={mutedTextStyle}>
-                    <AdminText
-                      i18nKey="settingsAdmin.deliveryMinOrderEnabledHelp"
-                      fallback="When enabled, orders that include Delivery, Carry-in, Assembly and Installation must reach the minimum value below."
-                    />
-                  </span>
                 </span>
               </label>
 
@@ -147,19 +97,13 @@ export default async function AdminSettingsPage({ searchParams }) {
                 </label>
               </div>
 
-              <div style={actionRowStyle}>
-                <button type="submit" style={primaryButtonStyle}>
-                  <AdminText i18nKey="settingsAdmin.saveSettings" fallback="Save settings" />
-                </button>
-              </div>
-            </form>
+            </AdminSettingsForm>
           </AdminSection>
 
           <AdminSection
             title={<AdminText i18nKey="settingsAdmin.deliveryLeadTimeTitle" fallback="Delivery lead time" />}
-            description={<AdminText i18nKey="settingsAdmin.deliveryLeadTimeDescription" fallback="Set how many weeks after an order the first available delivery week becomes." />}
           >
-            <form action="/api/admin/settings/delivery-lead-time" method="post" style={formStyle}>
+            <AdminSettingsForm action="/api/admin/settings/delivery-lead-time" style={formStyle}>
               <div style={amountRowStyle}>
                 <label style={amountLabelStyle}>
                   <span style={amountLabelTextStyle}>
@@ -174,57 +118,81 @@ export default async function AdminSettingsPage({ searchParams }) {
                     style={amountInputStyle}
                   />
                 </label>
-                <p style={mutedHelpStyle}>
-                  <AdminText
-                    i18nKey="settingsAdmin.deliveryLeadTimeHelp"
-                    fallback="Example: 4 means customers can choose delivery after 4, 5, or 6 weeks."
-                  />
-                </p>
               </div>
 
-              <div style={actionRowStyle}>
-                <button type="submit" style={primaryButtonStyle}>
-                  <AdminText i18nKey="settingsAdmin.saveSettings" fallback="Save settings" />
-                </button>
-              </div>
-            </form>
+            </AdminSettingsForm>
           </AdminSection>
+          {admin.role === "SUPERADMIN" ? (
+          <AdminSection
+            title={<AdminText i18nKey="settingsAdmin.loginVerificationTitle" fallback="Login verification" />}
+          >
+            <AdminSettingsForm action="/api/admin/settings/login-verification" style={formStyle}>
+              <label style={toggleCardStyle}>
+                <input
+                  name="adminLoginVerificationEnabled"
+                  type="checkbox"
+                  defaultChecked={loginVerificationEnabled}
+                  style={checkboxStyle}
+                />
+                <span style={toggleTextStyle}>
+                  <strong><AdminText i18nKey="settingsAdmin.loginVerificationEnabled" fallback="Require verification code for admin login" /></strong>
+                </span>
+              </label>
+
+            </AdminSettingsForm>
+          </AdminSection>
+          ) : null}
         </div>
       </div>
+      <style>{`
+        .settings-rows > section { min-width: 0; }
+        .settings-rows form { display: grid !important; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px !important; }
+        .settings-rows form[action$="delivery-min-order"] { grid-template-columns: minmax(0, 1fr) 180px auto; }
+        .settings-rows form > div:last-child { margin-top: 0 !important; padding-top: 0 !important; }
+        @media (max-width: 1100px) {
+          .settings-rows form, .settings-rows form[action$="delivery-min-order"] { grid-template-columns: minmax(0, 1fr); }
+        }
+      `}</style>
     </AdminShell>
   );
 }
 
-const compactWrapStyle = {
-  maxWidth: 860,
+const settingsRowsStyle = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr)",
+  gap: 16,
 };
 
+
 const formStyle = {
-  display: "grid",
-  gap: 18,
+  display: "flex",
+  flexDirection: "column",
+  gap: 16,
 };
 
 const toggleCardStyle = {
   display: "flex",
   alignItems: "flex-start",
-  gap: 14,
+  gap: 12,
   border: "1px solid var(--app-border)",
-  borderRadius: 14,
-  background: "var(--app-surface)",
-  padding: 18,
+  borderRadius: 8,
+  background: "var(--app-surface-muted)",
+  padding: 14,
   cursor: "pointer",
 };
 
 const checkboxStyle = {
-  width: 22,
-  height: 22,
+  width: 18,
+  height: 18,
+  flexShrink: 0,
   marginTop: 2,
   accentColor: "var(--color-primary)",
 };
 
 const toggleTextStyle = {
   display: "grid",
-  gap: 8,
+  gap: 6,
+  fontSize: "var(--admin-text-body, 0.875rem)",
   lineHeight: 1.5,
 };
 
@@ -245,16 +213,15 @@ const amountLabelTextStyle = {
 };
 
 const amountInputStyle = {
-  width: 160,
+  width: 180,
+  maxWidth: "100%",
+  boxSizing: "border-box",
+  minHeight: 40,
   padding: "8px 12px",
-  fontSize: 15,
+  fontSize: "var(--admin-text-body, 0.875rem)",
   border: "1px solid var(--app-border)",
   borderRadius: 8,
   background: "var(--app-surface)",
   color: "var(--app-text)",
 };
 
-const mutedHelpStyle = {
-  ...mutedTextStyle,
-  margin: "8px 0 0",
-};

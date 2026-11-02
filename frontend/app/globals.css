@@ -847,10 +847,6 @@ textarea {
   line-height: 1.08;
 }
 
-.analytics-dashboard .deploy-test-heading {
-  color: #d92d20;
-}
-
 .analytics-dashboard p {
   margin: 8px 0 0;
   color: var(--color-text-muted);

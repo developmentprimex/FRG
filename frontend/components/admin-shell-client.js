@@ -137,7 +137,7 @@ function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, sh
   };
   const visibleNavSections = navSections.map((section) => ({
     ...section,
-    items: section.items.map(item => item.href === "/admin/reports" || item.href === "/admin" ? { ...item, href: workspace ? `/admin/reports/${workspace.toLowerCase()}` : "/admin/access-denied" } : item).filter(isNavItemVisible).map((item) => (
+    items: section.items.map(item => item.href === "/admin/reports" ? { ...item, href: workspace ? `/admin/reports/${workspace.toLowerCase()}` : "/admin/access-denied" } : item).filter(isNavItemVisible).map((item) => (
       item.children ? { ...item, children: item.children.filter(isNavItemVisible) } : item
     )).filter((item) => !item.children || item.children.length > 0),
   })).filter((section) => section.items.length > 0);
@@ -477,8 +477,25 @@ function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, sh
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
-                <div style={{ display: "flex", gap: 6 }} aria-label="Workspace">
-                  {["FRG", "ASC"].filter(scope => hasPermission(access, `${scope}_VIEW`)).map(scope => <form key={scope} action="/api/admin/workspace" method="post"><input type="hidden" name="scope" value={scope} /><button type="submit" aria-pressed={workspace === scope} style={{ padding: "6px 12px", fontWeight: workspace === scope ? 800 : 400, border: "1px solid var(--app-border)", borderRadius: 6, background: workspace === scope ? "var(--color-primary-soft)" : "var(--app-surface)", color: "var(--app-text)" }}>{scope}</button></form>)}
+                <div role="group" style={{ display: "flex", gap: 4, padding: 4, border: "1px solid var(--app-border)", borderRadius: 10, background: "var(--app-surface)" }} aria-label="Workspace">
+                  {["FRG", "ASC"].filter(scope => hasPermission(access, `${scope}_VIEW`)).map(scope => {
+                    const selected = workspace === scope;
+                    return <form key={scope} action="/api/admin/workspace" method="post" style={{ margin: 0 }}>
+                      <input type="hidden" name="scope" value={scope} />
+                      <button type="submit" aria-pressed={selected} style={{
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        minWidth: 80, minHeight: 38, padding: "8px 14px", fontSize: 13, fontWeight: selected ? 800 : 600,
+                        border: selected ? "1px solid #71543e" : "1px solid transparent", borderRadius: 7,
+                        background: selected ? "#71543e" : "transparent", color: selected ? "#ffffff" : "var(--app-text-muted)",
+                        boxShadow: selected ? "0 2px 5px rgba(71, 48, 30, 0.18)" : "none", cursor: "pointer",
+                      }}>
+                        <span aria-hidden="true" style={{ display: "inline-flex", width: 14, height: 14, visibility: selected ? "visible" : "hidden" }}>
+                          <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="m3 8 3.2 3.2L13 4.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        </span>
+                        {scope}
+                      </button>
+                    </form>;
+                  })}
                 </div>
                 <AdminLanguageSwitcher />
                 <div
@@ -500,9 +517,6 @@ function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, sh
                   >
                     {adminEmail}
                   </span>
-                  <Link href="/admin/account" style={topbarLinkStyle}>
-                    <AdminText i18nKey="adminShellLogin.account" fallback="Account" />
-                  </Link>
                   <form action="/api/admin/logout" method="post" style={{ margin: 0 }}>
                   <button
                     className="admin-shell__logout-button"

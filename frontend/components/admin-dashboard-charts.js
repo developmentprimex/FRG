@@ -227,7 +227,7 @@ export function AdminDashboardCharts({
     { value: "orders", label: translate("dashboard.mobileTabOrders", "Orders") },
     { value: "housing", label: translate("dashboard.mobileTabHousing", "Housing") },
     { value: "products", label: translate("dashboard.mobileTabProducts", "Products") },
-  ];
+  ].filter(tab => tab.value !== "claims" || showClaimsLink);
   function handleFilterChange(event) {
     const { name, value } = event.target;
     const params = new URLSearchParams({
@@ -276,8 +276,8 @@ export function AdminDashboardCharts({
     <div className="analytics-dashboard">
       <section className="dashboard-toolbar">
         <div>
-          <p className="eyebrow deploy-test-heading">{translate("dashboard.analyticsOverview", "Analytics overview").toUpperCase()}</p>
-          <h1 className="deploy-test-heading">{translate("dashboard.orderDashboard", "Order dashboard").toUpperCase()}</h1>
+          <p className="eyebrow">{translate("dashboard.analyticsOverview", "Analytics overview").toUpperCase()}</p>
+          <h1>{translate("dashboard.orderDashboard", "Order dashboard").toUpperCase()}</h1>
           <p>{translate("dashboard.monitorSalesWorkflowMovementKitchenDemandAndItemPerformance", "Track orders, workflow, kitchens, and item performance.")}</p>
         </div>
         {renderFilterForm()}
@@ -417,6 +417,7 @@ export function AdminDashboardCharts({
         </div>
       </section>
 
+      {showClaimsLink && <>
       <section className="chart-card chart-card--compact chart-card--claims desktop-dashboard-section">
         <ChartHeader
           eyebrow={translate("dashboard.claimElementOverview", "Claims by item")}
@@ -450,6 +451,8 @@ export function AdminDashboardCharts({
           ) : null}
         </div>
       </section>
+
+      </>}
 
       <section className="chart-card chart-card--status desktop-dashboard-section">
         <ChartHeader

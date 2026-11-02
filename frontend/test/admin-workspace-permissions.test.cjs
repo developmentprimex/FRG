@@ -8,6 +8,21 @@ const root = path.resolve(__dirname, '..');
 const policySource = fs.readFileSync(path.join(root, 'lib/admin-permissions.js'), 'utf8');
 const policy = new Function(policySource.replaceAll('export ', '') + '; return { hasPermission, canAccess, parsePermissions, resolveWorkspace, routePermission };')();
 
+test('access-denied is terminal even when a workspace grant exists', async () => {
+  const source = fs.readFileSync(path.join(root, 'app/admin/access-denied/page.js'), 'utf8')
+    .replace(/^import .*;\r?\n/gm, '')
+    .replace('export default ', '')
+    .replace(/return <AdminShell[^\n]+;/, 'return "access-denied";');
+  const context = {
+    requireAdminPage: async () => ({ role: 'ADMIN', permissions: ['FRG'] }),
+    cookies: async () => ({ get: () => ({ value: 'FRG' }) }),
+    resolveWorkspace: policy.resolveWorkspace,
+    redirect: url => { throw new Error('Unexpected denial redirect: ' + url); },
+  };
+  vm.runInNewContext(source + ';globalThis.page = AccessDeniedPage;', context);
+  assert.equal(await context.page(), 'access-denied');
+});
+
 function sessionFixture(admin, permissions = []) {
   const secret = 'workspace-test-secret-only';
   const payload = Buffer.from(JSON.stringify({ adminId: 'u1', exp: Math.floor(Date.now()/1000)+60 })).toString('base64url');

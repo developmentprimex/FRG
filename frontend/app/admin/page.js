@@ -1,3 +1,5 @@
+import { AdminAscDashboard } from "../../components/admin-asc-dashboard";
+import { summarizeAscDashboard } from "../../lib/asc-dashboard-summary";
 import { cookies as workspaceCookies } from "next/headers";
 import { redirect as workspaceRedirect } from "next/navigation";
 import { resolveWorkspace } from "../../lib/admin-permissions";
@@ -454,7 +456,7 @@ function buildOrderAndClause(filters, alias = "o") {
 
 function buildClaimFilterConditions({ startDate, kitchenId }, alias = "sc") {
   const table = Prisma.raw(alias);
-  const filters = [];
+  const filters = [Prisma.sql`REGEXP_REPLACE(COALESCE(${table}."contractNumber", ''), '[[:space:]]+', '', 'g') NOT LIKE '111%'`];
   if (startDate) filters.push(Prisma.sql`${table}."createdAt" >= ${startDate}`);
   if (kitchenId) {
     filters.push(Prisma.sql`EXISTS (
@@ -528,6 +530,9 @@ async function loadClaimElementRows(filters) {
     return await prisma.$queryRaw`
       SELECT
         sc."id",
+        sc."contractNumber",
+        sc."fullName",
+        sc."createdAt",
         sc."problemDescription",
         sc."problemAreasJson",
         sc."attachmentsJson",
@@ -546,6 +551,9 @@ async function loadClaimElementRows(filters) {
     return await prisma.$queryRaw`
       SELECT
         sc."id",
+        sc."contractNumber",
+        sc."fullName",
+        sc."createdAt",
         sc."problemDescription",
         NULL::text AS "problemAreasJson",
         NULL::text AS "attachmentsJson",
@@ -949,7 +957,7 @@ function loadGroupedItemRowsCached(filters) {
 function loadClaimElementRowsCached(filters) {
   return unstable_cache(
     () => loadClaimElementRows(filters),
-    ["admin-dashboard-claim-elements", filters.startDate?.toISOString() || "all", filters.kitchenId || ""],
+    ["admin-dashboard-live-claim-elements-v2", filters.startDate?.toISOString() || "all", filters.kitchenId || ""],
     { revalidate: DASHBOARD_AGGREGATE_REVALIDATE_SECONDS },
   )();
 }
@@ -967,16 +975,72 @@ const hasKitchenItemArticleNumberColumn = cache(async function hasKitchenItemArt
   return rows.length > 0;
 });
 
+function summarizeDashboardClaims(claimElementRows) {
+  const claimElementStats = new Map();
+  const claimCityStats = new Map();
+  for (const row of claimElementRows) {
+    const structuredElements = extractStructuredClaimElements(row.problemAreasJson);
+    const uniqueElements = new Map(
+      (structuredElements.length ? structuredElements : extractClaimElements(row.problemDescription))
+        .map((element) => [element.key, element]),
+    );
+    const hasAttachments = Boolean(String(row.attachmentsJson || "").trim());
+    const city = String(row.clientCity || "").trim() || "Not captured";
+    const currentCity = claimCityStats.get(city) || {
+      name: city,
+      claims: 0,
+      claimsWithAttachments: 0,
+    };
+    currentCity.claims += 1;
+    if (hasAttachments) currentCity.claimsWithAttachments += 1;
+    claimCityStats.set(city, currentCity);
+
+    for (const element of uniqueElements.values()) {
+      const current = claimElementStats.get(element.key) || {
+        name: element.name,
+        claims: 0,
+        claimsWithAttachments: 0,
+      };
+      current.claims += 1;
+      if (hasAttachments) current.claimsWithAttachments += 1;
+      claimElementStats.set(element.key, current);
+    }
+  }
+  const claimElementData = Array.from(claimElementStats.values())
+    .sort((a, b) => {
+      if (b.claims !== a.claims) return b.claims - a.claims;
+      if (b.claimsWithAttachments !== a.claimsWithAttachments) return b.claimsWithAttachments - a.claimsWithAttachments;
+      return a.name.localeCompare(b.name);
+    });
+  const claimCityData = Array.from(claimCityStats.values())
+    .sort((a, b) => {
+      if (b.claims !== a.claims) return b.claims - a.claims;
+      if (b.claimsWithAttachments !== a.claimsWithAttachments) return b.claimsWithAttachments - a.claimsWithAttachments;
+      return a.name.localeCompare(b.name);
+    });
+  return { claimElementData, claimCityData };
+}
+
 export default async function AdminDashboardPage({ searchParams = {} }) {
   const admin = await requireAdminPage();
   const workspace = resolveWorkspace(admin, (await workspaceCookies()).get("adminWorkspace")?.value);
-  workspaceRedirect(workspace ? `/admin/reports/${workspace.toLowerCase()}` : "/admin/access-denied");
+  if (!workspace) workspaceRedirect("/admin/access-denied");
   const params = await searchParams;
   const period = getPeriod(normalizeParam(params.period));
   const kitchenId = normalizeParam(params.kitchenId);
   const status = normalizeParam(params.status);
   const validStatus = ORDER_STATUSES.includes(status) ? status : "";
   const startDate = getPeriodStartDate(period);
+
+  if (workspace === "ASC") {
+    const [claimRows, kitchens] = await Promise.all([loadClaimElementRowsCached({ startDate, kitchenId }), listKitchensForAdmin()]);
+    const { claimElementData, claimCityData } = summarizeDashboardClaims(claimRows);
+    return <AdminShell adminEmail={admin.email}><AdminAscDashboard
+      claimElementData={claimElementData} claimCityData={claimCityData}
+      summary={summarizeAscDashboard(claimRows)} kitchens={kitchens.map(({ id, name }) => ({ id, name }))} selectedPeriod={period.value}
+      periodOptions={PERIOD_OPTIONS} selectedKitchenId={kitchenId}
+    /></AdminShell>;
+  }
 
   const dashboardFilters = { startDate, kitchenId, status: validStatus };
   const [
@@ -999,8 +1063,8 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
     loadPaymentRows(dashboardFilters),
     loadGeographyRows(dashboardFilters),
     loadGroupedItemRowsCached(dashboardFilters),
-    loadClaimDashboardSummary({ startDate, kitchenId }),
-    loadClaimElementRowsCached({ startDate, kitchenId }),
+    Promise.resolve({ earliestCreatedAt: null }),
+    Promise.resolve([]),
   ]);
   const totalOrders = summary.totalOrders;
   const totalRevenue = summary.totalRevenue;
@@ -1096,48 +1160,7 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
   }
 
   const dailyStatusData = Array.from(dailyStatusByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
-  const claimElementStats = new Map();
-  const claimCityStats = new Map();
-  for (const row of claimElementRows) {
-    const structuredElements = extractStructuredClaimElements(row.problemAreasJson);
-    const uniqueElements = new Map(
-      (structuredElements.length ? structuredElements : extractClaimElements(row.problemDescription))
-        .map((element) => [element.key, element]),
-    );
-    const hasAttachments = Boolean(String(row.attachmentsJson || "").trim());
-    const city = String(row.clientCity || "").trim() || "Not captured";
-    const currentCity = claimCityStats.get(city) || {
-      name: city,
-      claims: 0,
-      claimsWithAttachments: 0,
-    };
-    currentCity.claims += 1;
-    if (hasAttachments) currentCity.claimsWithAttachments += 1;
-    claimCityStats.set(city, currentCity);
-
-    for (const element of uniqueElements.values()) {
-      const current = claimElementStats.get(element.key) || {
-        name: element.name,
-        claims: 0,
-        claimsWithAttachments: 0,
-      };
-      current.claims += 1;
-      if (hasAttachments) current.claimsWithAttachments += 1;
-      claimElementStats.set(element.key, current);
-    }
-  }
-  const claimElementData = Array.from(claimElementStats.values())
-    .sort((a, b) => {
-      if (b.claims !== a.claims) return b.claims - a.claims;
-      if (b.claimsWithAttachments !== a.claimsWithAttachments) return b.claimsWithAttachments - a.claimsWithAttachments;
-      return a.name.localeCompare(b.name);
-    });
-  const claimCityData = Array.from(claimCityStats.values())
-    .sort((a, b) => {
-      if (b.claims !== a.claims) return b.claims - a.claims;
-      if (b.claimsWithAttachments !== a.claimsWithAttachments) return b.claimsWithAttachments - a.claimsWithAttachments;
-      return a.name.localeCompare(b.name);
-    });
+  const { claimElementData, claimCityData } = summarizeDashboardClaims(claimElementRows);
   const resolvedItemStats = Array.from(itemStats.values()).map((item) => ({
     ...item,
     name: item.canonicalName || item.fallbackName || item.code || "",
@@ -1516,7 +1539,7 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <AdminDashboardCharts
-        showClaimsLink={showAdminClaimsInNav(admin)}
+        showClaimsLink={false}
         kpis={kpis}
         periodOptions={PERIOD_OPTIONS.map(({ value, labelKey, fallbackLabel }) => ({ value, labelKey, fallbackLabel }))}
         selectedPeriod={period.value}
