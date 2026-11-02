@@ -58,7 +58,7 @@ export async function GET(request) {
       description: `REPORT_FRG_${report.filters.exportPeriod}`,
       timeZone: REPORT_TIME_ZONE,
       initials: getInitials(admin?.email), now,
-      sheets: getFrgMonthlySheets(report, orders),
+      sheets: getFrgMonthlySheets(report, orders).filter(sheet => sheet.name === "Fragmento"),
     }));
   }
   if (scope) {
@@ -78,7 +78,7 @@ export async function GET(request) {
       timeZone: REPORT_TIME_ZONE,
       initials: getInitials(admin?.email),
       now,
-      sheets: [kitchenSheet, ...getAscClaimReportSheets(report, details)],
+      sheets: [kitchenSheet, ...getAscClaimReportSheets(report, details).filter(sheet => sheet.name !== "Claim details")],
     }));
   }
   const filters = normalizeActivityReportFilters({ ...params, ...businessFilters });
