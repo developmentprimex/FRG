@@ -302,7 +302,6 @@ export default function AdminArcPdfImport() {
       <div style={headerStyle}>
         <div>
           <h3 style={titleStyle}>{translate("contractsAdmin.arcImport.title", "Import ARC from PDF folder")}</h3>
-          <p style={hintStyle}>{translate("contractsAdmin.arcImport.description", "PDFs are processed in this browser. Review every generated JPG before importing.")}</p>
         </div>
         <label style={{ ...secondaryButtonStyle, ...folderButtonStyle, opacity: busy ? 0.55 : 1 }}>
           {translate("contractsAdmin.arcImport.chooseFolder", "Choose PDF folder")}
@@ -317,17 +316,19 @@ export default function AdminArcPdfImport() {
             style={hiddenInputStyle}
           />
         </label>
-      </div>
-
       <div style={optionsStyle}>
-        <strong>{translate("contractsAdmin.arcImport.prefixes", "Contract prefixes")}</strong>
-        {["111", "670"].map((prefix) => (
-          <label key={prefix} style={checkLabelStyle}>
-            <input type="checkbox" checked={prefixes[prefix]} disabled={busy} onChange={() => changePrefixes(prefix)} />
-            {prefix}
-          </label>
-        ))}
-        <span style={hintStyle}>{translate("contractsAdmin.arcImport.pdfPrivacy", "Original PDFs stay on this device; only the generated JPGs are uploaded.")}</span>
+        <span id="arc-prefix-label" style={prefixLegendStyle}>{translate("contractsAdmin.arcImport.prefixes", "Contract prefixes")}</span>
+        <div role="group" aria-labelledby="arc-prefix-label" style={prefixFieldsetStyle}>
+          <div style={prefixChoicesStyle}>
+            {["111", "670"].map((prefix) => (
+              <label key={prefix} style={{ ...checkLabelStyle, ...(prefixes[prefix] ? selectedPrefixStyle : {}), opacity: busy ? 0.55 : 1, cursor: busy ? "default" : "pointer" }}>
+                <input type="checkbox" checked={prefixes[prefix]} disabled={busy} onChange={() => changePrefixes(prefix)} style={prefixCheckboxStyle} />
+                <span>{prefix}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
       </div>
 
       {progress.total ? (
@@ -437,13 +438,17 @@ export default function AdminArcPdfImport() {
 }
 
 const rootStyle = { display: "grid", gap: 16 };
-const headerStyle = { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" };
-const titleStyle = { margin: 0, fontSize: 20, color: "var(--app-text)" };
-const hintStyle = { margin: "4px 0 0", color: "var(--app-text-muted)", fontSize: 13, lineHeight: 1.45 };
-const folderButtonStyle = { position: "relative", overflow: "hidden", cursor: "pointer", display: "inline-flex" };
+const headerStyle = { display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" };
+const titleStyle = { margin: 0, marginRight: 8, fontSize: 16, fontWeight: 600, color: "var(--app-text)" };
+const folderButtonStyle = { position: "relative", overflow: "hidden", cursor: "pointer", display: "inline-flex", order: 2, marginLeft: "auto", minHeight: 38, padding: "9px 12px", borderRadius: 8, fontSize: "var(--admin-text-body)" };
 const hiddenInputStyle = { position: "absolute", inset: 0, opacity: 0, cursor: "pointer" };
-const optionsStyle = { display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: 12, borderRadius: 8, background: "var(--app-surface-muted)" };
-const checkLabelStyle = { display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 800 };
+const optionsStyle = { display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12, order: 1 };
+const prefixFieldsetStyle = { minWidth: 0, margin: 0, padding: 0, border: 0 };
+const prefixLegendStyle = { color: "var(--app-text-muted)", fontSize: "var(--admin-text-label)", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" };
+const prefixChoicesStyle = { display: "flex", gap: 10, flexWrap: "wrap" };
+const checkLabelStyle = { display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, minHeight: 36, padding: "6px 12px", borderRadius: 8, border: "1px solid var(--app-border-strong)", background: "var(--app-surface)", color: "var(--app-text)", fontSize: "var(--admin-text-body)", fontWeight: 600 };
+const selectedPrefixStyle = { borderColor: "var(--app-accent)", background: "var(--app-surface-muted)", color: "var(--app-accent)" };
+const prefixCheckboxStyle = { width: 16, height: 16, margin: 0, accentColor: "var(--app-accent)", cursor: "inherit", flexShrink: 0 };
 const progressWrapStyle = { display: "grid", gap: 6 };
 const progressMetaStyle = { display: "flex", justifyContent: "space-between", gap: 12, color: "var(--app-text-muted)", fontSize: 13 };
 const progressStyle = { width: "100%", height: 12, accentColor: "var(--app-accent)" };

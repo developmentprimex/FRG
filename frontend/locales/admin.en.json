@@ -873,6 +873,8 @@
     }
   },
   "contractsAdmin": {
+    "resultCountOne": "{count} contract",
+    "resultCountMany": "{count} contracts",
     "contractNumbers": "Contract numbers",
     "createFilterAndEditReusableContractNumbersFromOnePlace": "Create, filter, and manage reusable contract numbers.",
     "filters": "Filters",
@@ -1087,6 +1089,8 @@
     "poland": "Poland"
   },
   "propertyOwnersAdmin": {
+    "resultCountOne": "{count} company",
+    "resultCountMany": "{count} companies",
     "propertyOwners": "Housing Companies",
     "manageOwnersAttachedToReusableContractNumbers": "Manage housing companies, objects, and assigned contract numbers.",
     "configuredCompanies": "Housing Companies",

@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import { AdminClaimLocalizedText } from "../../../components/admin-claim-localized-text";
 import { REPORT_TIME_ZONE } from "../../../lib/admin-date-time";
 import Link from "next/link";
@@ -79,7 +80,7 @@ export default async function AdminReportsPage({ searchParams = {} }) {
               <AdminText i18nKey={`businessReports.${period}`} fallback={period.replaceAll("_", " ")} />
             </Link>)}
           </div>
-          <form key={reportQuery} action="/admin/reports" method="get" style={filterPanelStyle}>
+          <AdminFilterForm action="/admin/reports" style={filterPanelStyle}>
             <input type="hidden" name="period" value="CUSTOM" />
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
@@ -121,14 +122,11 @@ export default async function AdminReportsPage({ searchParams = {} }) {
               </AdminSelect>
             </label>
             <div style={filterActionsStyle}>
-              <button type="submit" style={filterApplyButtonStyle}>
-                <AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" />
-              </button>
               <Link href="/admin/reports" scroll={false} style={filterClearLinkStyle}>
                 <AdminText i18nKey="contractsAdmin.clear" fallback="Clear" />
               </Link>
             </div>
-          </form>
+          </AdminFilterForm>
           <dl style={{ display: "flex", flexWrap: "wrap", gap: 12, margin: 0 }}>
             {[
               ["reportsAdmin.totalOrders", "Total orders", summary.totalOrders],

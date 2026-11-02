@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
@@ -76,7 +77,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-          <form action={basePath} method="get" style={filterPanelStyle}>
+          <AdminFilterForm action={basePath} style={filterPanelStyle}>
             <div style={filterGridStyle}>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
@@ -114,11 +115,10 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
                 <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
               </label>
               <div style={filterActionsStyle}>
-                <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-                <Link href={basePath} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+                <Link scroll={false} href={basePath} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
               </div>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <div className="admin-claims-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={tableStyle}>

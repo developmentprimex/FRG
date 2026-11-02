@@ -3,11 +3,13 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useAdminI18n } from "./admin-i18n";
+import { useAdminFilterChange } from "./admin-filter-form";
 import { calendarDate, calendarDays, calendarKey, calendarValueAllowed, normalizeCalendarValue, shiftCalendarMonth } from "../lib/report-calendar.js";
 import styles from "./admin-date-picker.module.css";
 
 export function AdminDatePicker({ name, defaultValue = "", max = "", min = "", type = "date", required = false, labelKey, label, style }) {
   const { language, translate } = useAdminI18n();
+  const filterChange = useAdminFilterChange();
   const locale = language === "de" ? "de-DE" : "en-GB";
   const today = new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Berlin" }).format(new Date());
   const t = (key, fallback) => translate(`reportCalendar.${key}`, fallback);
@@ -47,6 +49,7 @@ export function AdminDatePicker({ name, defaultValue = "", max = "", min = "", t
   function choose(next) {
     if (next && !allowed(next)) return;
     setValue(next);
+    if (next !== value) filterChange?.(name, next);
     close();
   }
   function toggle() {

@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
@@ -152,7 +153,7 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
             </dl>
           </div>
 
-          <form action={basePath} method="get" style={filterPanelStyle}>
+          <AdminFilterForm action={basePath} style={filterPanelStyle}>
             <div className="orders-filter-grid" style={{ ...filterGridStyle, gridTemplateColumns: pxOnly ? filterGridStyle.gridTemplateColumns : "minmax(0, 2fr) repeat(2, minmax(0, 1fr)) max-content" }}>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
@@ -182,11 +183,10 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
                 <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
               </label>
               <div style={filterActionsStyle}>
-                <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
                 <Link href={basePath} scroll={false} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
               </div>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <div className="admin-list-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={ordersTableStyle}>

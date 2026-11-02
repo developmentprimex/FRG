@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../../components/admin-filter-form";
 import { ItemType, KitchenStatus } from "@prisma/client";
 import Link from "next/link";
 import {
@@ -596,7 +597,7 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
         <AdminSection
           title={<AdminText i18nKey="kitchenDetailAdmin.catalogItems" fallback="Catalog Items" />}
         >
-          <form method="get" className="kitchen-catalog-items__filters" style={catalogFiltersStyle}>
+          <AdminFilterForm className="kitchen-catalog-items__filters" style={catalogFiltersStyle}>
             <FormField label={<AdminText i18nKey="kitchenDetailAdmin.searchItems" fallback="Search items" />}>
               <AdminTranslatedInput
                 name="itemSearch"
@@ -627,10 +628,9 @@ export default async function AdminKitchenDetailPage({ params, searchParams }) {
               </AdminSelect>
             </FormField>
             <div style={{ ...actionRowStyle, alignSelf: "end" }}>
-              <button type="submit" style={secondaryButtonStyle}><AdminText i18nKey="dashboard.apply" fallback="Apply" /></button>
               <ActionLink href={`/admin/kitchens/${kitchen.id}`}><AdminText i18nKey="dashboard.clearFilters" fallback="Clear filters" /></ActionLink>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <div style={cardListStyle}>
             {!visibleItems.length ? (

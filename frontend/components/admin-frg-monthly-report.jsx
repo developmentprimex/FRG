@@ -1,3 +1,4 @@
+import AdminFilterForm from "./admin-filter-form";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AdminShell } from "./admin-shell";
@@ -40,7 +41,7 @@ export async function AdminFrgMonthlyReportPage({ searchParams }) {
       </>}>
         <AdminBusinessReportPeriods periods={periods} activePeriod={filters.preset} />
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "end", gap: 18, marginTop: 12 }}>
-          <form action="/admin/reports/frg" method="get" key={query} style={filterFormStyle}>
+          <AdminFilterForm action="/admin/reports/frg" style={filterFormStyle}>
             <input type="hidden" name="period" value="CUSTOM" />
             <label style={fieldStyle}><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" />
               <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} max={current.asOfDate} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
@@ -48,16 +49,14 @@ export async function AdminFrgMonthlyReportPage({ searchParams }) {
             <label style={fieldStyle}><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" />
               <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} max={current.asOfDate} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
             </label>
-            <button type="submit" style={buttonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
             <AdminReportScopeLink compact href="/admin/reports/frg"><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></AdminReportScopeLink>
-          </form>
-          <form action="/admin/reports/frg" method="get" key={filters.month} style={filterFormStyle}>
+          </AdminFilterForm>
+          <AdminFilterForm action="/admin/reports/frg" style={filterFormStyle}>
             <label style={fieldStyle}>
               {text("month", "Report month")}
               <AdminDatePicker type="month" name="month" defaultValue={filters.month} max={current.month} required style={filterInputStyle} labelKey="frgMonthlyReport.month" label="Report month" />
             </label>
-            <button type="submit" style={buttonStyle}>{text("viewMonth", "View month")}</button>
-          </form>
+          </AdminFilterForm>
         </div>
       </AdminSection>
       <Suspense key={query} fallback={<AdminSection compact><p role="status">{text("loading", "Loading monthly report…")}</p></AdminSection>}>

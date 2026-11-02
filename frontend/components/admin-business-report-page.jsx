@@ -1,3 +1,4 @@
+import AdminFilterForm from "./admin-filter-form";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AdminShell } from "./admin-shell";
@@ -40,7 +41,7 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
           <Link href={"/api/admin/reports/orders/export?scope=" + scope + "&" + query} prefetch={false} style={{ ...compactButtonStyle, textDecoration: "none" }}><AdminText i18nKey="reportsAdmin.exportExcel" fallback="Export Excel" /></Link>
         </>}>
         <AdminBusinessReportPeriods periods={periods} activePeriod={activePeriod} />
-        <form key={query} action={path} method="get" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, alignItems: "end" }}>
+        <AdminFilterForm action={path} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, alignItems: "end" }}>
           <input type="hidden" name="period" value="CUSTOM" />
           <input type="hidden" name="type" value={activityFilters.type} />
           <input type="hidden" name="status" value={activityFilters.status} />
@@ -54,10 +55,9 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
             </AdminSelect>
           </label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <button type="submit" style={compactButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-            <Link href={path} style={linkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+            <Link scroll={false} href={path} style={linkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
           </div>
-        </form>
+        </AdminFilterForm>
       </AdminSection>
       <Suspense key={query} fallback={<AdminSection compact><p role="status" style={{ margin: 0, color: "var(--app-text-muted)", padding: "24px 0" }}><AdminText i18nKey="businessReports.updating" fallback="Updating report…" /></p></AdminSection>}>
         <BusinessReportContent filters={filters} now={now} />

@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
@@ -143,7 +144,7 @@ export default async function AdminUsersPage({ searchParams }) {
             />
           }
         >
-          <form action="/admin/users" method="get" style={filterPanelStyle}>
+          <AdminFilterForm action="/admin/users" style={filterPanelStyle}>
             <div style={filterHeaderStyle}>
               <span style={filterEyebrowStyle}>
                 <AdminText i18nKey="usersAdmin.filters" fallback="Filters" />
@@ -189,15 +190,12 @@ export default async function AdminUsersPage({ searchParams }) {
                 </AdminSelect>
               </FilterField>
               <div style={filterActionsStyle}>
-                <button type="submit" style={filterApplyButtonStyle}>
-                  <AdminText i18nKey="usersAdmin.applyFilters" fallback="Apply filters" />
-                </button>
-                <Link href="/admin/users" style={filterClearLinkStyle}>
+                <Link scroll={false} href="/admin/users" style={filterClearLinkStyle}>
                   <AdminText i18nKey="usersAdmin.clearFilters" fallback="Clear" />
                 </Link>
               </div>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <p style={resultsMetaStyle}>
             <AdminText

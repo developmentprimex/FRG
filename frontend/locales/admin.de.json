@@ -873,6 +873,8 @@
     }
   },
   "contractsAdmin": {
+    "resultCountOne": "{count} Vertrag",
+    "resultCountMany": "{count} Verträge",
     "contractNumbers": "Vertragsnummern",
     "createFilterAndEditReusableContractNumbersFromOnePlace": "Vertragsnummern zentral erstellen, filtern und bearbeiten.",
     "filters": "Filter",
@@ -1087,6 +1089,8 @@
     "poland": "Polen"
   },
   "propertyOwnersAdmin": {
+    "resultCountOne": "{count} Unternehmen",
+    "resultCountMany": "{count} Unternehmen",
     "propertyOwners": "Wohnungsgesellschaften",
     "manageOwnersAttachedToReusableContractNumbers": "Verwalten Sie Wohnungsgesellschaften, Objekte und zugewiesene Vertragsnummern.",
     "configuredCompanies": "Angelegte Wohnungsgesellschaften",

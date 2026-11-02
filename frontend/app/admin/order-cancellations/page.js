@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
@@ -59,15 +60,14 @@ export default async function AdminOrderCancellationsPage({ searchParams = {} })
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
-          <form action="/admin/order-cancellations" method="get" style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap", padding: 14, border: "1px solid var(--app-border)", borderRadius: 8, background: "var(--app-surface-muted)" }}>
+          <AdminFilterForm action="/admin/order-cancellations" style={{ display: "flex", gap: 10, alignItems: "end", flexWrap: "wrap", padding: 14, border: "1px solid var(--app-border)", borderRadius: 8, background: "var(--app-surface-muted)" }}>
             <input type="hidden" name="status" value={activeStatus} />
             <label style={{ display: "grid", gap: 6, flex: "1 1 280px", fontSize: "var(--admin-text-label)", color: "var(--app-text-muted)" }}>
               <AdminText i18nKey="contractsAdmin.search" fallback="Search" />
               <AdminTranslatedInput name="q" defaultValue={q} placeholderKey="orderCancellationsAdmin.searchPlaceholder" placeholderFallback="Reference, customer, email, order or contract number..." style={{ ...inputStyle, minHeight: 42, borderRadius: 8, padding: "9px 11px" }} />
             </label>
-            <button type="submit" style={{ ...primaryButtonStyle, minHeight: 42, borderRadius: 8, padding: "9px 14px" }}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-            <Link href={getFilterHref(activeStatus)} style={{ ...filterStyle, borderRadius: 8, minHeight: 42 }}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
-          </form>
+            <Link scroll={false} href={getFilterHref(activeStatus)} style={{ ...filterStyle, borderRadius: 8, minHeight: 42 }}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+          </AdminFilterForm>
 
           <div style={filterRowStyle}>
             {STATUS_FILTERS.map((filter) => {

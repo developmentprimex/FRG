@@ -2,6 +2,7 @@
 
 import { Children, isValidElement, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useOptionalAdminI18n } from "./admin-i18n";
+import { useAdminFilterChange } from "./admin-filter-form";
 
 export default function AdminSelect({
   name,
@@ -22,6 +23,7 @@ export default function AdminSelect({
   ...triggerProps
 }) {
   const adminI18n = useOptionalAdminI18n();
+  const filterChange = useAdminFilterChange();
   const generatedId = useId();
   const listboxId = `${id || generatedId}-listbox`;
   const buttonRef = useRef(null);
@@ -58,6 +60,16 @@ export default function AdminSelect({
   }, [controlled, defaultValue]);
 
   useEffect(() => {
+    const form = buttonRef.current?.form;
+    function reset() {
+      if (!controlled) setInternalValue(String(defaultValue || ""));
+      setOpen(false);
+    }
+    form?.addEventListener("reset", reset);
+    return () => form?.removeEventListener("reset", reset);
+  }, [controlled, defaultValue]);
+
+  useEffect(() => {
     if (!open) return;
 
     function handlePointerDown(event) {
@@ -86,6 +98,7 @@ export default function AdminSelect({
       target: { name, value: nextValue },
       currentTarget: { name, value: nextValue },
     });
+    if (nextValue !== selectedValue) filterChange?.(name, nextValue);
   }
 
   function chooseOption(option) {

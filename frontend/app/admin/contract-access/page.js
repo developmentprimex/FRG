@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
@@ -62,7 +63,7 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
             />
           )}
         >
-          <form action="/admin/contract-access" method="get" style={filterPanelStyle}>
+          <AdminFilterForm action="/admin/contract-access" style={filterPanelStyle}>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
               <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
@@ -72,14 +73,11 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
               <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
             </label>
             <div style={filterActionsStyle}>
-              <button type="submit" style={filterApplyButtonStyle}>
-                <AdminText i18nKey="dashboard.apply" fallback="Apply" />
-              </button>
               <Link href="/admin/contract-access" scroll={false} style={filterClearLinkStyle}>
                 <AdminText i18nKey="dashboard.clearFilters" fallback="Clear filters" />
               </Link>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <div className="admin-contract-access-table" style={tableWrapStyle}>
             <table style={tableStyle}>
