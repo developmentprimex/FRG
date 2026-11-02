@@ -1,4 +1,3 @@
-import { hasPermission } from "../lib/admin-permissions";
 import AdminFilterForm from "./admin-filter-form";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -38,7 +37,6 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
       <AdminSection compact title={scope === "FRG" ? "Fragmento" : "ASC"}
         actions={<>
           <AdminReportScopeLink compact href={"/admin/reports?" + query}><AdminText i18nKey="reportsAdmin.backToReports" fallback="Back to reports" /></AdminReportScopeLink>
-          {hasPermission(admin, "FRG_VIEW") && <AdminReportScopeLink compact href={(scope === "FRG" ? "/admin/reports/asc?" : "/admin/reports/frg?") + query}>{scope === "FRG" ? "ASC" : "FRG"}</AdminReportScopeLink>}
           <Link href={"/api/admin/reports/orders/export?scope=" + scope + "&" + query} prefetch={false} style={{ ...compactButtonStyle, textDecoration: "none" }}><AdminText i18nKey="reportsAdmin.exportExcel" fallback="Export Excel" /></Link>
         </>}>
         <AdminBusinessReportPeriods periods={periods} activePeriod={activePeriod} />

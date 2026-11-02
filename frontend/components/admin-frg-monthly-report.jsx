@@ -1,4 +1,3 @@
-import { hasPermission } from "../lib/admin-permissions";
 import AdminFilterForm from "./admin-filter-form";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -30,14 +29,10 @@ export async function AdminFrgMonthlyReportPage({ searchParams }) {
   const periods = BUSINESS_REPORT_PERIODS.map(period => ({ period,
     href: "/admin/reports/frg?" + buildFrgMonthlyQuery(normalizeFrgMonthlyFilters({ period }, now)),
   }));
-  const ascQuery = new URLSearchParams(query);
-  ascQuery.delete("month");
-  ascQuery.delete("contractType");
   return <AdminShell adminEmail={admin.email}>
     <div style={{ ...pageGridStyle, gap: 12 }}>
       <AdminSection compact title={text("title", "Fragmento — report")} actions={<>
         <AdminReportScopeLink compact href={"/admin/reports?" + query}><AdminText i18nKey="reportsAdmin.backToReports" fallback="Back to reports" /></AdminReportScopeLink>
-        {hasPermission(admin, "ASC_VIEW") && <AdminReportScopeLink compact href={"/admin/reports/asc?" + ascQuery}>ASC</AdminReportScopeLink>}
         <Link href={"/api/admin/reports/orders/export?scope=FRG&" + query} prefetch={false} style={buttonStyle}><AdminText i18nKey="reportsAdmin.exportExcel" fallback="Export Excel" /></Link>
       </>}>
         <AdminBusinessReportPeriods periods={periods} activePeriod={filters.preset} />
