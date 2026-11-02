@@ -90,7 +90,9 @@
     "closeSidebar": "Seitenleiste schließen",
     "sidebar": "Seitenleiste",
     "poweredBy": "Unterstützt von",
-    "loading": "Wird geladen"
+    "loading": "Wird geladen",
+    "fragmentoVisitors": "Fragmento-Besucher",
+    "claimVisitors": "Reklamationsbesucher"
   },
   "settingsAdmin": {
     "settings": "Einstellungen",
@@ -1339,7 +1341,7 @@
     "rowNumber": "Nr."
   },
   "contractAccessAdmin": {
-    "title": "Vertragszugriffe",
+    "title": "Fragmento-Besucher und Vertragszugriffe",
     "description": "Erfolgreiche, Test- und fehlgeschlagene Vertragszugriffe im ausgewählten Zeitraum. Zugriffsprotokolle werden dauerhaft aufbewahrt.",
     "page": "Seite",
     "entries": "Einträge",
@@ -1359,7 +1361,7 @@
     "notCaptured": "Nicht erfasst"
   },
   "claimActivityAdmin": {
-    "title": "Reklamationsaktivität",
+    "title": "Reklamationsbesucher und Aktivität",
     "description": "Erfolgreiche Vertragsabfragen und eingereichte Reklamationen auf der öffentlichen /service-Seite für den ausgewählten Zeitraum.",
     "uniqueVisitors": "Geschätzte tägliche Besucher",
     "pageOpens": "Seitenaufrufe",

@@ -1,9 +1,10 @@
 "use client";
 
 import { hasPermission, canAccess, routePermission } from "../lib/admin-permissions";
+import { switchAdminWorkspace } from "../lib/admin-workspace-action";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AdminI18nProvider, AdminLanguageSwitcher, AdminText, useAdminI18n } from "./admin-i18n";
 
 const navSections = [
@@ -52,13 +53,8 @@ const navSections = [
     id: "monitoring", labelKey: "adminShellLogin.sections.monitoring", fallback: "Monitoring",
     items: [
       { href: "/admin/reports", labelKey: "adminShellLogin.reports", fallback: "Reports", icon: ReportsIcon },
-      {
-        id: "visitors", labelKey: "adminShellLogin.visitors", fallback: "Visitors", icon: UsersIcon, requiresSuperAdmin: true,
-        children: [
-          { href: "/admin/contract-access", labelKey: "adminShellLogin.contractAccess", fallback: "Contract access", icon: ContractsIcon },
-          { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimActivity", fallback: "Claim activity", icon: ClaimsIcon },
-        ],
-      },
+      { href: "/admin/contract-access", labelKey: "adminShellLogin.fragmentoVisitors", fallback: "Fragmento visitors", icon: UsersIcon, requiresSuperAdmin: true, workspace: "FRG" },
+      { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimVisitors", fallback: "Claims visitors", icon: UsersIcon, requiresSuperAdmin: true, workspace: "ASC" },
     ],
   },
   {
@@ -104,7 +100,18 @@ function getNavBadgeCount(item, { openCancellationCount }) {
 function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, showClaimsNav, showUsersNav, openCancellationCount = 0, children }) {
   const pathname = usePathname();
   const router = useRouter();
-  const routeScope = /\/admin\/(claims|px-claims|reports\/asc)(\/|$)/.test(pathname) ? "ASC" : /\/admin\/(orders|px-orders|order-cancellations|reports\/frg)(\/|$)/.test(pathname) ? "FRG" : null;
+  const [isWorkspacePending, startWorkspaceTransition] = useTransition();
+  function changeWorkspace(formData) {
+    startWorkspaceTransition(async () => {
+      await switchAdminWorkspace(formData);
+      // Cookie mutations already return a fresh server render of /admin.
+      // Other admin pages navigate to the dashboard inside the same transition.
+      if (pathname !== "/admin") {
+        startWorkspaceTransition(() => router.replace("/admin", { scroll: false }));
+      }
+    });
+  }
+  const routeScope = /\/admin\/(claims|px-claims|claim-activity|reports\/asc)(\/|$)/.test(pathname) ? "ASC" : /\/admin\/(orders|px-orders|order-cancellations|contract-access|reports\/frg)(\/|$)/.test(pathname) ? "FRG" : null;
   const workspace = routeScope || initialWorkspace;
   useEffect(() => {
     if (routeScope && routeScope !== initialWorkspace && hasPermission(access, `${routeScope}_VIEW`)) {
@@ -127,6 +134,7 @@ function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, sh
     if (href !== pathname) setPendingHref(href);
   }
   const isNavItemVisible = (item) => {
+    if (item.workspace && item.workspace !== workspace) return false;
     if (item.href && !canAccess(access, routePermission(item.href))) return false;
     if (item.href && workspace === "FRG" && /\/(claims|px-claims)(\/|$)/.test(item.href)) return false;
     if (item.href && workspace === "ASC" && /\/(orders|px-orders|order-cancellations|kitchens|contracts|property-owners|catalog)(\/|$)/.test(item.href)) return false;
@@ -226,7 +234,7 @@ function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, sh
         lineHeight: 1.5,
       }}
     >
-      {pendingHref ? <div className="admin-navigation-progress" aria-label={translate("adminShellLogin.loading", "Loading")} /> : null}
+      {pendingHref || isWorkspacePending ? <div className="admin-navigation-progress" role="status" aria-label={translate("adminShellLogin.loading", "Loading")} /> : null}
       <div
         aria-hidden="true"
         style={{
@@ -477,12 +485,12 @@ function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, sh
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
-                <div role="group" style={{ display: "flex", gap: 4, padding: 4, border: "1px solid var(--app-border)", borderRadius: 10, background: "var(--app-surface)" }} aria-label="Workspace">
+                <div role="group" aria-busy={isWorkspacePending} style={{ display: "flex", gap: 4, padding: 4, border: "1px solid var(--app-border)", borderRadius: 10, background: "var(--app-surface)" }} aria-label="Workspace">
                   {["FRG", "ASC"].filter(scope => hasPermission(access, `${scope}_VIEW`)).map(scope => {
                     const selected = workspace === scope;
-                    return <form key={scope} action="/api/admin/workspace" method="post" style={{ margin: 0 }}>
+                    return <form key={scope} action={changeWorkspace} style={{ margin: 0 }}>
                       <input type="hidden" name="scope" value={scope} />
-                      <button type="submit" aria-pressed={selected} style={{
+                      <button type="submit" disabled={isWorkspacePending} aria-pressed={selected} style={{
                         display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
                         minWidth: 80, minHeight: 38, padding: "8px 14px", fontSize: 13, fontWeight: selected ? 800 : 600,
                         border: selected ? "1px solid #71543e" : "1px solid transparent", borderRadius: 7,

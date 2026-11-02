@@ -90,7 +90,9 @@
     "closeSidebar": "Close sidebar",
     "sidebar": "Sidebar",
     "poweredBy": "Powered by",
-    "loading": "Loading"
+    "loading": "Loading",
+    "fragmentoVisitors": "Fragmento visitors",
+    "claimVisitors": "Claims visitors"
   },
   "settingsAdmin": {
     "settings": "Settings",
@@ -1339,7 +1341,7 @@
     "rowNumber": "No."
   },
   "contractAccessAdmin": {
-    "title": "Contract access",
+    "title": "Fragmento visitors and contract access",
     "description": "Successful, test, and failed contract access attempts for the selected date range. Access logs are kept indefinitely.",
     "page": "Page",
     "entries": "entries",
@@ -1359,7 +1361,7 @@
     "notCaptured": "Not captured"
   },
   "claimActivityAdmin": {
-    "title": "Claim activity",
+    "title": "Claims visitors and activity",
     "description": "Successful contract lookups and submitted claims on the public /service page for the selected date range.",
     "uniqueVisitors": "Estimated daily visitors",
     "pageOpens": "Page opens",
