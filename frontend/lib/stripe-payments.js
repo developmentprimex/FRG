@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { orderStatusUpdateData } from "./order-confirmation-date.js";
 import { getStripeClient } from "./stripe";
 import { getDirectOrderConfirmationEnabled } from "./admin-settings";
 import { buildOrderForNotificationsWithConfirmedBaseline } from "./orders";
@@ -62,7 +63,7 @@ async function maybeSendPaidOrderConfirmation(orderRecord, { orderKind = ORDER_K
   }
   await getOrderDelegate(prisma, orderKind).update({
     where: { id: orderRecord.id },
-    data: { status: "CONFIRMED" },
+    data: orderStatusUpdateData("CONFIRMED", orderRecord),
   });
 }
 

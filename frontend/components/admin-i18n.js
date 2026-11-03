@@ -4,7 +4,7 @@ import { Fragment, createContext, useContext, useEffect, useMemo, useRef, useSta
 import { StatusBadgeLabel } from "./admin-ui";
 import de from "../locales/admin.de.json";
 import en from "../locales/admin.en.json";
-import { formatAdminDate } from "../lib/admin-date-time";
+import { formatAdminDate, formatAdminMonth } from "../lib/admin-date-time";
 
 const STORAGE_KEY = "adminLanguage";
 const dictionaries = { de, en };
@@ -97,6 +97,11 @@ export function AdminText({ i18nKey, fallback = "", as: Component = Fragment, va
   }
 
   return <Component>{text}</Component>;
+}
+
+export function AdminMonth({ value }) {
+  const { language } = useAdminI18n();
+  return formatAdminMonth(value, language);
 }
 
 export function AdminTranslation({ i18nKey, fallback = "", values }) {

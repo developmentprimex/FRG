@@ -1,5 +1,12 @@
 export const REPORT_TIME_ZONE = "Europe/Berlin";
 
+export function formatAdminMonth(value, language = "en") {
+  if (!value) return "-";
+  return new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-GB", {
+    month: "long", year: "numeric", timeZone: "UTC",
+  }).format(new Date(`${value}-01T12:00:00Z`));
+}
+
 export function formatAdminDate(value, language = "en", timeZone = "UTC", numeric = false) {
   if (!value) return "-";
 

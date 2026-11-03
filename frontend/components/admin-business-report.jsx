@@ -21,14 +21,14 @@ const reportHeaderStyle = {
 };
 const reportValueStyle = { ...tdStyle, ...reportCellStyle };
 
-export function AdminBusinessReport({ report, scope }) {
+export function AdminBusinessReport({ report, scope, title }) {
   const { columns, rows, total } = report[scope];
   const metrics = scope === "Fragmento"
     ? [["orders", "Orders"], ["cancellationRequests", "Cancellation requests"], ["contracts", "Kitchen contracts added"], ["emails", "Emails sent (recipients)"]]
-    : [["claims", "Claims"], ["frgKitchens", "FRG kitchen models added"], ["arcKitchens", "ARC kitchen models added"], ["emailsKd", "Emails to kd@myarchitecto.de"], ["emailsHbi", "Emails to verwaltung@hbi-wohnen.de"]];
-  return <AdminSection compact>
+    : [["claims", "Claims"], ["frgKitchens", "FRG kitchen models added"], ["arcKitchens", "ARC kitchens added"], ["emailsKd", "Emails to kd@myarchitecto.de"], ["emailsHbi", "Emails to verwaltung@hbi-wohnen.de"]];
+  return <AdminSection compact title={title}>
     <dl style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 8, margin: 0 }}>
-      {metrics.map(([key, label]) => <div key={key} style={{ padding: "8px 12px", border: "1px solid var(--app-border)", borderRadius: 8, background: "var(--app-surface-soft, #faf8f5)" }}>
+      {metrics.filter(([key]) => columns.some(([column]) => column === key)).map(([key, label]) => <div key={key} style={{ padding: "8px 12px", border: "1px solid var(--app-border)", borderRadius: 8, background: "var(--app-surface-soft, #faf8f5)" }}>
         <dt style={{ color: "var(--app-text-muted)", fontSize: 12 }}>{text(key, label)}</dt>
         <dd style={{ margin: "2px 0 0", fontSize: 22, lineHeight: 1.2, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>{count(total[key])}</dd>
       </div>)}
