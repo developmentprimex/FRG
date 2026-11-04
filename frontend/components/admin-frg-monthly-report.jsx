@@ -17,7 +17,8 @@ const count = value => new Intl.NumberFormat("de-DE").format(value);
 const money = value => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
 const buttonStyle = { ...primaryButtonStyle, minHeight: 34, padding: "6px 12px", fontSize: 13, textDecoration: "none", display: "inline-flex", alignItems: "center" };
 const cellStyle = { padding: "16px 12px", verticalAlign: "middle" };
-const headerStyle = { ...thStyle, whiteSpace: "nowrap" };
+const headerStyle = { ...thStyle, ...cellStyle, whiteSpace: "nowrap" };
+const numericHeaderStyle = { ...headerStyle, textAlign: "right" };
 
 export async function AdminFrgMonthlyReportPage({ searchParams }) {
   const admin = await requireAdminPage("FRG_VIEW");
@@ -74,11 +75,11 @@ export function AdminFrgMonthlyReport({ report }) {
       <table dir="ltr" style={{ ...tableStyle, minWidth: 740 }}>
         <thead><tr>
           <th scope="col" style={headerStyle}>{text("description", "Description")}</th>
-          <th scope="col" style={headerStyle}>{filters.previousDate
+          <th scope="col" style={numericHeaderStyle}>{filters.previousDate
             ? text("previous", "Through {date}", { date: reportDisplayDate(filters.previousDate) })
             : text("beforePeriod", "Before selected period")}</th>
-          <th scope="col" style={headerStyle}><ReportPeriod filters={filters} /></th>
-          <th scope="col" style={headerStyle}>{text("cumulative", "Total")}</th>
+          <th scope="col" style={numericHeaderStyle}><ReportPeriod filters={filters} /></th>
+          <th scope="col" style={numericHeaderStyle}>{text("cumulative", "Total")}</th>
         </tr></thead>
         <tbody>{report.metrics.map(([key, label, format]) => <tr key={key}>
           <th scope="row" style={{ ...tdStyle, ...cellStyle, textAlign: "left", fontWeight: 500 }}>{text(key, label)}</th>
