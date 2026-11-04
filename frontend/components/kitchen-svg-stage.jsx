@@ -1885,6 +1885,7 @@ const SPLIT_SIDE_OVEN_KEYS = new Set(["oven-module", "oven-base"]);
 const SPLIT_SIDE_SINK_KEYS = new Set(["sink-base"]);
 const AB_105793_SIDE_LABEL_SLUGS = new Set(["ab-105793", "ab-105796", "ab-105799", "ab-105802"]);
 const SPLIT_SIDE_LABEL_SLUGS = new Set([
+  "ab-111535",
   ...AB_105793_SIDE_LABEL_SLUGS,
   ...AB_105777_LAYOUT_ALIAS_SLUGS,
   "ab-105777",
@@ -2176,6 +2177,20 @@ function cropPlanBox(box, crop) {
 
 export function getSplitKitchenSideLabels(definitions, crop, slug, translate, language, isCompactMobilePlan = false) {
   if (!SPLIT_SIDE_LABEL_SLUGS.has(slug)) return [];
+
+  if (slug === "ab-111535") {
+    // Center each label across its entire CAD frame, including the open space.
+    return [[3.36, 535.56, "A"], [571.68, 833.88, "B"]].map(([left, right, side]) =>
+      cropPlanBox({
+        label: translate(`configurator.splitKitchenSide${side}`, language === "de" ? `Seite ${side}` : `Side ${side}`),
+        left: left / 842 * 100,
+        top: 89.2 / 595 * 100,
+        width: (right - left) / 842 * 100,
+        height: (145.72 - 89.2) / 595 * 100,
+        isFrameHeader: true,
+      }, crop),
+    );
+  }
 
   if (["ab-105847", "ab-105850", "ab-105853", "ab-105856", "ab-105859", "ab-105862"].includes(slug)) {
     // Use the actual SVG header bands, between the frame and cabinet tops.
