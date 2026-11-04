@@ -1111,6 +1111,7 @@
     "location": "Location",
     "allLocations": "All locations",
     "companyName": "Company name",
+    "companyAddress": "Company address",
     "address": "Address",
     "firstName": "First name",
     "lastName": "Last name",

@@ -90,8 +90,10 @@ sipas Excel-it. Email-i, telefoni dhe shënimet ekzistuese ruhen.
 | S-Immobiliengesellschaft Holstein mbH & Co.KG | Hagenstraße 19, 23843 Bad Oldesloe |
 | Monika Wach | Erich-Kästner-Ring 63, D 22175 Hamburg |
 
-Adresa e kompanisë shfaqet te `/admin/property-owners`, në kolonën Contact,
-te fusha Address në faqen e kompanisë dhe në eksportin Excel.
+Adresa e kompanisë shfaqet te `/admin/property-owners`, në kolonën Company address,
+te fusha Address në faqen e kompanisë dhe në eksportin Excel. Kolona Contact
+shfaq email-in dhe telefonin. Location shfaq vendndodhjen e objektit të parë me
+të dhëna adrese, ose `—` kur objektet nuk kanë adresa; nuk përdor adresën e kompanisë.
 Nuk kopjohet te objektet, kuzhinat ose adresat e porosive. Objektet e reja krijohen
 pa adresë; adresat e objekteve ekzistuese nuk ndryshohen. Pas rilidhjes,
 formularët që marrin adresën nga projekti lexojnë objektin e ri. Për shembull,
