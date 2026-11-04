@@ -10,8 +10,6 @@ import {
   mutedTextStyle,
   pageGridStyle,
   primaryButtonStyle,
-  secondaryButtonStyle,
-  splitGridStyle,
   textareaStyle,
 } from "../../../../components/admin-ui";
 import Link from "next/link";
@@ -22,7 +20,7 @@ import AdminContractAddressFields from "../../../../components/admin-contract-ad
 import AdminSelect from "../../../../components/admin-select";
 import { getFormMessage } from "../../../../lib/admin-forms";
 import { requireAdminPage } from "../../../../lib/auth";
-import { getPropertyOwnerForAdmin, listKitchensForAdmin } from "../../../../lib/catalog";
+import { getPropertyOwnerForAdmin } from "../../../../lib/catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -62,12 +60,8 @@ export default async function AdminPropertyOwnerDetailPage({ params, searchParam
   const { id: rawId } = await params;
   const id = normalizeRouteId(rawId);
   const resolvedSearchParams = (await searchParams) || {};
-  const [owner, kitchens] = await Promise.all([
-    getPropertyOwnerForAdmin(id),
-    listKitchensForAdmin(),
-  ]);
+  const owner = await getPropertyOwnerForAdmin(id);
   const createObjectOpen = normalizeParam(resolvedSearchParams.createObject) === "1";
-  const createContractOpen = normalizeParam(resolvedSearchParams.createContract) === "1";
   const openObjectId = normalizeParam(resolvedSearchParams.openObject);
 
   if (!owner) {
@@ -120,7 +114,6 @@ export default async function AdminPropertyOwnerDetailPage({ params, searchParam
           </div>
         </AdminSection>
 
-        <div style={splitGridStyle}>
           <AdminSection
             title={<AdminText i18nKey="propertyOwnersAdmin.editOwner" fallback="Edit partner" />}
           >
@@ -155,58 +148,6 @@ export default async function AdminPropertyOwnerDetailPage({ params, searchParam
             </form>
           </AdminSection>
 
-          <AdminSection
-            title={<AdminText i18nKey="contractsAdmin.addContractNumber" fallback="Add contract number" />}
-            description={<AdminText i18nKey="propertyOwnersAdmin.createContractDescription" fallback="Create a contract number for this partner. Optionally assign it to a project." />}
-          >
-            <details open={createContractOpen} style={createCompanyContractDetailsStyle}>
-              <summary className="create-company-contract-summary" style={createCompanyContractSummaryStyle}>
-                <AdminText i18nKey="contractsAdmin.createContractForCompany" fallback="Create contract number" />
-              </summary>
-              <div style={createCompanyContractBodyStyle}>
-                <form action="/api/admin/contracts" method="post" style={contractCreateFormStyle}>
-                    <input type="hidden" name="returnTo" value={`/admin/property-owners/${owner.id}`} />
-                    <input type="hidden" name="housingCompanyId" value={owner.id} />
-                    <FormField label={<AdminText i18nKey="dashboard.kitchen" fallback="Kitchen" />}>
-                      <AdminSelect name="kitchenId" style={compactInputStyle} required>
-                        <option value=""><AdminText i18nKey="contractsAdmin.selectKitchen" fallback="Select kitchen" /></option>
-                        {kitchens.map((kitchen) => (
-                          <option key={kitchen.id} value={kitchen.id}>
-                            {kitchen.name}
-                          </option>
-                        ))}
-                      </AdminSelect>
-                    </FormField>
-                    <FormField label={<AdminText i18nKey="contractsAdmin.contractNumber" fallback="Contract number" />}>
-                      <input name="contractNumber" placeholder="670123456" style={compactInputStyle} required />
-                    </FormField>
-                    <FormField label={<AdminText i18nKey="contractsAdmin.project" fallback="Project" />}>
-                      <AdminSelect name="projectId" style={compactInputStyle}>
-                        <option value=""><AdminText i18nKey="contractsAdmin.selectProject" fallback="Select project" /></option>
-                        {(owner.propertyObjects || []).map((object) => (
-                          <option key={object.id} value={object.projectId || ""} disabled={!object.projectId}>
-                            {object.projectCode ? `${object.projectCode} - ` : ""}{object.projectName || object.name || object.id} - {object.name || object.id}
-                          </option>
-                        ))}
-                      </AdminSelect>
-                    </FormField>
-                    <FormField label={<AdminText i18nKey="contractAddressFields.floor" fallback="Floor" />}>
-                      <input name="floor" style={compactInputStyle} />
-                    </FormField>
-                    <FormField label={<AdminText i18nKey="contractAddressFields.unitNumber" fallback="Unit number" />}>
-                      <input name="unitNumber" style={compactInputStyle} />
-                    </FormField>
-                    <FormField label={<AdminText i18nKey="contractAddressFields.notes" fallback="Notes" />} wide>
-                      <textarea name="notes" rows={2} style={compactTextareaStyle} />
-                    </FormField>
-                    <div style={formActionRowStyle}>
-                      <button type="submit" style={primaryButtonStyle}><AdminText i18nKey="contractsAdmin.createContract" fallback="Create contract number" /></button>
-                    </div>
-                  </form>
-              </div>
-            </details>
-          </AdminSection>
-        </div>
 
         <AdminSection
           title={<AdminText i18nKey="propertyOwnersAdmin.objects" fallback="Objects" />}
@@ -405,10 +346,6 @@ export default async function AdminPropertyOwnerDetailPage({ params, searchParam
 
         <style>{`
           .create-object-summary::-webkit-details-marker {
-            display: none;
-          }
-
-          .create-company-contract-summary::-webkit-details-marker {
             display: none;
           }
 
@@ -645,34 +582,6 @@ const objectEditorHeaderStyle = {
   justifyContent: "space-between",
   alignItems: "center",
   flexWrap: "wrap",
-};
-
-const contractCreateFormStyle = {
-  display: "grid",
-  gap: 12,
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-  alignItems: "start",
-};
-
-const createCompanyContractDetailsStyle = {
-  display: "grid",
-  gap: 16,
-};
-
-const createCompanyContractSummaryStyle = {
-  ...secondaryButtonStyle,
-  width: "fit-content",
-  minHeight: 46,
-  borderRadius: 8,
-  padding: "12px 18px",
-  listStyle: "none",
-  cursor: "pointer",
-};
-
-const createCompanyContractBodyStyle = {
-  display: "grid",
-  gap: 14,
-  paddingTop: 8,
 };
 
 const compactCreateObjectCardStyle = {

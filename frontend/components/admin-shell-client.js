@@ -53,8 +53,8 @@ const navSections = [
     id: "monitoring", labelKey: "adminShellLogin.sections.monitoring", fallback: "Monitoring",
     items: [
       { href: "/admin/reports", labelKey: "adminShellLogin.reports", fallback: "Reports", icon: ReportsIcon },
-      { href: "/admin/contract-access", labelKey: "adminShellLogin.fragmentoVisitors", fallback: "Fragmento visitors", icon: UsersIcon, requiresSuperAdmin: true, workspace: "FRG" },
-      { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimVisitors", fallback: "Claims visitors", icon: UsersIcon, requiresSuperAdmin: true, workspace: "ASC" },
+      { href: "/admin/contract-access", labelKey: "adminShellLogin.fragmentoVisitors", fallback: "Fragmento visitors", icon: UsersIcon, workspace: "FRG" },
+      { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimVisitors", fallback: "Claims visitors", icon: UsersIcon, workspace: "ASC" },
     ],
   },
   {
@@ -103,21 +103,25 @@ function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, sh
   const [isWorkspacePending, startWorkspaceTransition] = useTransition();
   function changeWorkspace(formData) {
     startWorkspaceTransition(async () => {
-      await switchAdminWorkspace(formData);
-      // Cookie mutations already return a fresh server render of /admin.
-      // Other admin pages navigate to the dashboard inside the same transition.
-      if (pathname !== "/admin") {
-        startWorkspaceTransition(() => router.replace("/admin", { scroll: false }));
+      const scope = await switchAdminWorkspace(formData);
+      const isVisitorsPage = pathname === "/admin/claim-activity" || pathname === "/admin/contract-access";
+      const nextPath = isVisitorsPage
+        ? scope === "ASC" ? "/admin/claim-activity" : "/admin/contract-access"
+        : "/admin";
+      // Cookie mutations refresh the current route; paired visitor pages also
+      // navigate to the matching report inside the same transition.
+      if (pathname !== nextPath) {
+        startWorkspaceTransition(() => router.replace(nextPath, { scroll: false }));
       }
     });
   }
   const routeScope = /\/admin\/(claims|px-claims|claim-activity|reports\/asc)(\/|$)/.test(pathname) ? "ASC" : /\/admin\/(orders|px-orders|order-cancellations|contract-access|reports\/frg)(\/|$)/.test(pathname) ? "FRG" : null;
   const workspace = routeScope || initialWorkspace;
   useEffect(() => {
-    if (routeScope && routeScope !== initialWorkspace && hasPermission(access, `${routeScope}_VIEW`)) {
+    if (!isWorkspacePending && routeScope && routeScope !== initialWorkspace && hasPermission(access, `${routeScope}_VIEW`)) {
       fetch("/api/admin/workspace", { method: "POST", headers: { accept: "application/json" }, body: new URLSearchParams({ scope: routeScope }) }).catch(() => {});
     }
-  }, [routeScope, initialWorkspace]);
+  }, [routeScope, initialWorkspace, isWorkspacePending]);
   const { translate } = useAdminI18n();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState("");

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import styles from "./contract-detail.module.css";
+import detailStyles from "../../../../components/admin-detail-table.module.css";
 import {
   ActionLink,
   AdminSection,
@@ -13,7 +15,8 @@ import {
 import { AdminShell } from "../../../../components/admin-shell";
 import AdminContractLinkFields from "../../../../components/admin-contract-link-fields";
 import AdminContractApplianceFields from "../../../../components/admin-contract-appliance-fields";
-import AdminApplianceSummary from "../../../../components/admin-appliance-summary";
+import AdminContractEditButton from "../../../../components/admin-contract-edit-button";
+import { CONTRACT_APPLIANCE_TYPES, getContractApplianceBrandLabel } from "../../../../lib/contract-appliances";
 import { loadContractApplianceInventory } from "../../../../lib/contract-appliance-inventory";
 import AdminFileInput from "../../../../components/admin-file-input";
 import { AdminDateTime, AdminKitchenDisplayName, AdminStatusBadge, AdminText } from "../../../../components/admin-i18n";
@@ -43,10 +46,10 @@ function ProjectStatusText({ status }) {
 
 function DetailField({ label, children }) {
   return (
-    <div style={detailFieldStyle}>
-      <span style={detailLabelStyle}>{label}</span>
-      <div style={detailValueStyle}>{children || "-"}</div>
-    </div>
+    <tr>
+      <th scope="row">{label}</th>
+      <td>{children || "-"}</td>
+    </tr>
   );
 }
 
@@ -64,9 +67,6 @@ function AddressLines({ lines }) {
 
 function contractAddressLines(contract) {
   return [
-    contract.projectName ? <><AdminText i18nKey="contractsAdmin.project" fallback="Project" />: {contract.projectCode ? `${contract.projectCode} - ` : ""}{contract.projectName}</> : "",
-    contract.projectStatus ? <><AdminText i18nKey="contractsAdmin.status" fallback="Status" />: <ProjectStatusText status={contract.projectStatus} /></> : "",
-    contract.propertyObject?.name ? <><AdminText i18nKey="contractsAdmin.propertyObject" fallback="Object / Building" />: {contract.propertyObject.name}</> : "",
     [contract.address1, contract.address2].filter(Boolean).join(", "),
     [contract.postalCode, contract.city].filter(Boolean).join(" "),
     contract.country ? <CountryName country={contract.country} /> : "",
@@ -167,7 +167,7 @@ export default async function AdminContractDetailPage({ params }) {
   const admin = await requireAdminPage("FRG_VIEW");
   const { id } = await params;
   const [contract, kitchens, owners, projects] = await Promise.all([
-    getKitchenContractForAdmin(id),
+    getKitchenContractForAdmin(id, admin),
     listKitchensForAdmin(),
     listPropertyOwnersForAdmin(),
     listProjectsForAdmin(),
@@ -188,23 +188,24 @@ export default async function AdminContractDetailPage({ params }) {
   const returnTo = `/admin/contracts/${contract.id}`;
   const applianceInventory = await loadContractApplianceInventory(contract);
   const claimPlanAssetBase = `/api/service-claims/contracts/${encodeURIComponent(contract.contractNumber)}/plan-assets`;
+  const registrationCount = (contract.activeRegistration ? 1 : 0) + (contract.pendingRegistrations?.length || 0) + (contract.previousRegistrations?.length || 0);
+  const hasClaimPlan = contract.hasUploadedClaimPlanPreview || contract.claimPlanPreviewPath || contract.hasUploadedClaimPlanPdf || contract.claimPlanPdfPath;
 
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
         <AdminSection
           title={<AdminText i18nKey="contractDetailAdmin.contractTitle" fallback="Contract {contractNumber}" values={{ contractNumber: contract.contractNumber }} />}
-          description={<AdminKitchenDisplayName slug={contract.kitchen.slug} name={contract.kitchen.name} />}
           actions={
             <div style={actionRowStyle}>
-              <ActionLink href="/admin/contracts"><AdminText i18nKey="contractDetailAdmin.backToContracts" fallback="Back to contract numbers" /></ActionLink>
-              <ActionLink href="#orders"><AdminText i18nKey="adminShellLogin.orders" fallback="Orders" /></ActionLink>
-              <ActionLink href="#registration-history"><AdminText i18nKey="contractDetailAdmin.registrationHistory" fallback="Registration history" /></ActionLink>
-              <ActionLink href="#edit-contract"><AdminText i18nKey="contractDetailAdmin.editContract" fallback="Edit contract" /></ActionLink>
+            <ActionLink href="/admin/contracts"><AdminText i18nKey="contractDetailAdmin.backToContracts" fallback="Back to contract numbers" /></ActionLink>
+            <AdminContractEditButton />
             </div>
           }
         >
-          <div style={summaryGridStyle}>
+          <div className={detailStyles.overview}>
+          <table><tbody>
+            <DetailField label={<AdminText i18nKey="kitchensAdmin.kitchen" fallback="Kitchen" />}><AdminKitchenDisplayName slug={contract.kitchen.slug} name={contract.kitchen.name} /></DetailField>
             <DetailField label={<AdminText i18nKey="contractDetailAdmin.type" fallback="Type" />}>{contract.contractType}</DetailField>
             <DetailField label={<AdminText i18nKey="contractsAdmin.status" fallback="Status" />}><AdminStatusBadge status={contract.isActive ? "ACTIVE" : "INACTIVE"} /></DetailField>
             <DetailField label={<AdminText i18nKey="contractsAdmin.owner" fallback="Housing company" />}>{contract.owner?.name || <AdminText i18nKey="contractsAdmin.noOwnerSelected" fallback="No housing company selected" />}</DetailField>
@@ -214,16 +215,18 @@ export default async function AdminContractDetailPage({ params }) {
                 ? <AdminText i18nKey="contractDetailAdmin.orderCount" fallback="{count} order(s)" values={{ count: contract._count.orders }} />
                 : <AdminText i18nKey="contractsAdmin.unused" fallback="Unused" />}
             </DetailField>
-          </div>
-        </AdminSection>
-
-        <AdminSection title={<AdminText i18nKey="contractDetailAdmin.overview" fallback="Overview" />}>
-          <div style={overviewGridStyle}>
+            {contract.projectName || contract.propertyObject?.name ? <DetailField label={<AdminText i18nKey="contractsAdmin.project" fallback="Project" />}>
+              <AddressLines lines={[
+                [contract.projectCode, contract.projectName].filter(Boolean).join(" - "),
+                contract.propertyObject?.name && contract.propertyObject.name !== contract.projectName ? contract.propertyObject.name : "",
+                contract.projectStatus ? <ProjectStatusText status={contract.projectStatus} /> : "",
+              ]} />
+            </DetailField> : null}
             <DetailField label={<AdminText i18nKey="contractsAdmin.contractAddress" fallback="Contract address" />}><AddressLines lines={contractAddressLines(contract)} /></DetailField>
-            <DetailField label={<AdminText i18nKey="contractsAdmin.paymentAddress" fallback="Billing address" />}><AddressLines lines={billingAddressLines(contract)} /></DetailField>
-            <DetailField label={<AdminText i18nKey="contractsAdmin.registeredOwner" fallback="Registered owner" />}><AddressLines lines={contactLines(contract.activeRegistration)} /></DetailField>
-            <DetailField label={<AdminText i18nKey="contractsAdmin.notes" fallback="Notes" />}>{contract.notes || "-"}</DetailField>
-            <DetailField label={<AdminText i18nKey="contractDetailAdmin.claimPlan" fallback="Claim plan" />}>
+            {contract.latestOrderAddress ? <DetailField label={<AdminText i18nKey="contractsAdmin.paymentAddress" fallback="Billing address" />}><AddressLines lines={billingAddressLines(contract)} /></DetailField> : null}
+            {contract.activeRegistration ? <DetailField label={<AdminText i18nKey="contractsAdmin.registeredOwner" fallback="Registered owner" />}><AddressLines lines={contactLines(contract.activeRegistration)} /></DetailField> : null}
+            {contract.notes ? <DetailField label={<AdminText i18nKey="contractsAdmin.notes" fallback="Notes" />}>{contract.notes}</DetailField> : null}
+            {hasClaimPlan ? <DetailField label={<AdminText i18nKey="contractDetailAdmin.claimPlan" fallback="Claim plan" />}>
               <AddressLines lines={[
                 contract.hasUploadedClaimPlanPreview
                   ? <a href={`${claimPlanAssetBase}/preview`} target="_blank" rel="noreferrer"><AdminText i18nKey="contractDetailAdmin.openUploadedSketch" fallback="Open uploaded sketch" /></a>
@@ -236,31 +239,41 @@ export default async function AdminContractDetailPage({ params }) {
                     ? <a href={contract.claimPlanPdfPath} target="_blank" rel="noreferrer"><AdminText i18nKey="contractDetailAdmin.openPdfPlan" fallback="Open PDF plan" /></a>
                     : "",
               ]} />
-            </DetailField>
-          </div>
-        </AdminSection>
+            </DetailField> : null}
+          </tbody></table>
 
-        <AdminSection
-          title={<AdminText i18nKey="contractDetailAdmin.appliances" fallback="Electrical appliances" />}
-          description={<AdminText i18nKey="contractDetailAdmin.appliancesSummary" fallback="Installed appliance brands used to select serial-number help photos for this contract." />}
-        >
-          <AdminApplianceSummary appliances={applianceInventory.appliances} />
-          {applianceInventory.manual && !applianceInventory.configured ? <p style={mutedTextStyle}><AdminText i18nKey="contractDetailAdmin.inventoryUnreviewed" fallback="This appliance list has not been checked yet. Remove missing appliances and save to confirm it." /></p> : null}
-        </AdminSection>
+        <details open>
+          <summary><AdminText i18nKey="contractDetailAdmin.appliances" fallback="Electrical appliances" /></summary>
+          {applianceInventory.appliances.length ? <table><tbody>
+            {applianceInventory.appliances.map((appliance) => {
+              const type = CONTRACT_APPLIANCE_TYPES.find((entry) => entry.type === appliance.applianceType);
+              return <DetailField key={appliance.applianceType} label={<AdminText i18nKey={`contractDetailAdmin.${type?.labelKey}`} fallback={type?.label || appliance.applianceType} />}>
+                {getContractApplianceBrandLabel(appliance.brand) || <AdminText i18nKey="contractDetailAdmin.notSpecified" fallback="Not specified" />}
+                {appliance.articleNumber ? <span style={{ display: "block", color: "var(--app-text-muted)" }}>{appliance.articleNumber}</span> : null}
+              </DetailField>;
+            })}
+          </tbody></table> : <p className={styles.detailBody} style={mutedTextStyle}><AdminText i18nKey="contractDetailAdmin.noInstalledAppliances" fallback="No electrical appliances are included in this kitchen or its confirmed orders." /></p>}
+          {applianceInventory.manual && !applianceInventory.configured ? <p className={styles.detailBody} style={mutedTextStyle}><AdminText i18nKey="contractDetailAdmin.inventoryUnreviewed" fallback="This appliance list has not been checked yet. Remove missing appliances and save to confirm it." /></p> : null}
+        </details>
 
-        <AdminSection id="orders" title={<AdminText i18nKey="adminShellLogin.orders" fallback="Orders" />}>
-          <div id="orders" />
+        <details id="orders" open={Boolean(contract.orders?.length)}>
+          <summary><AdminText i18nKey="adminShellLogin.orders" fallback="Orders" /> ({contract._count.orders})</summary>
+          <div className={styles.detailBody}>
           <OrderList orders={contract.orders || []} />
-        </AdminSection>
+          </div>
+        </details>
 
-        <AdminSection title={<AdminText i18nKey="contractDetailAdmin.registrationHistory" fallback="Registration history" />}>
-          <div id="registration-history" />
+        <details id="registration-history">
+          <summary><AdminText i18nKey="contractDetailAdmin.registrationHistory" fallback="Registration history" /> ({registrationCount})</summary>
+          <div className={styles.detailBody}>
           <RegistrationHistory contract={contract} />
-        </AdminSection>
+          </div>
+        </details>
 
-        <AdminSection title={<AdminText i18nKey="contractDetailAdmin.editContract" fallback="Edit contract" />}>
-          <div id="edit-contract" />
-          <form action={`/api/admin/contracts/${contract.id}`} method="post" encType="multipart/form-data" style={editFormStyle}>
+        <details id="edit-contract" className={styles.editor}>
+          <summary><AdminText i18nKey="contractDetailAdmin.editContract" fallback="Edit contract" /></summary>
+          <div className={styles.detailBody}>
+          <form action={`/api/admin/contracts/${contract.id}`} method="post" encType="multipart/form-data" className={styles.editForm}>
             <input type="hidden" name="_intent" value="update" />
             <input type="hidden" name="returnTo" value={returnTo} />
             <input type="hidden" name="contractType" value={contract.contractType} />
@@ -268,7 +281,7 @@ export default async function AdminContractDetailPage({ params }) {
               <input name="contractNumber" defaultValue={contract.contractNumber} style={inputStyle} required />
             </FormField>
             {contract.contractType === "ARC" ? (
-              <FormField label={<AdminText i18nKey="contractDetailAdmin.replaceKitchenSketch" fallback="Replace kitchen sketch (JPG, PNG, or WebP)" />}>
+              <FormField label={<AdminText i18nKey="contractDetailAdmin.kitchenSketchLabel" fallback="Kitchen sketch" />}>
                 <AdminFileInput
                   name="claimPlanPreviewFile"
                   accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
@@ -289,7 +302,7 @@ export default async function AdminContractDetailPage({ params }) {
                 </FormField>
                 <input type="hidden" name="claimPlanPdfPath" value={contract.claimPlanPdfPath || ""} />
                 <input type="hidden" name="claimPlanPreviewPath" value={contract.claimPlanPreviewPath || ""} />
-                <FormField label={<AdminText i18nKey="contractDetailAdmin.replaceOrAddKitchenSketch" fallback="Replace/add kitchen sketch (JPG, PNG, or WebP)" />}>
+                <FormField label={<AdminText i18nKey="contractDetailAdmin.kitchenSketchLabel" fallback="Kitchen sketch" />}>
                   <AdminFileInput
                     name="claimPlanPreviewFile"
                     accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
@@ -298,7 +311,7 @@ export default async function AdminContractDetailPage({ params }) {
                     style={inputStyle}
                   />
                 </FormField>
-                <FormField label={<AdminText i18nKey="contractDetailAdmin.replaceOrAddPdf" fallback="Replace/add original kitchen plan (PDF)" />}>
+                <FormField label={<AdminText i18nKey="contractDetailAdmin.kitchenPlanPdfLabel" fallback="Kitchen plan (PDF)" />}>
                   <AdminFileInput
                     name="claimPlanPdfFile"
                     accept="application/pdf,.pdf"
@@ -308,6 +321,7 @@ export default async function AdminContractDetailPage({ params }) {
                   />
                 </FormField>
                 <AdminContractLinkFields
+                  compact
                   owners={owners}
                   projects={projects}
                   defaultHousingCompanyId={contract.housingCompanyId || ""}
@@ -316,7 +330,7 @@ export default async function AdminContractDetailPage({ params }) {
                 />
               </>
             )}
-            <AdminContractApplianceFields initialInventory={applianceInventory} kitchenId={contract.kitchenId} contractId={contract.id} contractType={contract.contractType} />
+            <AdminContractApplianceFields compact initialInventory={applianceInventory} kitchenId={contract.kitchenId} contractId={contract.id} contractType={contract.contractType} />
             <div style={editActionsStyle}>
               <button type="submit" style={primaryButtonStyle}>
                 <AdminText i18nKey="contractDetailAdmin.saveContractType" fallback="Save {type} contract" values={{ type: contract.contractType }} />
@@ -339,64 +353,18 @@ export default async function AdminContractDetailPage({ params }) {
               </button>
             </form>
           </div>
+          </div>
+        </details>
+          </div>
         </AdminSection>
       </div>
     </AdminShell>
   );
 }
 
-const summaryGridStyle = {
-  display: "grid",
-  gap: 14,
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-};
-
-const overviewGridStyle = {
-  display: "grid",
-  gap: 16,
-  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-};
-
-const applianceSummaryGridStyle = {
-  display: "grid",
-  gap: 10,
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-};
-
-const applianceSummaryStyle = {
-  background: "rgba(255,255,255,0.7)",
-  border: "1px solid var(--app-border)",
-  borderRadius: 12,
-  display: "grid",
-  gap: 5,
-  padding: 12,
-};
-
-const detailFieldStyle = {
-  display: "grid",
-  gap: 7,
-  minWidth: 0,
-};
-
-const detailLabelStyle = {
-  color: "var(--app-text-muted)",
-  fontSize: 11,
-  fontWeight: 900,
-  letterSpacing: "0.08em",
-  lineHeight: 1.25,
-  textTransform: "uppercase",
-};
-
-const detailValueStyle = {
-  color: "var(--app-text)",
-  fontSize: 14,
-  fontWeight: 700,
-  lineHeight: 1.45,
-};
-
 const lineStackStyle = {
   display: "grid",
-  gap: 4,
+  gap: 2,
 };
 
 const listStyle = {
@@ -407,7 +375,7 @@ const listStyle = {
 const listItemLinkStyle = {
   display: "grid",
   gap: 8,
-  padding: 14,
+  padding: 10,
   borderRadius: 10,
   border: "1px solid var(--app-border)",
   background: "rgba(255,255,255,0.86)",
@@ -428,7 +396,7 @@ const itemMetaStyle = {
 const historyItemStyle = {
   display: "grid",
   gap: 8,
-  padding: 14,
+  padding: 10,
   borderRadius: 10,
   border: "1px solid var(--app-border)",
   background: "rgba(255,255,255,0.86)",
@@ -453,13 +421,6 @@ const historyStatusStyle = {
   fontWeight: 800,
 };
 
-const editFormStyle = {
-  display: "grid",
-  gap: 16,
-  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-  alignItems: "end",
-};
-
 const editActionsStyle = {
   gridColumn: "1 / -1",
   display: "flex",
@@ -467,6 +428,9 @@ const editActionsStyle = {
 };
 
 const dangerActionsStyle = {
+  borderTop: "1px solid var(--app-border)",
+  paddingTop: 12,
+  marginTop: 12,
   display: "flex",
   gap: 10,
   flexWrap: "wrap",

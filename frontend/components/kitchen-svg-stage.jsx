@@ -65,6 +65,7 @@ const Kitchen3DViewer = dynamic(() => import("./Kitchen3DViewer"), {
 // stays razor-sharp at any zoom. The pixel-perfect hotspot overlay sits on top unchanged
 // (the SVG keeps the PDF's aspect ratio, so the %-based boxes still line up exactly).
 export const IMAGE_VIEW_BY_SLUG = {
+  "ab-111535": "/plans/AB%20670%20111535.svg",
   "ab-105793": "/plans/AB%20105793.svg",
   "ab-105796": "/plans/AB%20105796.svg",
   "ab-105799": "/plans/AB%20105799.svg",
@@ -220,6 +221,7 @@ AB_105762_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
 // linework (see docs/detect-plan-hotspots.py). Values are % of image width/height, so they
 // stay pixel-aligned at any display size. Use ?calibrate=1 on the kitchen page to verify.
 export const IMAGE_HOTSPOTS_BY_SLUG = {
+  "ab-111535": PLAN_HOTSPOTS_BY_SLUG["ab-111535"],
   // The right block's end panel remains white in orders; ASC keeps its own selector.
   "ab-105793": PLAN_HOTSPOTS_BY_SLUG["ab-105793"].filter(
     (hotspot) => hotspot.claimFurniturePartKey !== "worktop-end-panel-right",

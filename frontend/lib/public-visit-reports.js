@@ -212,7 +212,42 @@ export function calculatePublicVisitBreakdowns(events = []) {
   };
 }
 
+function liveVisitSqlWhere(filters = {}) {
+  if (!filters.excludeTestContracts) return Prisma.sql`TRUE`;
+  return Prisma.sql`
+    "eventType" <> ${PUBLIC_VISIT_EVENT_TYPES.CONTRACT_TEST_ACCEPTED}
+    AND COALESCE("metadata"->>'orderKind', '') <> ${ORDER_KIND_TEST}
+    AND REGEXP_REPLACE(COALESCE("contractNumber", ''), '[[:space:]]', '', 'g') NOT LIKE '111%'
+    AND NOT EXISTS (
+      SELECT 1 FROM "KitchenContract" test_contract
+      WHERE test_contract."id" = "PublicVisitEvent"."kitchenContractId"
+        AND REGEXP_REPLACE(test_contract."contractNumber", '[[:space:]]', '', 'g') LIKE '111%'
+    )
+  `;
+}
+
+function contractAccessSqlWhere(filters = {}) {
+  const date = getVisitReportWhere(filters).createdAt;
+  return Prisma.sql`
+    "eventType" IN (${Prisma.join(CONTRACT_ACCESS_EVENT_TYPES)})
+    AND ${liveVisitSqlWhere(filters)}
+    ${date?.gte ? Prisma.sql`AND "createdAt" >= ${date.gte}` : Prisma.empty}
+    ${date?.lte ? Prisma.sql`AND "createdAt" <= ${date.lte}` : Prisma.empty}
+  `;
+}
+
 export async function loadRecentContractAccessData(filters = {}, page = 1) {
+  if (filters.excludeTestContracts) {
+    const ids = await prisma.$queryRaw`
+      SELECT "id" FROM "PublicVisitEvent" WHERE ${contractAccessSqlWhere(filters)}
+      ORDER BY "createdAt" DESC, "id" DESC LIMIT 100 OFFSET ${(page - 1) * 100}
+    `;
+    return prisma.publicVisitEvent.findMany({
+      where: { id: { in: ids.map(row => row.id) } },
+      include: kitchenContractInclude,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
+  }
   return prisma.publicVisitEvent.findMany({
     where: {
       ...getVisitReportWhere(filters),
@@ -226,7 +261,9 @@ export async function loadRecentContractAccessData(filters = {}, page = 1) {
 }
 
 export async function loadContractAccessPageData(filters = {}, requestedPage = 1) {
-  const total = await prisma.publicVisitEvent.count({
+  const total = filters.excludeTestContracts
+    ? Number((await prisma.$queryRaw`SELECT COUNT(*) AS total FROM "PublicVisitEvent" WHERE ${contractAccessSqlWhere(filters)}`)[0].total)
+    : await prisma.publicVisitEvent.count({
     where: {
       ...getVisitReportWhere(filters),
       eventType: { in: CONTRACT_ACCESS_EVENT_TYPES },
@@ -246,6 +283,7 @@ function serviceVisitSqlWhere(filters = {}) {
   return Prisma.sql`
     (NULLIF("kitchenContractId", '') IS NOT NULL OR
       LOWER(BTRIM(COALESCE("contractNumberLast4", ''))) NOT IN (${Prisma.join([...SERVICE_CLAIM_JUNK_CONTRACT_LAST4])}))
+    AND ${liveVisitSqlWhere(filters)}
     ${date?.gte ? Prisma.sql`AND "createdAt" >= ${date.gte}` : Prisma.empty}
     ${date?.lte ? Prisma.sql`AND "createdAt" <= ${date.lte}` : Prisma.empty}
   `;

@@ -1,0 +1,37 @@
+.detailBody {
+  padding: 12px 0 0;
+}
+
+.editor {
+  scroll-margin-top: 20px;
+}
+
+.editForm {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 14px;
+}
+
+.editForm label {
+  min-width: 0;
+  gap: 5px !important;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.editForm :is(input:not([type="hidden"]), select, textarea) {
+  min-height: 38px;
+  padding: 7px 10px !important;
+}
+
+.editForm input[type="file"] {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .editForm {
+    grid-template-columns: 1fr;
+  }
+}

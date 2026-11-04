@@ -1,5 +1,9 @@
 export const ADMIN_PERMISSIONS = ["FRG", "ASC"];
 
+export function canViewTestContracts(admin) {
+  return ["SUPERADMIN", "PX_ADMIN"].includes(admin?.role);
+}
+
 function permissionWorkspace(permission) {
   return /^(FRG|ASC)(?:_VIEW|_MANAGE)?$/.exec(permission)?.[1] || null;
 }
@@ -42,7 +46,9 @@ export function routePermission(path, method = "GET") {
   const view = method === "GET" || method === "HEAD";
   if (["login", "logout", "account", "access-denied", "workspace"].includes(segment)) return null;
   if (segment === "settings") return path.includes("/login-verification") ? "SUPERADMIN" : "SETTINGS_MANAGE";
-  if (["users", "contract-access", "claim-activity"].includes(segment)) return "SUPERADMIN";
+  if (segment === "users") return "SUPERADMIN";
+  if (segment === "contract-access") return "FRG_VIEW";
+  if (segment === "claim-activity") return "ASC_VIEW";
   if (segment === "px-orders") return view ? "PX_FRG_VIEW" : "PX_FRG_MANAGE";
   if (segment === "px-claims") return view ? "PX_ASC_VIEW" : "PX_ASC_MANAGE";
   if (["claims"].includes(segment)) return view ? "ASC_VIEW" : "ASC_MANAGE";

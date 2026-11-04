@@ -2,6 +2,7 @@ import { getServiceClaimDishwasherMask } from "./service-claim-dishwasher-masks.
 import { AB_105803_BLENDE_CALIBRATION, AB_105803_COOKTOP_POINTS, AB_105803_OVEN_PART_POINTS, AB_105803_SINK_POINTS } from "./ab-105803-plan.js";
 import { AB_105743_SINK_POINTS } from "./ab-105743-fixtures.js";
 import { getServiceClaimPartComponentId } from "./service-claim-kitchen-plan-selection.js";
+import { AB_111535_BLENDE_CALIBRATION } from "./ab-111535-plan.js";
 import { AB_105793_BLENDE_CALIBRATION, AB_105793_COOKTOP_POINTS, AB_105793_OVEN_PART_POINTS } from "./ab-105793-plan.js";
 import { AB_105796_BLENDE_CALIBRATION, AB_105796_COOKTOP_POINTS, AB_105796_OVEN_PART_POINTS } from "./ab-105796-plan.js";
 import { AB_105799_BLENDE_CALIBRATION, AB_105799_COOKTOP_POINTS, AB_105799_OVEN_PART_POINTS } from "./ab-105799-plan.js";
@@ -622,6 +623,7 @@ const CLAIM_BLENDE_CALIBRATION_BY_SLUG = {
   "ab-105779": { "wall-cabinet-3": { wholeFacesOnly: true, wholeBlendeFaces: AB_105779_BLENDE_FACES } },
   "ab-105789": AB_105789_BLENDE_CALIBRATION,
   "ab-105790": AB_105790_BLENDE_CALIBRATION,
+  "ab-111535": AB_111535_BLENDE_CALIBRATION,
   "ab-105793": AB_105793_BLENDE_CALIBRATION,
   "ab-105796": AB_105796_BLENDE_CALIBRATION,
   "ab-105799": AB_105799_BLENDE_CALIBRATION,
@@ -1437,6 +1439,7 @@ const AB_105762_WORKTOP_SPLIT = splitWorktopDefinition(
 );
 
 const SEPARATED_WORKTOP_DEFINITIONS_BY_SLUG = {
+  "ab-111535": { indexPartKeys: ["worktop-left", "worktop-right", "worktop-right"] },
   "ab-105804": { indexPartKeys: AB_105804_WORKTOP_PART_KEYS },
   "ab-105803": { indexPartKeys: ["worktop-left", "worktop-right", "worktop-left", "worktop-right"] },
   "ab-105779": { indexPartKeys: AB_105779_WORKTOP_PART_KEYS },
@@ -1736,7 +1739,7 @@ function elevationSinkHotspot(hotspots, part, sinkCabinetSourceKey = "sink-base"
 
   // This elevation has a measured worktop band: follow both drawn edges while
   // keeping the sink selection confined to the sink cabinet's width.
-  const measuredWorktop = (AB_105778_LAYOUT_SLUGS.has(kitchenSlug) || ["ab-105793", "ab-105796", "ab-105799", "ab-105802", "ab-105792", "ab-105795", "ab-105798", "ab-105801"].includes(kitchenSlug))
+  const measuredWorktop = (AB_105778_LAYOUT_SLUGS.has(kitchenSlug) || ["ab-111535", "ab-105793", "ab-105796", "ab-105799", "ab-105802", "ab-105792", "ab-105795", "ab-105798", "ab-105801"].includes(kitchenSlug))
     ? hotspots.find((hotspot) => (
       hotspot?.componentKey === (["ab-105793", "ab-105796", "ab-105799", "ab-105802"].includes(kitchenSlug) ? "worktop-secondary" : "worktop")
       && !isFloorHeightWorktopEndPanel(hotspot)
@@ -2505,7 +2508,9 @@ export function buildServiceClaimPartHotspots(hotspots = [], claimParts = [], ki
   return (hotspots || []).flatMap((sourceHotspot, hotspotIndex) => {
     const hotspot = trimCabinetAtWorktopEndPanel(sourceHotspot, worktopEndPanels);
     const drawnComponentKey = String(hotspot?.componentKey || "").trim();
-    const sourceComponentKey = dishwasherDefinition?.hotspotSourceKey === drawnComponentKey
+    const sourceComponentKey = normalizedSlug === "ab-111535" && hotspot.claimFixturePartKey
+      ? "sink-faucet"
+      : dishwasherDefinition?.hotspotSourceKey === drawnComponentKey
       ? dishwasherDefinition.sourceComponentKey : drawnComponentKey;
     // Wide sink cabinets can be drawn as two adjacent fronts. Give every front
     // the same ASC claim identity while keeping sink and faucet independent.
@@ -2611,6 +2616,12 @@ export function buildServiceClaimPartHotspots(hotspots = [], claimParts = [], ki
         hotspot.claimFixturePartKey
         && sourceComponentKey === "sink-faucet"
       ) {
+        // AB 111535 bundles the fixtures into SP80 and draws only the faucet.
+        // Give its sink the same measured worktop strip as other elevations.
+        if (normalizedSlug === "ab-111535" && part.partKey === "sink"
+          && hotspot.claimFixturePartKey === "faucet") {
+          return elevationSinkHotspot(hotspots, part, elevationSinkCabinetSourceKey, normalizedSlug) || [];
+        }
         return part.partKey === hotspot.claimFixturePartKey
           ? [existingClaimPartHotspot(hotspot, part)]
           : [];

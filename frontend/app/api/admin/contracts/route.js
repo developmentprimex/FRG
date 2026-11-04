@@ -15,7 +15,7 @@ import {
 import { saveContractApplianceInventory } from "../../../../lib/contract-appliance-inventory";
 
 async function handleGET(request) {
-  await requireAdminApi();
+  const admin = await requireAdminApi();
   const { searchParams } = new URL(request.url);
   return NextResponse.json(await listKitchenContractsForAdmin({
     kitchenId: searchParams.get("kitchenId") || "",
@@ -24,7 +24,7 @@ async function handleGET(request) {
     status: searchParams.get("status") || "",
     usage: searchParams.get("usage") || "",
     query: searchParams.get("q") || "",
-  }));
+  }, null, admin));
 }
 
 function getReturnPath(formData, fallback) {

@@ -30,3 +30,8 @@ outputs/pre-burger-20260826-1213/*.xlsx
 /tmp/kitchen-105791/
 /tmp/kitchen_105791_work.py
 /tmp/kitchen_105791_verify.cjs
+
+# Local AB import data, test PDFs, and environment configuration
+/frontend/.env.local
+/frontend/.local-data/
+/AB-test/

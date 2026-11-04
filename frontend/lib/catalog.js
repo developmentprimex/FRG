@@ -1,5 +1,6 @@
 import { KitchenStatus, ItemType, OrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
+import { canViewTestContracts } from "./admin-permissions.js";
 import { getAdminPagination } from "./admin-pagination.js";
 import { filterAdminKitchens } from "./admin-kitchen-search.js";
 import { getPriceBreakdown } from "./price-utils.js";
@@ -828,9 +829,12 @@ export async function listProjectsForAdmin(filters = {}) {
   }));
 }
 
-export async function listKitchenContractsForAdmin(filters = {}, requestedPage = null) {
+export async function listKitchenContractsForAdmin(filters = {}, requestedPage = null, admin = null) {
   const whereParts = [];
   const havingParts = [];
+  if (!canViewTestContracts(admin)) {
+    whereParts.push(Prisma.sql`REGEXP_REPLACE(kc."contractNumber", '[[:space:]]', '', 'g') NOT LIKE '111%'`);
+  }
   if (filters.contractId) whereParts.push(Prisma.sql`kc."id" = ${filters.contractId}`);
   if (filters.contractType === "ARC" || filters.contractType === "FRG") {
     whereParts.push(Prisma.sql`kc."contractType" = ${filters.contractType}`);
@@ -1093,8 +1097,8 @@ export async function listKitchenContractsForAdmin(filters = {}, requestedPage =
   return pagination ? { ...pagination, items } : items;
 }
 
-export async function getKitchenContractForAdmin(id) {
-  const contracts = await listKitchenContractsForAdmin({ contractId: id });
+export async function getKitchenContractForAdmin(id, admin = null) {
+  const contracts = await listKitchenContractsForAdmin({ contractId: id }, null, admin);
   const contract = contracts[0] || null;
   if (!contract) return null;
 
