@@ -1,14 +1,11 @@
 import AdminFilterForm from "../../../components/admin-filter-form";
+import visitorTableStyles from "../../../components/admin-visitor-table.module.css";
 import Link from "next/link";
 import {
   AdminSection,
   inputStyle,
   pageGridStyle,
   primaryButtonStyle,
-  tableStyle,
-  tableWrapStyle,
-  tdStyle,
-  thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
 import { AdminDatePicker } from "../../../components/admin-date-picker";
@@ -17,7 +14,8 @@ import {
   AdminDateTime,
   AdminText,
 } from "../../../components/admin-i18n";
-import { requireSuperAdminPage } from "../../../lib/admin-role-guards";
+import { requireAdminPage } from "../../../lib/auth";
+import { canViewTestContracts } from "../../../lib/admin-permissions";
 import {
   loadContractAccessPageData,
   normalizePublicVisitReportFilters,
@@ -40,9 +38,10 @@ function AccessResultBadge({ eventType }) {
 }
 
 export default async function AdminContractAccessPage({ searchParams = {} }) {
-  const admin = await requireSuperAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const params = (await searchParams) || {};
   const filters = normalizePublicVisitReportFilters(params);
+  filters.excludeTestContracts = !canViewTestContracts(admin);
   const { events, page, total, totalPages } = await loadContractAccessPageData(filters, params.page);
   function pageHref(targetPage) {
     const query = new URLSearchParams({ page: String(targetPage) });
@@ -56,12 +55,6 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
       <div style={pageGridStyle}>
         <AdminSection
           title={<AdminText i18nKey="contractAccessAdmin.title" fallback="Contract access" />}
-          description={(
-            <AdminText
-              i18nKey="contractAccessAdmin.description"
-              fallback="Successful, test, and failed contract access attempts for the selected date range. Access logs are kept indefinitely."
-            />
-          )}
         >
           <AdminFilterForm action="/admin/contract-access" style={filterPanelStyle}>
             <label style={filterFieldStyle}>
@@ -79,36 +72,38 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
             </div>
           </AdminFilterForm>
 
-          <div className="admin-contract-access-table" style={tableWrapStyle}>
-            <table style={tableStyle}>
+          <div className={`admin-contract-access-table ${visitorTableStyles.wrapper}`}>
+            <table className={visitorTableStyles.table}>
               <thead>
                 <tr>
-                  <th style={thStyle}><AdminText i18nKey="contractAccessAdmin.accessTime" fallback="Time" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAccessAdmin.source" fallback="Source" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAccessAdmin.device" fallback="Device" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAccessAdmin.contract" fallback="Contract" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAccessAdmin.project" fallback="Project" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAccessAdmin.result" fallback="Result" /></th>
+                  <th className={visitorTableStyles.numberCell}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.accessTime" fallback="Time" /></th>
+                  <th><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.source" fallback="Source" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.device" fallback="Device" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.contract" fallback="Contract" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.project" fallback="Project" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.result" fallback="Result" /></th>
                 </tr>
               </thead>
               <tbody>
                 {!events.length ? (
                   <tr>
-                    <td style={tdStyle} colSpan={7}>
+                    <td colSpan={8}>
                       <AdminText i18nKey="contractAccessAdmin.noContractAccess" fallback="No contract access events found." />
                     </td>
                   </tr>
                 ) : null}
-                {events.map((event) => {
+                {events.map((event, index) => {
                   const contract = event.kitchenContract;
                   const source = event.source || event.referrerHost || "direct";
 
                   return (
                     <tr key={event.id}>
-                      <td style={tdStyle}><AdminDateTime value={event.createdAt} timeZone="Europe/Berlin" /></td>
-                      <td style={tdStyle}><AdminCountryName code={event.countryCode} /></td>
-                      <td style={tdStyle}>
+                      <td className={visitorTableStyles.numberCell}>{total - (page - 1) * 100 - index}</td>
+                      <td><AdminDateTime value={event.createdAt} timeZone="Europe/Berlin" /></td>
+                      <td><AdminCountryName code={event.countryCode} /></td>
+                      <td>
                         <strong>
                           {source === "direct"
                             ? <AdminText i18nKey="contractAccessAdmin.directVisit" fallback="Direct visit" />
@@ -116,25 +111,25 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
                         </strong>
                         {event.utmCampaign ? <span style={mutedLineStyle}>{event.utmCampaign}</span> : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td>
                         {event.deviceType || <AdminText i18nKey="contractAccessAdmin.notCaptured" fallback="Not captured" />}
                         {event.browserFamily ? (
                           <span style={mutedLineStyle}>{event.browserFamily} · {event.operatingSystem}</span>
                         ) : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td>
                         {contract ? (
                           <Link href={`/admin/contracts/${contract.id}`} style={contractLinkStyle}>{contract.contractNumber}</Link>
                         ) : event.contractNumber || (event.contractNumberLast4 ? `••••${event.contractNumberLast4}` : "-")}
                         {contract?.kitchen?.name ? <span style={mutedLineStyle}>{contract.kitchen.name}</span> : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td>
                         {contract?.project?.name || "-"}
                         {contract?.project?.housingCompany?.name ? (
                           <span style={mutedLineStyle}>{contract.project.housingCompany.name}</span>
                         ) : null}
                       </td>
-                      <td style={tdStyle}><AccessResultBadge eventType={event.eventType} /></td>
+                      <td><AccessResultBadge eventType={event.eventType} /></td>
                     </tr>
                   );
                 })}
@@ -228,9 +223,9 @@ const filterClearLinkStyle = {
 const badgeBaseStyle = {
   display: "inline-flex",
   borderRadius: 999,
-  padding: "6px 9px",
-  fontSize: 11,
-  fontWeight: 900,
+  padding: "6px 8px",
+  fontSize: "var(--admin-text-label, 0.75rem)",
+  fontWeight: 600,
   textTransform: "uppercase",
   border: "1px solid transparent",
   whiteSpace: "nowrap",
@@ -260,12 +255,12 @@ const failedStyle = {
 const contractLinkStyle = {
   color: "var(--app-text)",
   textDecoration: "none",
-  fontWeight: 900,
+  fontWeight: 600,
 };
 
 const mutedLineStyle = {
   display: "block",
   color: "var(--app-text-muted)",
-  fontSize: 13,
-  marginTop: 5,
+  fontSize: "var(--admin-text-meta, 0.8125rem)",
+  marginTop: 4,
 };

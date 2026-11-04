@@ -1,14 +1,11 @@
 import AdminFilterForm from "../../../components/admin-filter-form";
+import visitorTableStyles from "../../../components/admin-visitor-table.module.css";
 import Link from "next/link";
 import {
   AdminSection,
   inputStyle,
   pageGridStyle,
   primaryButtonStyle,
-  tableStyle,
-  tableWrapStyle,
-  tdStyle,
-  thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
 import { AdminDatePicker } from "../../../components/admin-date-picker";
@@ -17,7 +14,8 @@ import {
   AdminDateTime,
   AdminText,
 } from "../../../components/admin-i18n";
-import { requireSuperAdminPage } from "../../../lib/admin-role-guards";
+import { requireAdminPage } from "../../../lib/auth";
+import { canViewTestContracts } from "../../../lib/admin-permissions";
 import { ORDER_KIND_TEST } from "../../../lib/order-kind";
 import {
   loadRecentServiceVisitData,
@@ -72,8 +70,9 @@ function SummaryCard({ label, value }) {
 }
 
 export default async function AdminClaimActivityPage({ searchParams = {} }) {
-  const admin = await requireSuperAdminPage();
+  const admin = await requireAdminPage("ASC_VIEW");
   const filters = normalizePublicVisitReportFilters((await searchParams) || {});
+  filters.excludeTestContracts = !canViewTestContracts(admin);
   const [summary, events] = await Promise.all([
     loadServiceVisitSummary(filters),
     loadRecentServiceVisitData(filters),
@@ -84,12 +83,6 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
       <div style={pageGridStyle}>
         <AdminSection
           title={<AdminText i18nKey="claimActivityAdmin.title" fallback="Claim activity" />}
-          description={(
-            <AdminText
-              i18nKey="claimActivityAdmin.description"
-              fallback="Successful contract lookups and submitted claims on the public /service page for the selected date range."
-            />
-          )}
         >
           <AdminFilterForm action="/admin/claim-activity" style={filterPanelStyle}>
             <label style={filterFieldStyle}>
@@ -132,42 +125,44 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
               label={<AdminText i18nKey="claimActivityAdmin.claimsSubmitted" fallback="Claims submitted" />}
               value={summary.claimsSubmitted}
             />
-            <SummaryCard
+            {canViewTestContracts(admin) ? <SummaryCard
               label={<AdminText i18nKey="claimActivityAdmin.testLookups" fallback="Test lookups" />}
               value={summary.testLookups}
-            />
+            /> : null}
           </div>
 
-          <div className="admin-claim-activity-table" style={tableWrapStyle}>
-            <table style={tableStyle}>
+          <div className={`admin-claim-activity-table ${visitorTableStyles.wrapper}`}>
+            <table className={visitorTableStyles.table}>
               <thead>
                 <tr>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.accessTime" fallback="Time" /></th>
-                  <th style={thStyle}><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.source" fallback="Source" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.device" fallback="Device" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.contract" fallback="Contract" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.project" fallback="Project" /></th>
-                  <th style={thStyle}><AdminText i18nKey="claimActivityAdmin.result" fallback="Result" /></th>
+                  <th className={visitorTableStyles.numberCell}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.accessTime" fallback="Time" /></th>
+                  <th><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.source" fallback="Source" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.device" fallback="Device" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.contract" fallback="Contract" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.project" fallback="Project" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.result" fallback="Result" /></th>
                 </tr>
               </thead>
               <tbody>
                 {!events.length ? (
                   <tr>
-                    <td style={tdStyle} colSpan={7}>
+                    <td colSpan={8}>
                       <AdminText i18nKey="claimActivityAdmin.noEvents" fallback="No claim activity events found." />
                     </td>
                   </tr>
                 ) : null}
-                {events.map((event) => {
+                {events.map((event, index) => {
                   const contract = event.kitchenContract;
                   const source = event.source || event.referrerHost || "direct";
 
                   return (
                     <tr key={event.id}>
-                      <td style={tdStyle}><AdminDateTime value={event.createdAt} /></td>
-                      <td style={tdStyle}><AdminCountryName code={event.countryCode} /></td>
-                      <td style={tdStyle}>
+                      <td className={visitorTableStyles.numberCell}>{events.length - index}</td>
+                      <td><AdminDateTime value={event.createdAt} /></td>
+                      <td><AdminCountryName code={event.countryCode} /></td>
+                      <td>
                         <strong>
                           {source === "direct"
                             ? <AdminText i18nKey="claimActivityAdmin.directVisit" fallback="Direct visit" />
@@ -175,25 +170,25 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
                         </strong>
                         {event.utmCampaign ? <span style={mutedLineStyle}>{event.utmCampaign}</span> : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td>
                         {event.deviceType || <AdminText i18nKey="claimActivityAdmin.notCaptured" fallback="Not captured" />}
                         {event.browserFamily ? (
                           <span style={mutedLineStyle}>{event.browserFamily} · {event.operatingSystem}</span>
                         ) : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td>
                         {contract ? (
                           <Link href={`/admin/contracts/${contract.id}`} style={contractLinkStyle}>{contract.contractNumber}</Link>
                         ) : event.contractNumberLast4 ? `••••${event.contractNumberLast4}` : "-"}
                         {contract?.kitchen?.name ? <span style={mutedLineStyle}>{contract.kitchen.name}</span> : null}
                       </td>
-                      <td style={tdStyle}>
+                      <td>
                         {contract?.project?.name || "-"}
                         {contract?.project?.housingCompany?.name ? (
                           <span style={mutedLineStyle}>{contract.project.housingCompany.name}</span>
                         ) : null}
                       </td>
-                      <td style={tdStyle}><ClaimActivityResultBadge event={event} /></td>
+                      <td><ClaimActivityResultBadge event={event} /></td>
                     </tr>
                   );
                 })}
@@ -301,9 +296,9 @@ const summaryValueStyle = {
 const badgeBaseStyle = {
   display: "inline-flex",
   borderRadius: 999,
-  padding: "6px 9px",
-  fontSize: 11,
-  fontWeight: 900,
+  padding: "6px 8px",
+  fontSize: "var(--admin-text-label, 0.75rem)",
+  fontWeight: 600,
   textTransform: "uppercase",
   border: "1px solid transparent",
   whiteSpace: "nowrap",
@@ -340,12 +335,12 @@ const failedStyle = {
 const contractLinkStyle = {
   color: "var(--app-text)",
   textDecoration: "none",
-  fontWeight: 900,
+  fontWeight: 600,
 };
 
 const mutedLineStyle = {
   display: "block",
   color: "var(--app-text-muted)",
-  fontSize: 13,
-  marginTop: 5,
+  fontSize: "var(--admin-text-meta, 0.8125rem)",
+  marginTop: 4,
 };

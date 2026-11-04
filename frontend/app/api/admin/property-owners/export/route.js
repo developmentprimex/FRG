@@ -60,13 +60,13 @@ function appendSheet(workbook, name, rows, widths) {
 }
 
 async function handleGET(request) {
-  await requireAdminApi();
+  const admin = await requireAdminApi();
 
   const filters = normalizeFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
   const owners = filterOwners(await listPropertyOwnersForAdmin(), filters);
   const ownersById = new Map(owners.map((owner) => [owner.id, owner]));
   const companyIds = new Set(owners.map((owner) => owner.id));
-  const contracts = (await listKitchenContractsForAdmin()).filter(
+  const contracts = (await listKitchenContractsForAdmin({}, null, admin)).filter(
     (contract) => companyIds.has(contract.housingCompanyId),
   );
   const contractIds = contracts.map((contract) => contract.id);

@@ -957,6 +957,7 @@
     "ownerLabel": "Housing company:",
     "createdLabel": "Created:",
     "deleteContractNumber": "Delete contract number",
+    "deleteConfirmMessage": "Delete contract number {contractNumber}?\nThis action cannot be undone.",
     "editContractDetails": "Edit contract number details",
     "noAddressCaptured": "No address captured",
     "viewOrdersForThisContract": "View orders for this contract number",

@@ -167,7 +167,7 @@ export default async function AdminContractDetailPage({ params }) {
   const admin = await requireAdminPage("FRG_VIEW");
   const { id } = await params;
   const [contract, kitchens, owners, projects] = await Promise.all([
-    getKitchenContractForAdmin(id),
+    getKitchenContractForAdmin(id, admin),
     listKitchensForAdmin(),
     listPropertyOwnersForAdmin(),
     listProjectsForAdmin(),

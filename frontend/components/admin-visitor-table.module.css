@@ -1,0 +1,93 @@
+.wrapper {
+  min-width: 0;
+  overflow-x: auto;
+  border: 1px solid var(--app-border);
+  border-radius: 4px;
+  background: var(--color-card);
+  box-shadow: var(--app-shadow-soft);
+}
+
+.table {
+  width: 100%;
+  min-width: 1104px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: var(--app-surface);
+}
+
+.table th {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
+  color: var(--app-text-muted);
+  text-align: left;
+  font-size: var(--admin-text-label, 0.75rem);
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--app-border);
+  color: var(--app-text);
+  vertical-align: middle;
+  font-size: var(--admin-text-body, 0.875rem);
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.table th:nth-child(2) {
+  width: 19%;
+}
+
+.table th:nth-child(3) {
+  width: 12%;
+}
+
+.table th:nth-child(7) {
+  width: 18%;
+}
+
+.table th:last-child {
+  width: 13%;
+}
+
+.table td:nth-child(2) {
+  white-space: nowrap;
+}
+
+.table .numberCell {
+  width: 64px;
+  box-sizing: border-box;
+  padding-left: 10px;
+  padding-right: 10px;
+  text-align: center;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  letter-spacing: 0.04em;
+}
+
+.table td.numberCell {
+  color: var(--app-text-muted);
+  font-size: var(--admin-text-label, 0.75rem);
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+.table tbody tr {
+  transition: background 160ms ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(143, 62, 44, 0.045);
+}
+
+.table a:focus-visible {
+  outline: 3px solid rgba(143, 62, 44, 0.24);
+  outline-offset: 2px;
+}

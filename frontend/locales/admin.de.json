@@ -957,6 +957,7 @@
     "ownerLabel": "Wohnungsgesellschaft:",
     "createdLabel": "Erstellt:",
     "deleteContractNumber": "Vertragsnummer löschen",
+    "deleteConfirmMessage": "Vertragsnummer {contractNumber} löschen?\nDiese Aktion kann nicht rückgängig gemacht werden.",
     "editContractDetails": "Details der Vertragsnummer bearbeiten",
     "noAddressCaptured": "Keine Adresse erfasst",
     "viewOrdersForThisContract": "Bestellungen zu dieser Vertragsnummer anzeigen",
