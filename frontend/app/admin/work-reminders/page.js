@@ -9,7 +9,7 @@ import { WorkReminderReview } from "../../../components/admin-work-reminder-revi
 export const dynamic = "force-dynamic";
 
 export default async function WorkReminderHistory({ searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("ASC_VIEW");
   const params = await searchParams || {};
   const page = Math.max(1, Math.floor(Number(params.page) || 1));
   const pageSize = 30;

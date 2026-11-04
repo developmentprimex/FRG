@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { REPORT_TIME_ZONE } from "../../../../../../lib/admin-date-time";
 import { NextResponse } from "next/server";
 import {
@@ -39,11 +40,13 @@ function excelResponse({ buffer, filename }) {
   });
 }
 
-export async function GET(request) {
+async function handleGET(request) {
   const admin = await requireAdminApi();
   const params = Object.fromEntries(request.nextUrl.searchParams.entries());
   const businessFilters = normalizeBusinessReportFilters(params);
   const scope = String(params.scope || "").trim().toUpperCase();
+  await requireAdminApi(scope === "ASC" ? "ASC_VIEW" : "FRG_VIEW");
+  if (!scope) await requireAdminApi("ASC_VIEW");
   if (scope && !["FRG", "ASC"].includes(scope)) {
     return NextResponse.json({ error: "Invalid report scope." }, { status: 400 });
   }
@@ -58,7 +61,7 @@ export async function GET(request) {
       description: `REPORT_FRG_${report.filters.exportPeriod}`,
       timeZone: REPORT_TIME_ZONE,
       initials: getInitials(admin?.email), now,
-      sheets: getFrgMonthlySheets(report, orders),
+      sheets: getFrgMonthlySheets(report, orders).filter(sheet => sheet.name === "Fragmento"),
     }));
   }
   if (scope) {
@@ -78,7 +81,7 @@ export async function GET(request) {
       timeZone: REPORT_TIME_ZONE,
       initials: getInitials(admin?.email),
       now,
-      sheets: [kitchenSheet, ...getAscClaimReportSheets(report, details)],
+      sheets: [kitchenSheet, ...getAscClaimReportSheets(report, details).filter(sheet => sheet.name !== "Claim details")],
     }));
   }
   const filters = normalizeActivityReportFilters({ ...params, ...businessFilters });
@@ -152,3 +155,5 @@ export async function GET(request) {
 
   return excelResponse({ buffer, filename });
 }
+
+export const GET = withAdminPermission(["FRG_VIEW", "ASC_VIEW"], handleGET);

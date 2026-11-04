@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
@@ -38,7 +39,7 @@ function parseEmailExcludedAttachments(value) {
   }
 }
 
-export async function GET(_request, { params }) {
+async function handleGET(_request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   const order = await getOrderById(id);
@@ -48,7 +49,7 @@ export async function GET(_request, { params }) {
   return NextResponse.json(order);
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   let returnPath = `/admin/orders/${id}`;
@@ -124,3 +125,6 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, returnPath, "error", message);
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

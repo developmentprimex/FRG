@@ -1,8 +1,10 @@
 "use client";
 
+import { hasPermission, canAccess, routePermission } from "../lib/admin-permissions";
+import { switchAdminWorkspace } from "../lib/admin-workspace-action";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { AdminI18nProvider, AdminLanguageSwitcher, AdminText, useAdminI18n } from "./admin-i18n";
 import { canAccessPx, hasFullAdminAccess } from "../lib/admin-roles";
 
@@ -54,13 +56,8 @@ const navSections = [
     id: "monitoring", labelKey: "adminShellLogin.sections.monitoring", fallback: "Monitoring",
     items: [
       { href: "/admin/reports", labelKey: "adminShellLogin.reports", fallback: "Reports", icon: ReportsIcon },
-      {
-        id: "visitors", labelKey: "adminShellLogin.visitors", fallback: "Visitors", icon: UsersIcon, requiresSuperAdmin: true,
-        children: [
-          { href: "/admin/contract-access", labelKey: "adminShellLogin.contractAccess", fallback: "Contract access", icon: ContractsIcon },
-          { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimActivity", fallback: "Claim activity", icon: ClaimsIcon },
-        ],
-      },
+      { href: "/admin/contract-access", labelKey: "adminShellLogin.fragmentoVisitors", fallback: "Fragmento visitors", icon: UsersIcon, workspace: "FRG" },
+      { href: "/admin/claim-activity", labelKey: "adminShellLogin.claimVisitors", fallback: "Claims visitors", icon: UsersIcon, workspace: "ASC" },
     ],
   },
   {
@@ -80,12 +77,14 @@ const navSections = [
 ];
 const DESKTOP_SIDEBAR_WIDTH = "clamp(260px, 18vw, 300px)";
 
-export function AdminShellClient({ adminEmail, adminRole = "ADMIN", initialLanguage = "en", showClaimsNav = false, showUsersNav = false, openCancellationCount = 0, children }) {
+export function AdminShellClient({ adminEmail, adminRole = "ADMIN", initialLanguage = "en", access = {}, initialWorkspace = null, showClaimsNav = false, showUsersNav = false, openCancellationCount = 0, children }) {
   return (
     <AdminI18nProvider initialLanguage={initialLanguage}>
       <AdminShellContent
         adminEmail={adminEmail}
         adminRole={adminRole}
+        access={access}
+        initialWorkspace={initialWorkspace}
         showClaimsNav={showClaimsNav}
         showUsersNav={showUsersNav}
         openCancellationCount={openCancellationCount}
@@ -101,9 +100,31 @@ function getNavBadgeCount(item, { openCancellationCount }) {
   return 0;
 }
 
-function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav, openCancellationCount = 0, children }) {
+function AdminShellContent({ adminEmail, adminRole, access, initialWorkspace, showClaimsNav, showUsersNav, openCancellationCount = 0, children }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [isWorkspacePending, startWorkspaceTransition] = useTransition();
+  function changeWorkspace(formData) {
+    startWorkspaceTransition(async () => {
+      const scope = await switchAdminWorkspace(formData);
+      const isVisitorsPage = pathname === "/admin/claim-activity" || pathname === "/admin/contract-access";
+      const nextPath = isVisitorsPage
+        ? scope === "ASC" ? "/admin/claim-activity" : "/admin/contract-access"
+        : "/admin";
+      // Cookie mutations refresh the current route; paired visitor pages also
+      // navigate to the matching report inside the same transition.
+      if (pathname !== nextPath) {
+        startWorkspaceTransition(() => router.replace(nextPath, { scroll: false }));
+      }
+    });
+  }
+  const routeScope = /\/admin\/(claims|px-claims|claim-activity|reports\/asc)(\/|$)/.test(pathname) ? "ASC" : /\/admin\/(orders|px-orders|order-cancellations|contract-access|reports\/frg)(\/|$)/.test(pathname) ? "FRG" : null;
+  const workspace = routeScope || initialWorkspace;
+  useEffect(() => {
+    if (!isWorkspacePending && routeScope && routeScope !== initialWorkspace && hasPermission(access, `${routeScope}_VIEW`)) {
+      fetch("/api/admin/workspace", { method: "POST", headers: { accept: "application/json" }, body: new URLSearchParams({ scope: routeScope }) }).catch(() => {});
+    }
+  }, [routeScope, initialWorkspace, isWorkspacePending]);
   const { translate } = useAdminI18n();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [pendingHref, setPendingHref] = useState("");
@@ -120,6 +141,10 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
     if (href !== pathname) setPendingHref(href);
   }
   const isNavItemVisible = (item) => {
+    if (item.workspace && item.workspace !== workspace) return false;
+    if (item.href && !canAccess(access, routePermission(item.href))) return false;
+    if (item.href && workspace === "FRG" && /\/(claims|px-claims)(\/|$)/.test(item.href)) return false;
+    if (item.href && workspace === "ASC" && /\/(orders|px-orders|order-cancellations|kitchens|contracts|property-owners|catalog)(\/|$)/.test(item.href)) return false;
     if (item.requiresClaimsNav && !showClaimsNav) return false;
     if (item.requiresUsersNav && !showUsersNav) return false;
     if (item.requiresSuperAdmin && !hasFullAdminAccess({ role: adminRole })) return false;
@@ -128,7 +153,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
   };
   const visibleNavSections = navSections.map((section) => ({
     ...section,
-    items: section.items.filter(isNavItemVisible).map((item) => (
+    items: section.items.map(item => item.href === "/admin/reports" ? { ...item, href: workspace ? `/admin/reports/${workspace.toLowerCase()}` : "/admin/access-denied" } : item).filter(isNavItemVisible).map((item) => (
       item.children ? { ...item, children: item.children.filter(isNavItemVisible) } : item
     )).filter((item) => !item.children || item.children.length > 0),
   })).filter((section) => section.items.length > 0);
@@ -217,7 +242,7 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
         lineHeight: 1.5,
       }}
     >
-      {pendingHref ? <div className="admin-navigation-progress" aria-label={translate("adminShellLogin.loading", "Loading")} /> : null}
+      {pendingHref || isWorkspacePending ? <div className="admin-navigation-progress" role="status" aria-label={translate("adminShellLogin.loading", "Loading")} /> : null}
       <div
         aria-hidden="true"
         style={{
@@ -468,6 +493,26 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
               }}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
+                <div role="group" aria-busy={isWorkspacePending} style={{ display: "flex", gap: 4, padding: 4, border: "1px solid var(--app-border)", borderRadius: 10, background: "var(--app-surface)" }} aria-label="Workspace">
+                  {["FRG", "ASC"].filter(scope => hasPermission(access, `${scope}_VIEW`)).map(scope => {
+                    const selected = workspace === scope;
+                    return <form key={scope} action={changeWorkspace} style={{ margin: 0 }}>
+                      <input type="hidden" name="scope" value={scope} />
+                      <button type="submit" disabled={isWorkspacePending} aria-pressed={selected} style={{
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        minWidth: 80, minHeight: 38, padding: "8px 14px", fontSize: 13, fontWeight: selected ? 800 : 600,
+                        border: selected ? "1px solid #71543e" : "1px solid transparent", borderRadius: 7,
+                        background: selected ? "#71543e" : "transparent", color: selected ? "#ffffff" : "var(--app-text-muted)",
+                        boxShadow: selected ? "0 2px 5px rgba(71, 48, 30, 0.18)" : "none", cursor: "pointer",
+                      }}>
+                        <span aria-hidden="true" style={{ display: "inline-flex", width: 14, height: 14, visibility: selected ? "visible" : "hidden" }}>
+                          <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="m3 8 3.2 3.2L13 4.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        </span>
+                        {scope}
+                      </button>
+                    </form>;
+                  })}
+                </div>
                 <AdminLanguageSwitcher />
                 <div
                   style={{
@@ -488,9 +533,6 @@ function AdminShellContent({ adminEmail, adminRole, showClaimsNav, showUsersNav,
                   >
                     {adminEmail}
                   </span>
-                  <Link href="/admin/account" style={topbarLinkStyle}>
-                    <AdminText i18nKey="adminShellLogin.account" fallback="Account" />
-                  </Link>
                   <form action="/api/admin/logout" method="post" style={{ margin: 0 }}>
                   <button
                     className="admin-shell__logout-button"

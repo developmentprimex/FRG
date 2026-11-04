@@ -1,18 +1,18 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import { REPORT_TIME_ZONE } from "./admin-date-time.js";
-import { workDayStart } from "./work-processing-rules.js";
+import { reportDayStart } from "./business-report-dates.js";
 import { normalizeBusinessReportFilters, shiftReportDate } from "./business-report-filters.js";
 import { VAT_RATE } from "./price-utils.js";
-import { formatServiceClaimReference } from "./service-claim-email-subject.js";
+import { formatBusinessClaimReference } from "./business-report-reference.js";
 
 export function buildBusinessReportDetailsSql(filters, scope) {
   if (!["FRG", "ASC"].includes(scope)) throw new Error("Invalid report scope.");
   const orders = scope === "FRG";
   const conditions = [Prisma.sql`REGEXP_REPLACE(COALESCE(r."contractNumber", ''), '[[:space:]]+', '', 'g') NOT LIKE '111%'`];
   if (orders) conditions.push(Prisma.sql`NOT EXISTS (SELECT 1 FROM "KitchenContract" tc WHERE tc.id = r."kitchenContractId" AND REGEXP_REPLACE(tc."contractNumber", '[[:space:]]+', '', 'g') LIKE '111%')`);
-  if (filters.dateFrom) conditions.push(Prisma.sql`r."createdAt" AT TIME ZONE 'UTC' >= ${workDayStart(filters.dateFrom)}`);
-  if (filters.dateTo) conditions.push(Prisma.sql`r."createdAt" AT TIME ZONE 'UTC' < ${workDayStart(shiftReportDate(filters.dateTo, 1))}`);
+  if (filters.dateFrom) conditions.push(Prisma.sql`r."createdAt" AT TIME ZONE 'UTC' >= ${reportDayStart(filters.dateFrom)}`);
+  if (filters.dateTo) conditions.push(Prisma.sql`r."createdAt" AT TIME ZONE 'UTC' < ${reportDayStart(shiftReportDate(filters.dateTo, 1))}`);
   if (filters.contractType) conditions.push(Prisma.sql`c."contractType" = ${filters.contractType}`);
   const source = orders
     ? Prisma.sql`"Order" r LEFT JOIN live_contracts c ON c.id = r."kitchenContractId"`
@@ -22,7 +22,7 @@ export function buildBusinessReportDetailsSql(filters, scope) {
       CONCAT_WS(' ', r."firstName", r."lastName") AS customer, r.status::text AS status,
       ROUND(r."totalPrice"::numeric / ${1 + VAT_RATE}::numeric, 2)::double precision AS "salesNet",
       r."totalPrice"::double precision AS "salesGross"`
-    : Prisma.sql`r."contractNumber", r."ticketNumber", r."claimSequence", r."fullName" AS customer,
+    : Prisma.sql`r."contractNumber", (to_jsonb(r)->>'ticketNumber')::integer AS "ticketNumber", r."claimSequence", r."fullName" AS customer,
       r."problemDescription" AS issue`;
   return Prisma.sql`WITH live_contracts AS (
     SELECT * FROM "KitchenContract" WHERE REGEXP_REPLACE("contractNumber", '[[:space:]]+', '', 'g') NOT LIKE '111%'
@@ -40,7 +40,7 @@ export async function loadBusinessReportDetails(input, scope, db = prisma) {
   const filters = normalizeBusinessReportFilters(input);
   const records = await db.$queryRaw(buildBusinessReportDetailsSql(filters, scope));
   return records.map(row => scope === "ASC" ? {
-    ...row, reference: formatServiceClaimReference(row.contractNumber, row.claimSequence, row.ticketNumber),
+    ...row, reference: formatBusinessClaimReference(row.contractNumber, row.claimSequence, row.ticketNumber),
   } : row);
 }
 

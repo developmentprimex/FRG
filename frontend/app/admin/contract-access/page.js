@@ -1,21 +1,21 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
+import visitorTableStyles from "../../../components/admin-visitor-table.module.css";
 import Link from "next/link";
 import {
   AdminSection,
   inputStyle,
   pageGridStyle,
   primaryButtonStyle,
-  tableStyle,
-  tableWrapStyle,
-  tdStyle,
-  thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
+import { AdminDatePicker } from "../../../components/admin-date-picker";
 import {
   AdminCountryName,
   AdminDateTime,
   AdminText,
 } from "../../../components/admin-i18n";
-import { requireSuperAdminPage } from "../../../lib/admin-role-guards";
+import { requireAdminPage } from "../../../lib/auth";
+import { canViewTestContracts } from "../../../lib/admin-permissions";
 import {
   loadContractAccessPageData,
   normalizePublicVisitReportFilters,
@@ -34,18 +34,14 @@ function AccessResultBadge({ eventType }) {
       : "contractAccessAdmin.accessRejected";
   const fallback = isAccepted ? "Accepted" : isTest ? "Test" : "Access failed";
 
-  return (
-    <span style={style}>
-      <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: "currentColor", flexShrink: 0 }} />
-      <AdminText i18nKey={key} fallback={fallback} />
-    </span>
-  );
+  return <span style={style}><AdminText i18nKey={key} fallback={fallback} /></span>;
 }
 
 export default async function AdminContractAccessPage({ searchParams = {} }) {
-  const admin = await requireSuperAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const params = (await searchParams) || {};
   const filters = normalizePublicVisitReportFilters(params);
+  filters.excludeTestContracts = !canViewTestContracts(admin);
   const { events, page, total, totalPages } = await loadContractAccessPageData(filters, params.page);
   function pageHref(targetPage) {
     const query = new URLSearchParams({ page: String(targetPage) });
@@ -57,86 +53,73 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
-        <AdminSection>
-          <form action="/admin/contract-access" method="get" style={filterPanelStyle}>
+        <AdminSection
+          title={<AdminText i18nKey="contractAccessAdmin.title" fallback="Contract access" />}
+        >
+          <AdminFilterForm action="/admin/contract-access" style={filterPanelStyle}>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
-              <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
+              <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
             </label>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span>
-              <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
+              <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
             </label>
             <div style={filterActionsStyle}>
-              <button type="submit" style={filterApplyButtonStyle}>
-                <AdminText i18nKey="dashboard.apply" fallback="Apply" />
-              </button>
               <Link href="/admin/contract-access" scroll={false} style={filterClearLinkStyle}>
                 <AdminText i18nKey="dashboard.clearFilters" fallback="Clear filters" />
               </Link>
             </div>
-          </form>
-        </AdminSection>
+          </AdminFilterForm>
 
-        <AdminSection title={<AdminText i18nKey="contractAccessAdmin.title" fallback="Contract access" />}>
-          <div className="admin-contract-access-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
-            <table style={{ ...tableStyle, tableLayout: "auto", minWidth: 1000 }}>
+          <div className={`admin-contract-access-table ${visitorTableStyles.wrapper}`}>
+            <table className={visitorTableStyles.table}>
               <thead>
                 <tr>
-                  <th scope="col" style={{ ...accessThStyle, width: 48, textAlign: "center" }}><AdminText i18nKey="reportsAdmin.rowNumber" fallback="No." /></th>
-                  <th scope="col" style={accessThStyle}><AdminText i18nKey="contractAccessAdmin.accessTime" fallback="Time" /></th>
-                  <th scope="col" style={accessThStyle}><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
-                  <th scope="col" style={accessThStyle}><AdminText i18nKey="contractAccessAdmin.source" fallback="Source" /></th>
-                  <th scope="col" style={accessThStyle}><AdminText i18nKey="contractAccessAdmin.device" fallback="Device" /></th>
-                  <th scope="col" style={accessThStyle}><AdminText i18nKey="contractAccessAdmin.contract" fallback="Contract" /></th>
-                  <th scope="col" style={accessThStyle}><AdminText i18nKey="contractAccessAdmin.project" fallback="Project" /></th>
-                  <th scope="col" style={accessThStyle}><AdminText i18nKey="contractAccessAdmin.result" fallback="Result" /></th>
+                  <th className={visitorTableStyles.numberCell}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.accessTime" fallback="Time" /></th>
+                  <th><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.device" fallback="Device" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.contract" fallback="Contract" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.project" fallback="Project" /></th>
+                  <th><AdminText i18nKey="contractAccessAdmin.result" fallback="Result" /></th>
                 </tr>
               </thead>
               <tbody>
                 {!events.length ? (
                   <tr>
-                    <td style={accessTdStyle} colSpan={8}>
+                    <td colSpan={7}>
                       <AdminText i18nKey="contractAccessAdmin.noContractAccess" fallback="No contract access events found." />
                     </td>
                   </tr>
                 ) : null}
                 {events.map((event, index) => {
                   const contract = event.kitchenContract;
-                  const source = event.source || event.referrerHost || "direct";
 
                   return (
                     <tr key={event.id}>
-                      <td style={{ ...accessTdStyle, textAlign: "center", color: "var(--app-text-muted)", fontSize: "var(--admin-text-label)", fontWeight: 500 }}>{(page - 1) * 100 + index + 1}</td>
-                      <td style={accessTdStyle}><AdminDateTime value={event.createdAt} timeZone="Europe/Berlin" stacked /></td>
-                      <td style={accessTdStyle}><AdminCountryName code={event.countryCode} /></td>
-                      <td style={accessTdStyle}>
-                        <strong>
-                          {source === "direct"
-                            ? <AdminText i18nKey="contractAccessAdmin.directVisit" fallback="Direct visit" />
-                            : source}
-                        </strong>
-                        {event.utmCampaign ? <span style={mutedLineStyle}>{event.utmCampaign}</span> : null}
-                      </td>
-                      <td style={accessTdStyle}>
+                      <td className={visitorTableStyles.numberCell}>{total - (page - 1) * 100 - index}</td>
+                      <td><AdminDateTime value={event.createdAt} timeZone="Europe/Berlin" /></td>
+                      <td><AdminCountryName code={event.countryCode} /></td>
+                      <td>
                         {event.deviceType || <AdminText i18nKey="contractAccessAdmin.notCaptured" fallback="Not captured" />}
                         {event.browserFamily ? (
                           <span style={mutedLineStyle}>{event.browserFamily} · {event.operatingSystem}</span>
                         ) : null}
                       </td>
-                      <td style={accessTdStyle}>
+                      <td>
                         {contract ? (
                           <Link href={`/admin/contracts/${contract.id}`} style={contractLinkStyle}>{contract.contractNumber}</Link>
                         ) : event.contractNumber || (event.contractNumberLast4 ? `••••${event.contractNumberLast4}` : "-")}
                         {contract?.kitchen?.name ? <span style={mutedLineStyle}>{contract.kitchen.name}</span> : null}
                       </td>
-                      <td style={{ ...accessTdStyle, whiteSpace: "normal", minWidth: 200, maxWidth: 300 }}>
+                      <td>
                         {contract?.project?.name || "-"}
                         {contract?.project?.housingCompany?.name ? (
                           <span style={mutedLineStyle}>{contract.project.housingCompany.name}</span>
                         ) : null}
                       </td>
-                      <td style={accessTdStyle}><AccessResultBadge eventType={event.eventType} /></td>
+                      <td><AccessResultBadge eventType={event.eventType} /></td>
                     </tr>
                   );
                 })}
@@ -229,14 +212,11 @@ const filterClearLinkStyle = {
 
 const badgeBaseStyle = {
   display: "inline-flex",
-  alignItems: "center",
-  gap: 7,
-  minWidth: 78,
   borderRadius: 999,
-  padding: "5px 10px",
-  fontSize: "var(--admin-text-label)",
+  padding: "6px 8px",
+  fontSize: "var(--admin-text-label, 0.75rem)",
   fontWeight: 600,
-  lineHeight: 1.4,
+  textTransform: "uppercase",
   border: "1px solid transparent",
   whiteSpace: "nowrap",
 };
@@ -268,12 +248,9 @@ const contractLinkStyle = {
   fontWeight: 600,
 };
 
-const accessThStyle = { ...thStyle, padding: "16px 20px", whiteSpace: "nowrap" };
-const accessTdStyle = { ...tdStyle, padding: "16px 12px", verticalAlign: "middle", whiteSpace: "nowrap", fontSize: "var(--admin-text-body)" };
-
 const mutedLineStyle = {
   display: "block",
   color: "var(--app-text-muted)",
-  fontSize: "var(--admin-text-meta)",
-  marginTop: 3,
+  fontSize: "var(--admin-text-meta, 0.8125rem)",
+  marginTop: 4,
 };

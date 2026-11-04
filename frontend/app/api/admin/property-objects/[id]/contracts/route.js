@@ -1,8 +1,9 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../../lib/auth";
 import { prisma } from "../../../../../../lib/prisma";
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   let detailPath = "/admin/property-owners";
@@ -60,3 +61,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, errorPath, "error", mapAdminMutationError(error, "Contract number"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

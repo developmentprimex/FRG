@@ -1,6 +1,8 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { redirectWithFlash } from "../../../../../lib/admin-forms";
 import { parseAdminRole } from "../../../../../lib/admin-roles";
 import { requireSuperAdminApi } from "../../../../../lib/admin-role-guards";
+import { parsePermissions } from "../../../../../lib/admin-permissions";
 import { prisma } from "../../../../../lib/prisma";
 
 async function countActiveSuperadminsInDb(excludeId = null) {
@@ -13,7 +15,7 @@ async function countActiveSuperadminsInDb(excludeId = null) {
   });
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   const returnPath = "/admin/users";
 
   try {
@@ -25,6 +27,12 @@ export async function POST(request, { params }) {
     const targetUser = await prisma.adminUser.findUnique({ where: { id } });
     if (!targetUser) {
       return redirectWithFlash(request, returnPath, "error", "User was not found.");
+    }
+
+    if (intent === "permissions") {
+      const permissions = parsePermissions(formData.getAll("permissions"));
+      await prisma.appSetting.upsert({ where: { key: `admin.permissions.${id}` }, create: { key: `admin.permissions.${id}`, value: JSON.stringify(permissions) }, update: { value: JSON.stringify(permissions) } });
+      return redirectWithFlash(request, returnPath, "success", "Permissions updated.");
     }
 
     if (intent === "delete") {
@@ -86,10 +94,13 @@ export async function POST(request, { params }) {
       }
     }
 
-    await prisma.adminUser.update({
-      where: { id },
-      data: { role },
-    });
+    const updates = [prisma.adminUser.update({ where: { id }, data: { role } })];
+    if (formData.get("includePermissions") === "1" && targetUser.role !== "SUPERADMIN") {
+      const value = JSON.stringify(parsePermissions(formData.getAll("permissions")));
+      const key = `admin.permissions.${id}`;
+      updates.push(prisma.appSetting.upsert({ where: { key }, create: { key, value }, update: { value } }));
+    }
+    await prisma.$transaction(updates);
 
     return redirectWithFlash(request, returnPath, "success", "User updated.");
   } catch (error) {
@@ -107,3 +118,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, returnPath, "error", message);
   }
 }
+
+export const POST = withAdminPermission("SUPERADMIN", handlePOST);

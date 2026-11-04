@@ -933,6 +933,16 @@ function isAllowedServiceClaimAttachment(mime, filename) {
   return false;
 }
 
+function isServiceClaimUploadFile(value) {
+  // Next.js may parse multipart files with a different File constructor.
+  return value !== null
+    && typeof value === "object"
+    && typeof value.name === "string"
+    && typeof value.type === "string"
+    && Number.isFinite(value.size)
+    && typeof value.arrayBuffer === "function";
+}
+
 async function normalizeServiceClaimUploads(files) {
   if (!files.length) {
     return [];
@@ -942,11 +952,11 @@ async function normalizeServiceClaimUploads(files) {
   }
   const parts = [];
   for (const file of files) {
-    if (!(file instanceof File)) {
+    if (!isServiceClaimUploadFile(file)) {
       continue;
     }
     if (file.size <= 0) {
-      continue;
+      throw new Error(`The file "${sanitizeServiceClaimFilename(file.name)}" is empty (0 bytes). Please choose a non-empty file.`);
     }
     if (file.size > MAX_SERVICE_CLAIM_FILE_BYTES) {
       throw new Error("Each attachment must be 4 MB or smaller.");
@@ -980,7 +990,7 @@ async function parseServiceClaimRequest(request) {
     const serialNumberImageFilesByComponentId = {};
     const problemAreaAttachmentFilesByComponentId = {};
     for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
+      if (isServiceClaimUploadFile(value)) {
         if (key === "attachments" || key === "generalAttachments") {
           generalAttachmentFiles.push(value);
           continue;

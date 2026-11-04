@@ -2,6 +2,7 @@ import { formatServiceClaimReference } from "../../../lib/service-claim-email-su
 import { attachWorkProcessing } from "../../../lib/work-processing";
 import { filterAndSortWork, summarizeWork, workUiItem, workRowStyle } from "../../../lib/work-processing-rules";
 import { WorkCell, WorkActions, WorkFilter, WorkSummary } from "../../../components/admin-work-processing";
+import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
@@ -16,6 +17,7 @@ import {
   thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
+import { AdminDatePicker } from "../../../components/admin-date-picker";
 import { AdminEmailDeliveryStatus } from "../../../components/admin-order-email-delivery";
 import { attachClaimEmailDelivery } from "../../../lib/email/claim-email-store";
 import { AdminPagination } from "../../../components/admin-pagination";
@@ -25,7 +27,6 @@ import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-b
 import { AdminClaimLocalizedText } from "../../../components/admin-claim-localized-text";
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminClaimsPage } from "../../../lib/admin-claims-access";
-import { requirePxAdminPage } from "../../../lib/admin-role-guards";
 import { prisma } from "../../../lib/prisma";
 import { listKitchensForAdmin } from "../../../lib/catalog";
 import { queryServiceClaimsList } from "../../../lib/service-claim-admin-query";
@@ -50,7 +51,7 @@ function truncate(value, max = 140) {
 }
 
 export default async function AdminClaimsPage({ searchParams = {}, pxOnly = false }) {
-  const admin = await (pxOnly ? requirePxAdminPage() : requireAdminClaimsPage());
+  const admin = await requireAdminClaimsPage(pxOnly);
   const resolvedSearchParams = (await searchParams) || {};
   const basePath = pxOnly ? "/admin/px-claims" : "/admin/claims";
   const filters = {
@@ -104,7 +105,7 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
 
           <WorkSummary counts={processingCounts} />
-          <form action={basePath} method="get" style={filterPanelStyle}>
+          <AdminFilterForm action={basePath} style={filterPanelStyle}>
             {filters.contactKey ? <input type="hidden" name="contactKey" value={filters.contactKey} /> : null}
             {filters.contractNumber ? <input type="hidden" name="contractNumber" value={filters.contractNumber} /> : null}
             {filters.contactKey || filters.contractNumber ? <div style={rowMetaStyle}>
@@ -149,18 +150,17 @@ export default async function AdminClaimsPage({ searchParams = {}, pxOnly = fals
               </label> : null}
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
-                <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
+                <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
               </label>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span>
-                <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
+                <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
               </label>
               <div style={filterActionsStyle}>
-                <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-                <Link href={basePath} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+                <Link scroll={false} href={basePath} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
               </div>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <div className="admin-claims-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={tableStyle}>

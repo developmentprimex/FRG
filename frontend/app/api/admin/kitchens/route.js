@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../lib/auth";
 import { ItemType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash, validateKitchenInput } from "../../../../lib/admin-forms";
@@ -43,12 +44,12 @@ const DEFAULT_KITCHEN_ITEMS = [
   },
 ];
 
-export async function GET() {
+async function handleGET() {
   await requireAdminApi();
   return NextResponse.json(await listKitchensForAdmin());
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   await requireAdminApi();
   try {
     const formData = await request.formData();
@@ -101,3 +102,6 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/kitchens", "error", mapAdminMutationError(error, "Kitchen"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

@@ -4392,8 +4392,9 @@ test("AB 105846 follows the marked depth seam across the worktop surface", () =>
   assert.equal(sharedPoints[1][0], sharedPoints[2][0]);
 });
 
-test("AB 105846 layout aliases reuse its exact plan and claims geometry", () => {
+test("AB 105846 layout aliases share the revised PDF view and claims geometry", () => {
   const sourceImage = PLAN_IMAGE_BY_SLUG["ab-105846"];
+  assert.equal(PLAN_IMAGE_BY_SLUG["ab-105846"], "/plans/AB%20105846-view.svg?v=3");
   const sourceHotspots = PLAN_HOTSPOTS_BY_SLUG["ab-105846"];
   const sourceWorktop = sourceHotspots.filter((hotspot) => hotspot.componentKey === "worktop");
   const claimParts = [

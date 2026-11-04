@@ -9,7 +9,7 @@ import { getCancellationRequestForAdmin } from "../../../../lib/order-cancellati
 export const dynamic = "force-dynamic";
 
 export default async function WithdrawalDetailPage({ params, searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const { id } = await params;
   const query = (await searchParams) || {};
   const request = await getCancellationRequestForAdmin(id);

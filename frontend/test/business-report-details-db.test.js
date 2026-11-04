@@ -45,3 +45,21 @@ test("detail query returns each live record once and matches rounding, date cuto
     assert.deepEqual(await load("ASC", "FRG"), []);
   } finally { await prisma.$disconnect(); }
 });
+
+test("ASC export works on main databases without the optional ticketNumber column", { skip: !process.env.DATABASE_URL }, async () => {
+  try {
+    const oldSchema = Prisma.raw(`WITH "KitchenContract" (id, "contractNumber", "contractType") AS (
+      VALUES ('f', '670000001', 'FRG')
+    ), "ServiceClaim" (id, "contractNumber", "claimSequence", "fullName", "problemDescription", "createdAt") AS (
+      VALUES ('claim', '670000001', 2, 'Test Customer', 'Oven', timestamp '2026-10-25 12:00')
+    ), `);
+    const filters = normalizeBusinessReportFilters({ period: "ALL" });
+    const query = buildBusinessReportDetailsSql(filters, "ASC");
+    const tail = Prisma.sql([query.strings[0].replace(/^\s*WITH\s+/, ""), ...query.strings.slice(1)], ...query.values);
+    const rows = await prisma.$queryRaw(Prisma.sql`${oldSchema}${tail}`);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].ticketNumber, null);
+    const details = await loadBusinessReportDetails(filters, "ASC", { $queryRaw: async () => rows });
+    assert.equal(details[0].reference, "670000001 KD 02");
+  } finally { await prisma.$disconnect(); }
+});

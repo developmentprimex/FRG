@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash, validatePropertyOwnerInput } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
@@ -14,7 +15,7 @@ function normalizeRouteId(value) {
   }
 }
 
-export async function GET(_request, { params }) {
+async function handleGET(_request, { params }) {
   await requireAdminApi();
   const { id: rawId } = await params;
   const id = normalizeRouteId(rawId);
@@ -29,7 +30,7 @@ export async function GET(_request, { params }) {
       hc."createdAt",
       hc."updatedAt",
       COUNT(DISTINCT pobj."id")::int AS "objectCount",
-      COUNT(kc."id")::int AS "contractCount"
+      COUNT(kc."id") FILTER (WHERE REGEXP_REPLACE(kc."contractNumber", '[[:space:]]', '', 'g') NOT LIKE '111%')::int AS "contractCount"
     FROM "HousingCompany" hc
     LEFT JOIN "PropertyObject" pobj ON pobj."housingCompanyId" = hc."id"
     LEFT JOIN "Project" prj ON prj."propertyObjectId" = pobj."id"
@@ -52,7 +53,7 @@ export async function GET(_request, { params }) {
   });
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id: rawId } = await params;
   const id = normalizeRouteId(rawId);
@@ -85,3 +86,6 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, detailPath, "error", mapAdminMutationError(error, "Housing company"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

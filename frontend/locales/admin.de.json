@@ -282,7 +282,7 @@
     "customer": "Kunde",
     "copy": "Absenderkopie",
     "lastAttempt": "Zuletzt protokollierter Versuch",
-    "hint": "Gesendet bedeutet: vom Mailserver angenommen. Der Eingang im Postfach ist nicht bestätigt.",
+    "hint": "Zuletzt protokollierter Versuch. Gesendet bedeutet vom Mailserver angenommen, nicht im Postfach nachgewiesen. Der Status wird nach der Verarbeitung gespeichert; zum Aktualisieren neu laden. Bei Störungen kann das Ergebnis fehlen oder veraltet sein.",
     "status": {
       "SENT": "Gesendet",
       "SKIPPED": "Nicht gesendet (E-Mail nicht konfiguriert)",
@@ -350,7 +350,9 @@
     "closeSidebar": "Seitenleiste schließen",
     "sidebar": "Seitenleiste",
     "poweredBy": "Unterstützt von",
-    "loading": "Wird geladen"
+    "loading": "Wird geladen",
+    "fragmentoVisitors": "Fragmento-Besucher",
+    "claimVisitors": "Reklamationsbesucher"
   },
   "settingsAdmin": {
     "settings": "Einstellungen",
@@ -406,7 +408,7 @@
     "roleDescription": {
       "SUPERADMIN": "Voller Zugriff, einschließlich Benutzerverwaltung.",
       "PX_ADMIN": "Voller Zugriff, einschließlich PX-Bestellungen, PX-Reklamationen und Benutzerverwaltung.",
-      "ADMIN": "Admin-Zugriff ohne PX-Bestellungen, PX-Reklamationen, Benutzer, Reklamationsaktivität oder Vertragszugriffe.",
+      "ADMIN": "Standard-Admin-Zugriff auf das aktuelle Dashboard.",
       "USER": "Basis-Admin-Zugriff mit denselben Workflows vorerst."
     },
     "changeEmailOrPassword": "E-Mail oder Passwort ändern.",
@@ -433,7 +435,7 @@
   "usersAdmin": {
     "workspace": "Administration",
     "title": "Benutzerverwaltung",
-    "description": "Admin-Konten erstellen und Rollen zuweisen. Superadmins und PX-Admins können auf diese Seite zugreifen.",
+    "description": "Admin-Konten erstellen und Rollen zuweisen. Nur Superadmins können auf diese Seite zugreifen.",
     "createUser": "Benutzer erstellen",
     "createUserDescription": "Neues Admin-Konto mit E-Mail, Passwort und Rolle hinzufügen.",
     "createUserButton": "Benutzer erstellen",
@@ -450,12 +452,12 @@
     "role": "Rolle",
     "roleGuide": "Rollenübersicht",
     "actionRestrictions": "Eingeschränkte Aktionen",
-    "roleGuideDescription": "Detaillierte Berechtigungen folgen später. Vorerst können alle Rollen die bestehenden Admin-Workflows nutzen.",
+    "roleGuideDescription": "Der Zugriff auf Arbeitsbereiche wird unten separat zugewiesen. Superadmins haben vollen Zugriff.",
     "roleDescription": {
       "SUPERADMIN": "Voller Zugriff, einschließlich Benutzerverwaltung.",
-      "PX_ADMIN": "Voller Zugriff, einschließlich PX-Bestellungen, PX-Reklamationen und Benutzerverwaltung.",
-      "ADMIN": "Admin-Zugriff ohne PX-Bestellungen, PX-Reklamationen, Benutzer, Reklamationsaktivität oder Vertragszugriffe.",
-      "USER": "Basis-Admin-Zugriff mit denselben Workflows vorerst."
+      "PX_ADMIN": "Der Zugriff richtet sich nach den zugewiesenen Arbeitsbereich-Berechtigungen.",
+      "ADMIN": "Der Zugriff richtet sich nach den zugewiesenen Arbeitsbereich-Berechtigungen.",
+      "USER": "Der Zugriff richtet sich nach den zugewiesenen Arbeitsbereich-Berechtigungen."
     },
     "allUsers": "Alle Benutzer",
     "allUsersDescription": "Rollen aktualisieren oder Konten deaktivieren. Geschützte Aktionen sind deaktiviert und erklärt.",
@@ -1260,7 +1262,10 @@
       "unchanged": "Unveraendert",
       "conflicts": "Konflikte",
       "failed": "Fehlgeschlagen"
-    }
+    },
+    "resultCountOne": "{count} Vertrag",
+    "resultCountMany": "{count} Verträge",
+    "deleteConfirmMessage": "Vertragsnummer {contractNumber} löschen?\nDiese Aktion kann nicht rückgängig gemacht werden."
   },
   "contractDetailAdmin": {
     "manualAppliancesHelp": "Nur vorhandene Geräte beibehalten. Entfernte Geräte können bei Reklamationen nicht ausgewählt werden.",
@@ -1311,7 +1316,9 @@
     "applianceFridge": "Kühlschrank / Gefrierschrank",
     "applianceOven": "Backofen",
     "applianceHob": "Kochfeld",
-    "applianceExtractorHood": "Dunstabzugshaube"
+    "applianceExtractorHood": "Dunstabzugshaube",
+    "kitchenSketchLabel": "Küchenskizze",
+    "kitchenPlanPdfLabel": "Küchenplan (PDF)"
   },
   "contractAddressFields": {
     "country": "Land",
@@ -1442,7 +1449,10 @@
     "confirmDeleteObject": "Dieses Objekt löschen?",
     "viewMoreObjects": "Mehr anzeigen",
     "showLessObjects": "Weniger anzeigen",
-    "close": "Schließen"
+    "close": "Schließen",
+    "resultCountOne": "{count} Unternehmen",
+    "resultCountMany": "{count} Unternehmen",
+    "companyAddress": "Firmenadresse"
   },
   "ordersAdmin": {
     "filterWithoutKitchen": "Nach Kunde, Vertragsnummer, Adresse oder Datum filtern.",
@@ -1652,7 +1662,7 @@
     "rowNumber": "Nr."
   },
   "contractAccessAdmin": {
-    "title": "Vertragszugriffe",
+    "title": "Fragmento-Besucher und Vertragszugriffe",
     "description": "Erfolgreiche, Test- und fehlgeschlagene Vertragszugriffe im ausgewählten Zeitraum. Zugriffsprotokolle werden dauerhaft aufbewahrt.",
     "page": "Seite",
     "entries": "Einträge",
@@ -1672,7 +1682,7 @@
     "notCaptured": "Nicht erfasst"
   },
   "claimActivityAdmin": {
-    "title": "Reklamationsaktivität",
+    "title": "Reklamationsbesucher und Aktivität",
     "description": "Erfolgreiche Vertragsabfragen und eingereichte Reklamationen auf der öffentlichen /service-Seite für den ausgewählten Zeitraum.",
     "uniqueVisitors": "Geschätzte tägliche Besucher",
     "pageOpens": "Seitenaufrufe",
@@ -2042,5 +2052,59 @@
     "waitingKitchen": "Wartet auf Küche",
     "view": "PDF ansehen",
     "activate": "Diese Version verwenden"
+  },
+  "reportCalendar": {
+    "selectDate": "Datum auswählen",
+    "previousMonth": "Vorheriger Monat",
+    "nextMonth": "Nächster Monat",
+    "previousYear": "Vorheriges Jahr",
+    "nextYear": "Nächstes Jahr",
+    "chooseMonth": "Monat auswählen",
+    "clear": "Löschen",
+    "today": "Heute",
+    "thisMonth": "Dieser Monat"
+  },
+  "permissions": {
+    "title": "Arbeitsbereich-Berechtigungen",
+    "FRG_VIEW": "FRG: Bestellungen und Berichte ansehen",
+    "FRG_MANAGE": "FRG: Bestellungen und Einrichtung verwalten",
+    "ASC_VIEW": "ASC: Reklamationen und Berichte ansehen",
+    "ASC_MANAGE": "ASC: Reklamationen verwalten",
+    "save": "Berechtigungen speichern",
+    "denied": "Sie haben keinen Zugriff auf diesen Arbeitsbereich. Bitten Sie einen Superadmin, Berechtigungen zuzuweisen.",
+    "relatedClaim": "Reklamation zu diesem Vertrag",
+    "relatedOrder": "Bestellung zu diesem Vertrag",
+    "FRG": "FRG-Zugriff: Ansehen und Verwalten",
+    "ASC": "ASC-Zugriff: Ansehen und Verwalten"
+  },
+  "ascDashboard": {
+    "title": "Serviceübersicht",
+    "subtitle": "Reklamationen, betroffene Verträge und gemeldete Artikel auf einen Blick.",
+    "all": "Alle Reklamationen",
+    "total": "Reklamationen gesamt",
+    "received": "Im ausgewählten Zeitraum eingegangen",
+    "contracts": "Betroffene Verträge",
+    "unique": "Unterschiedliche Vertragsnummern",
+    "files": "Mit Anhängen",
+    "documents": "Reklamationen mit hochgeladenen Dateien",
+    "cities": "Städte",
+    "locations": "Unterschiedliche angegebene Städte",
+    "items": "Am häufigsten gemeldete Artikel",
+    "itemNote": "Eine Reklamation kann mehrere Artikel enthalten.",
+    "cityTitle": "Reklamationen nach Stadt",
+    "cityNote": "Basierend auf der angegebenen Adresse.",
+    "emptyItems": "Keine gemeldeten Artikel für diese Filter.",
+    "emptyCities": "Keine Stadtdaten für diese Filter.",
+    "activity": "Reklamationseingänge",
+    "activityNote": "Anzahl der Eingänge pro Tag mit Aktivität.",
+    "empty": "Keine Reklamationen für diese Filter.",
+    "recent": "Neueste Reklamationen",
+    "recentNote": "Bis zu 8 neueste Reklamationen im ausgewählten Zeitraum",
+    "contract": "Vertrag",
+    "customer": "Kunde",
+    "city": "Stadt",
+    "created": "Eingegangen",
+    "action": "Aktion",
+    "view": "Ansehen"
   }
 }

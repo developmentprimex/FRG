@@ -21,7 +21,7 @@ function formatMoney(value) {
 }
 
 export default async function AdminCatalogServicesPage() {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const services = await prisma.catalogService.findMany({
     include: {
       _count: { select: { kitchenItems: true } },

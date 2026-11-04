@@ -8,7 +8,7 @@ import {
 import { AdminText, useAdminI18n } from "./admin-i18n";
 import { inputStyle } from "./admin-ui";
 
-export default function AdminContractApplianceFields({ initialInventory = null, kitchenId = "", contractId = "", contractType = "FRG" }) {
+export default function AdminContractApplianceFields({ initialInventory = null, kitchenId = "", contractId = "", contractType = "FRG", compact = false }) {
   const fieldsetRef = useRef(null);
   const { translate } = useAdminI18n();
   const [selectedKitchenId, setSelectedKitchenId] = useState(kitchenId);
@@ -54,18 +54,18 @@ export default function AdminContractApplianceFields({ initialInventory = null, 
     entry.applianceType === type ? { ...entry, isPresent: !entry.isPresent } : entry) }));
 
   return (
-    <fieldset ref={fieldsetRef} style={fieldsetStyle}>
+    <fieldset ref={fieldsetRef} style={compact ? { ...fieldsetStyle, padding: 10, gap: 10, borderRadius: 8, margin: 0 } : fieldsetStyle}>
       <input type="hidden" name="applianceInventorySubmitted" value={ready ? "true" : "loading"} />
       <input type="hidden" name="applianceInventoryKitchenId" value={loadedKitchenId || ""} />
       <legend style={legendStyle}>
         <AdminText i18nKey="contractDetailAdmin.appliances" fallback="Electrical appliances" />
       </legend>
-      <p style={hintStyle}>
+      {!compact || inventory?.manual ? <p style={hintStyle}>
         <AdminText
           i18nKey={inventory?.manual ? "contractDetailAdmin.manualAppliancesHelp" : "contractDetailAdmin.linkedAppliancesHelp"}
           fallback={inventory?.manual ? "Keep only the installed appliances. Removed appliances cannot be selected in claims." : "Appliances come from the kitchen and confirmed orders. Set a brand override only when the installed appliance differs."}
         />
-      </p>
+      </p> : null}
       {inventory?.manual && !inventory.configured ? <p style={hintStyle}><AdminText i18nKey="contractDetailAdmin.inventoryUnreviewed" fallback="This appliance list has not been checked yet. Remove missing appliances and save to confirm it." /></p> : null}
       {!ready ? <p role="status"><AdminText i18nKey={loadError ? "contractDetailAdmin.inventoryLoadError" : "contractDetailAdmin.inventoryLoading"} fallback={loadError ? "Could not load appliances. Retry before saving." : "Loading appliances…"} />{loadError ? <button type="button" onClick={() => setRetry((value) => value + 1)}><AdminText i18nKey="contractDetailAdmin.inventoryRetry" fallback="Retry" /></button> : null}</p> : null}
       {ready && !inventory?.entries.length ? <p style={hintStyle}><AdminText i18nKey="contractDetailAdmin.noInstalledAppliances" fallback="No electrical appliances are included in this kitchen or its confirmed orders." /></p> : null}
@@ -73,7 +73,7 @@ export default function AdminContractApplianceFields({ initialInventory = null, 
         {ready && inventory?.entries.map((appliance) => {
           const { type, labelKey, label } = CONTRACT_APPLIANCE_TYPES.find((entry) => entry.type === appliance.applianceType);
           return (
-            <div key={type} style={rowStyle}>
+            <div key={type} style={compact ? { ...rowStyle, gap: 6, padding: 10, paddingRight: inventory.manual ? 44 : 10, borderRadius: 6 } : rowStyle}>
               <input type="hidden" name={`appliancePresent:${type}`} value={String(appliance.isPresent)} />
               <strong style={labelStyle}>
                 <AdminText i18nKey={`contractDetailAdmin.${labelKey}`} fallback={label} />
@@ -94,7 +94,7 @@ export default function AdminContractApplianceFields({ initialInventory = null, 
                   <AdminText i18nKey="contractDetailAdmin.restoreAppliance" fallback="Restore appliance" />
                 </button>
               ) : null}
-              {!inventory.manual ? <span style={hintStyle}>{CONTRACT_APPLIANCE_BRANDS.find((brand) => brand.value === appliance.brand)?.label || translate("contractDetailAdmin.notSpecified", "Not specified")}</span> : null}
+              {!compact && !inventory.manual ? <span style={hintStyle}>{CONTRACT_APPLIANCE_BRANDS.find((brand) => brand.value === appliance.brand)?.label || translate("contractDetailAdmin.notSpecified", "Not specified")}</span> : null}
               {appliance.conflictingBrand ? <span style={hintStyle}><AdminText i18nKey="contractDetailAdmin.applianceBrandConflict" fallback="The saved brand differs from the linked product. Verify the installed appliance." /></span> : null}
               <label style={{ ...controlStyle, display: appliance.isPresent ? "grid" : "none" }}>
                 <span style={controlLabelStyle}><AdminText i18nKey="contractDetailAdmin.brand" fallback="Brand" /></span>

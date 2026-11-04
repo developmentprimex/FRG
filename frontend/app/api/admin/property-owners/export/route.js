@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { requireAdminApi } from "../../../../../lib/auth";
@@ -58,14 +59,14 @@ function appendSheet(workbook, name, rows, widths) {
   XLSX.utils.book_append_sheet(workbook, sheet, name);
 }
 
-export async function GET(request) {
-  await requireAdminApi();
+async function handleGET(request) {
+  const admin = await requireAdminApi();
 
   const filters = normalizeFilters(Object.fromEntries(request.nextUrl.searchParams.entries()));
   const owners = filterOwners(await listPropertyOwnersForAdmin(), filters);
   const ownersById = new Map(owners.map((owner) => [owner.id, owner]));
   const companyIds = new Set(owners.map((owner) => owner.id));
-  const contracts = (await listKitchenContractsForAdmin()).filter(
+  const contracts = (await listKitchenContractsForAdmin({}, null, admin)).filter(
     (contract) => companyIds.has(contract.housingCompanyId),
   );
   const contractIds = contracts.map((contract) => contract.id);
@@ -122,3 +123,5 @@ export async function GET(request) {
     },
   });
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);

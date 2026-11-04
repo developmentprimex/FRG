@@ -4,7 +4,7 @@ import { prisma } from "../../../../../lib/prisma";
 import { reviewClaimFeedbackDelivery } from "../../../../../lib/claim-feedback";
 
 export async function POST(request) {
-  try { await requireAdminApi(); }
+  try { await requireAdminApi("ASC_MANAGE"); }
   catch (error) { return NextResponse.json({ error: "Unauthorized" }, { status: error.status || 401 }); }
   const origin = request.headers.get("origin");
   if (origin && origin !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid request origin." }, { status: 403 });

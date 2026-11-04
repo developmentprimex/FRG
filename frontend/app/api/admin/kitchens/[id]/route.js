@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import burgerCindyArticleCodes from "../../../../../lib/burger-cindy-article-codes.cjs";
 import { mapAdminMutationError, redirectWithFlash, validateKitchenInput } from "../../../../../lib/admin-forms";
@@ -6,7 +7,7 @@ import { getKitchenById } from "../../../../../lib/catalog";
 import { prisma } from "../../../../../lib/prisma";
 import { deleteKitchenForAdmin } from "../../../../../lib/admin-kitchen-delete";
 
-export async function GET(_request, { params }) {
+async function handleGET(_request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   const kitchen = await getKitchenById(id);
@@ -16,7 +17,7 @@ export async function GET(_request, { params }) {
   return NextResponse.json(kitchen);
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   try {
@@ -82,3 +83,6 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, `/admin/kitchens/${id}`, "error", mapAdminMutationError(error, "Kitchen"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

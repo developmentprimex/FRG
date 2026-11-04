@@ -1,5 +1,4 @@
 const bcrypt = require("bcryptjs");
-const { randomUUID } = require("crypto");
 const { loadEnvConfig } = require("@next/env");
 
 loadEnvConfig(process.cwd());
@@ -8,7 +7,6 @@ const { PrismaClient, KitchenStatus, ItemType } = require("@prisma/client");
 const { assertBurgerCindyArticleCode } = require("../lib/burger-cindy-article-codes.cjs");
 const CLAIMS_CHATBOT_KNOWLEDGE = require("../lib/claims-chatbot-knowledge.json");
 const SERVICE_CLAIM_TROUBLESHOOTING_DATA = require("../lib/service-claim-troubleshooting-data.json");
-const CONTRACT_CLIENT_ADDRESS_DEFAULTS = require("../lib/contract-client-address-defaults.cjs");
 
 const prisma = new PrismaClient();
 
@@ -70,6 +68,7 @@ const L_SHAPED_CLAIM_KITCHEN_SLUGS = new Set([
   ...AB_105846_LAYOUT_ALIAS_CODES.map((code) => `ab-${code}`),
 ]);
 const TWO_PART_CLAIM_KITCHEN_SLUGS = new Set([
+  "ab-111535",
   "ab-105804",
   "ab-105793",
   "ab-105796",
@@ -97,6 +96,7 @@ const TWO_PART_CLAIM_KITCHEN_SLUGS = new Set([
   "ab-105862",
 ]);
 const WORKTOP_END_PANEL_CLAIM_KITCHEN_SLUGS = new Set([
+  "ab-111535",
   "ab-105804",
   "ab-105803",
   "ab-105793",
@@ -206,6 +206,11 @@ const BUNDLE_PRICES = {
 };
 
 const CATALOG_ARTICLES = [
+  // AB 111535 supplier articles, absent from the existing catalog.
+  { articleNumber: "U80", name: "Lower Cabinet 80 cm", nameDe: "Unterschrank 80 cm", widthMm: 800, heightMm: 878, depthMm: 600, price: "0.00", itemType: ItemType.COMPONENT, isFixedPricePackage: false, isActive: true },
+  { articleNumber: "SP80", name: "Sink Lower Cabinet", nameDe: "Spülenunterschrank", widthMm: 800, heightMm: 878, depthMm: 600, price: "0.00", itemType: ItemType.COMPONENT, isFixedPricePackage: false, isActive: true },
+  { articleNumber: "PLS60", name: "Worktop", nameDe: "Arbeitsplatte", depthMm: 600, price: "0.00", itemType: ItemType.COMPONENT, isFixedPricePackage: false, isActive: true },
+  { articleNumber: "WU16", name: "Cabinet side panel", nameDe: "Unterschrank-Wange", widthMm: 16, heightMm: 878, depthMm: 600, price: "0.00", itemType: ItemType.COMPONENT, isFixedPricePackage: false, isActive: true },
   { articleNumber: "AP60", name: "Worktop", nameDe: "Arbeitsplatte", depthMm: 600, price: "0.00", itemType: ItemType.COMPONENT, isFixedPricePackage: false, isActive: true },
   { articleNumber: "UVADT20-01", name: "Lower pull-out cabinet", nameDe: "Unterschrank mit Auszug", widthMm: 200, depthMm: 600, price: "0.00", itemType: ItemType.COMPONENT, isFixedPricePackage: false, isActive: true },
   // 670 104296: supplier-included furniture and the supplied ceramic cooker set.
@@ -323,6 +328,7 @@ for (const article of CATALOG_ARTICLES) {
 }
 
 const CATALOG_BLENDEN = [
+  { code: "UPK10", name: "Filler Panel up to 10 cm", nameDe: "Passblende bis 10 cm", price: "0.00", isActive: true },
   { code: "UP10K", name: "Lower cabinet end filler", nameDe: "Passblende Unterschrank", price: "0.00", isActive: true },
   { code: "UPEV", name: "Corner filler panel", nameDe: "Eckpassblende Unterschrank", price: "0.00", isActive: true },
   { code: "HP2072K", name: "Upper cabinet end filler", nameDe: "Passblende Oberschrank", price: "35.00", isActive: true },
@@ -485,7 +491,7 @@ function defaultSinkWorktop(overrides = {}) {
 
 function normalizeBlendeCode(value) {
   const code = String(value || "").trim().toUpperCase();
-  if (["UP10K", "UPEV", "HP2072K"].includes(code)) return code;
+  if (["UPK10", "UP10K", "UPEV", "HP2072K"].includes(code)) return code;
   if (code.startsWith("HPEF4302")) return "HPEF4302";
   if (code.startsWith("UPK20")) return "UPK20";
   if (code.startsWith("UPEF65")) return "UPEF65";
@@ -2181,6 +2187,22 @@ const AB_110510_ITEMS = [
   ...defaultServices(),
 ];
 
+// AB 111535: row 5 is part of the worktop, leaving four included order assemblies.
+// Sink/faucet are claim-only parts of SP80, not an extra commercial default.
+const AB_111535_ITEMS = [
+  { itemType: ItemType.COMPONENT, code: "SINK-BASE-AB111535-SP80", name: "Sink Lower Cabinet", nameDe: "Spülenunterschrank", price: "0.00", articleNumber: "SP80", catalogArticleNumber: "SP80", widthMm: 800, heightMm: 878, depthMm: 600, componentKey: "sink-base", iconKey: "sink_base", colorKey: "springgreen", sortOrder: 10, isLocked: true, catalogPriceSyncMode: "LOCKED_INCLUDED", infoText: "Included SP80 sink cabinet with sink and faucet" },
+  defaultWorktop({ code: "TOP-AB111535-PLS60", catalogArticleNumber: "PLS60", articleNumber: "PLS60", depthMm: 600, sortOrder: 20, catalogPriceSyncMode: "LOCKED_INCLUDED" }),
+  { itemType: ItemType.COMPONENT, code: "CAB-BASE-AB111535-US90-UPK10", name: "Lower Cabinet with Drawer", nameDe: "Unterschrank mit Schublade", price: "0.00", articleNumber: "US90", catalogArticleNumber: "US90", widthMm: 900, heightMm: 878, depthMm: 600, componentKey: "base-module-1", iconKey: "drawer_base_two", colorKey: "springgreen", sortOrder: 30, isLocked: true, catalogPriceSyncMode: "LOCKED_INCLUDED", blendeCode: "UPK10", blendeLabel: "UPK10", blendePrice: "0.00" },
+  { itemType: ItemType.COMPONENT, code: "DISH-AB111535-600", name: DISHWASHER_CATALOG_NAME_EN, nameDe: DISHWASHER_CATALOG_NAME_DE, price: articlePrice("A-EGSPV597210 + TGV60"), articleNumber: "A-EGSPV597210 + TGV60", catalogArticleNumber: "A-EGSPV597210 + TGV60", widthMm: 600, heightMm: 878, depthMm: 600, componentKey: "dishwasher-base", iconKey: "dishwasher_base", colorKey: "#001f7f", sortOrder: 40 },
+  { itemType: ItemType.COMPONENT, code: "CAB-BASE-AB111535-U80", name: "Lower Cabinet 80 cm", nameDe: "Unterschrank 80 cm", price: "0.00", articleNumber: "U80", catalogArticleNumber: "U80", widthMm: 800, heightMm: 878, depthMm: 600, componentKey: "base-module-2", iconKey: "base_cabinet_plain", colorKey: "springgreen", sortOrder: 60, isLocked: true, catalogPriceSyncMode: "LOCKED_INCLUDED", preserveName: true },
+  { itemType: ItemType.COMPONENT, code: "CAB-WALL-AB111535-H9002-HPK2002", name: "Upper Cabinet", nameDe: "Oberschrank", price: articlePriceWithBlende("H9002", "HPK2002"), articleNumber: "H9002", catalogArticleNumber: "H9002", widthMm: 900, heightMm: 723, depthMm: 340, componentKey: "wall-cabinet-1", iconKey: "wall_cabinet_plain", colorKey: "#00ffbf", sortOrder: 70, blendeCode: "HPK2002", blendeLabel: "HPK2002", blendePrice: blendePrice("HPK2002") },
+  { itemType: ItemType.COMPONENT, code: "CAB-WALL-AB111535-H8002-8", name: "Upper Cabinet", nameDe: "Oberschrank", price: articlePrice("H8002"), articleNumber: "H8002", catalogArticleNumber: "H8002", widthMm: 800, heightMm: 723, depthMm: 340, componentKey: "wall-cabinet-2", iconKey: "wall_cabinet_plain", colorKey: "#00ffbf", sortOrder: 80 },
+  { itemType: ItemType.COMPONENT, code: "CAB-WALL-AB111535-H6002", name: "Upper Cabinet", nameDe: "Oberschrank", price: articlePrice("H6002"), articleNumber: "H6002", catalogArticleNumber: "H6002", widthMm: 600, heightMm: 723, depthMm: 340, componentKey: "wall-cabinet-3", iconKey: "wall_cabinet_plain", colorKey: "#00ffbf", sortOrder: 90 },
+  { itemType: ItemType.COMPONENT, code: "CAB-WALL-AB111535-H8002-10", name: "Upper Cabinet", nameDe: "Oberschrank", price: articlePrice("H8002"), articleNumber: "H8002", catalogArticleNumber: "H8002", widthMm: 800, heightMm: 723, depthMm: 340, componentKey: "wall-cabinet-4", iconKey: "wall_cabinet_plain", colorKey: "#00ffbf", sortOrder: 100 },
+  ...defaultAccessories(),
+  ...defaultServices(),
+];
+
 // AB 111539: L-shaped kitchen from the supplied vector PDF and schedule.
 // SP50, US40 and U30 are supplier DEFAULT cabinets and therefore stay locked
 // in FRG while remaining separate physical targets in the ASC claim plan.
@@ -3751,6 +3773,14 @@ const DEFAULT_KITCHENS = [
     reconcileExisting: true,
   },
   {
+    slug: "ab-111535",
+    kitchenCode: "111 535",
+    name: "111535",
+    description: "Kitchen configuration based on frontend/public/plans/AB 670 111535.svg",
+    items: AB_111535_ITEMS,
+    seedCatalogProgramPrices: true,
+  },
+  {
     slug: "ab-111539",
     kitchenCode: "111 539",
     name: "111539",
@@ -4163,199 +4193,6 @@ const SERVICE_CLAIM_KNOWLEDGE_ENTRIES = [
   ...CLAIMS_CHATBOT_KNOWLEDGE.entries.map(mapClaimsDecisionGuideEntry),
 ];
 
-const DEFAULT_HOUSING_COMPANY = {
-  name: "ARGE Nördliche Riedsiedlung",
-  address: "Beekbreite 2-8, 49124 Georgsmarienhütte, Germany",
-  email: null,
-  phone: null,
-  notes: "c/o MBN GmbH",
-};
-
-const DEFAULT_PROPERTY_PROJECT = {
-  objectName: "Hamburg",
-  projectName: "Hamburg",
-  projectCode: "Hamburg",
-  projectStatus: "active",
-  projectDescription: "Kitchens for Hamburg project",
-  projectManagerName: null,
-  contactPhone: null,
-  country: "Germany",
-  city: "Hamburg",
-  postalCode: "22111",
-  address1: "Hermannstal 92-114",
-  address2: null,
-};
-
-async function pruneNonDefaultHousingCompanies() {
-  const defaultCompanyName = DEFAULT_HOUSING_COMPANY.name;
-
-  const unlinkedContracts = await prisma.kitchenContract.updateMany({
-    where: {
-      projectId: { not: null },
-      project: {
-        housingCompany: {
-          name: { not: defaultCompanyName },
-        },
-      },
-    },
-    data: { projectId: null },
-  });
-
-  const deletedHousingCompanies = await prisma.housingCompany.deleteMany({
-    where: {
-      name: { not: defaultCompanyName },
-    },
-  });
-
-  return {
-    deletedHousingCompanies: deletedHousingCompanies.count,
-    unlinkedContracts: unlinkedContracts.count,
-  };
-}
-
-async function ensureDefaultPropertyProject(projectSeed = DEFAULT_PROPERTY_PROJECT) {
-  const company = DEFAULT_HOUSING_COMPANY;
-
-  const existingOwner = await prisma.housingCompany.findFirst({
-    where: { name: company.name },
-  });
-
-  const ownerId = existingOwner?.id || randomUUID();
-  if (existingOwner) {
-    await prisma.housingCompany.update({
-      where: { id: ownerId },
-      data: {
-        name: company.name,
-        address: company.address,
-        email: company.email,
-        phone: company.phone,
-        notes: company.notes,
-      },
-    });
-  } else {
-    await prisma.housingCompany.create({
-      data: {
-        id: ownerId,
-        name: company.name,
-        address: company.address,
-        email: company.email,
-        phone: company.phone,
-        notes: company.notes,
-      },
-    });
-  }
-
-  const existingObject = await prisma.propertyObject.findFirst({
-    where: {
-      housingCompanyId: ownerId,
-      name: projectSeed.objectName,
-    },
-  });
-
-  const objectId = existingObject?.id || randomUUID();
-  if (existingObject) {
-    await prisma.propertyObject.update({
-      where: { id: objectId },
-      data: {
-        name: projectSeed.objectName,
-        contactPhone: projectSeed.contactPhone,
-        country: projectSeed.country,
-        city: projectSeed.city,
-        postalCode: projectSeed.postalCode,
-        address1: projectSeed.address1,
-        address2: projectSeed.address2,
-      },
-    });
-  } else {
-    await prisma.propertyObject.create({
-      data: {
-        id: objectId,
-        name: projectSeed.objectName,
-        housingCompanyId: ownerId,
-        contactPhone: projectSeed.contactPhone,
-        country: projectSeed.country,
-        city: projectSeed.city,
-        postalCode: projectSeed.postalCode,
-        address1: projectSeed.address1,
-        address2: projectSeed.address2,
-      },
-    });
-  }
-
-  const project = await prisma.project.upsert({
-    where: { propertyObjectId: objectId },
-    update: {
-      name: projectSeed.projectName,
-      projectCode: projectSeed.projectCode,
-      status: projectSeed.projectStatus,
-      description: projectSeed.projectDescription,
-      managerName: projectSeed.projectManagerName,
-      housingCompanyId: ownerId,
-    },
-    create: {
-      propertyObjectId: objectId,
-      housingCompanyId: ownerId,
-      name: projectSeed.projectName,
-      projectCode: projectSeed.projectCode,
-      status: projectSeed.projectStatus,
-      description: projectSeed.projectDescription,
-      managerName: projectSeed.projectManagerName,
-    },
-  });
-
-  return project.id;
-}
-
-async function applyConfirmedContractAddresses(onlyKitchenSlug = "") {
-  for (const [contractNumber, address] of Object.entries(CONTRACT_CLIENT_ADDRESS_DEFAULTS)) {
-    const contract = await prisma.kitchenContract.findUnique({
-      where: { contractNumber },
-      select: { id: true, kitchen: { select: { slug: true } } },
-    });
-    if (!contract || (onlyKitchenSlug && contract.kitchen.slug !== onlyKitchenSlug)) continue;
-
-    const projectName = `${address.city} - ${address.address1}`;
-    const projectId = await ensureDefaultPropertyProject({
-      ...DEFAULT_PROPERTY_PROJECT,
-      objectName: projectName,
-      projectName,
-      projectCode: contractNumber,
-      projectDescription: `Confirmed supplier address for contract ${contractNumber}`,
-      country: address.country,
-      city: address.city,
-      postalCode: address.postalCode,
-      address1: address.address1,
-      address2: address.address2 || null,
-    });
-    await prisma.kitchenContract.update({
-      where: { id: contract.id },
-      data: { projectId, floor: address.floor || null, unitNumber: address.unitNumber || null },
-    });
-  }
-}
-
-async function linkImplementedKitchenContracts(projectId) {
-  await prisma.kitchenContract.updateMany({
-    where: {
-      contractNumber: { not: { startsWith: "DM-" } },
-      kitchen: { status: KitchenStatus.ACTIVE },
-    },
-    data: { projectId },
-  });
-
-  const linkedContracts = await prisma.kitchenContract.findMany({
-    where: {
-      projectId,
-      contractNumber: { not: { startsWith: "DM-" } },
-      kitchen: { status: KitchenStatus.ACTIVE },
-    },
-    select: { contractNumber: true },
-    orderBy: { contractNumber: "asc" },
-  });
-
-  return linkedContracts.map((contract) => contract.contractNumber);
-}
-
 function compactSeedRecord(record) {
   return Object.fromEntries(
     Object.entries(record).filter(([, value]) => value !== undefined),
@@ -4670,16 +4507,8 @@ async function main() {
   const catalogServiceByCode = new Map(
     (await prisma.catalogService.findMany()).map((service) => [service.code, service]),
   );
-  if (!onlyKitchenSlug) {
-    const housingCompanyCleanup = await pruneNonDefaultHousingCompanies();
-    if (housingCompanyCleanup.deletedHousingCompanies || housingCompanyCleanup.unlinkedContracts) {
-      console.log(
-        `Removed ${housingCompanyCleanup.deletedHousingCompanies} non-ARGE housing companies and unlinked ${housingCompanyCleanup.unlinkedContracts} contracts.`,
-      );
-    }
-  }
-
-  const defaultProjectId = await ensureDefaultPropertyProject();
+  // Housing ownership is managed by import:housing-companies and admin edits.
+  // Seeding kitchen data must preserve existing company/project links.
 
   // Read the catalog dimensions that exist in *this* database so newly seeded kitchen items
   // inherit them (option 2: kitchen item W/H/D follows the catalog article by articleNumber).
@@ -4914,7 +4743,8 @@ async function main() {
     const sinkFixture = claimSourceItems.find((item) => (
       item?.isActive !== false
       && String(item?.componentKey || "").toLowerCase() === "sink-faucet"
-    ));
+    )) || (kitchen.slug === "ab-111535" && sinkCabinet
+      ? { ...sinkCabinet, componentKey: "sink-faucet" } : null);
     const sinkCabinetArticleCode = String(sinkCabinet?.articleNumber || "").trim().toUpperCase() || "SP60";
     const sinkCabinetClaimNames = {
       SP120: { name: "Sink Base Cabinet 120 cm", nameDe: "Spülenschrank 120 cm" },
@@ -5203,7 +5033,7 @@ async function main() {
       || TWO_PART_CLAIM_KITCHEN_SLUGS.has(normalizedKitchenSlug)
     );
     if (worktop && hasSeparatedWorktops) {
-      const worktopArticleCode = ["ab-104296", "ab-104332"].includes(normalizedKitchenSlug) ? "AP60" : null;
+      const worktopArticleCode = normalizedKitchenSlug === "ab-111535" ? "PLS60" : ["ab-104296", "ab-104332"].includes(normalizedKitchenSlug) ? "AP60" : null;
       for (const part of [
         { partKey: "worktop-left", articleCode: worktopArticleCode || "PLR60-1", name: "Left Worktop", nameDe: "Arbeitsplatte links", sortOrder: 60 },
         { partKey: "worktop-right", articleCode: worktopArticleCode || "PLR60-2", name: "Right Worktop", nameDe: "Arbeitsplatte rechts", sortOrder: 70 },
@@ -5253,7 +5083,7 @@ async function main() {
         nameDe: "Unterschrank-Wange",
         sortOrder: 80,
       }];
-      if (["ab-105791", "ab-105794", "ab-105797", "ab-105800", "ab-105803"].includes(normalizedKitchenSlug)) {
+      if (["ab-111535", "ab-105791", "ab-105794", "ab-105797", "ab-105800", "ab-105803"].includes(normalizedKitchenSlug)) {
         panelParts.push({
           partKey: "worktop-end-panel-left", articleCode: "WU16",
           name: "Left cabinet side panel", nameDe: "Unterschrank-Wange links", sortOrder: 81,
@@ -5348,19 +5178,16 @@ async function main() {
         where: { contractNumber: contract.contractNumber },
         update: {
           kitchenId: kitchen.id,
-          projectId: defaultProjectId,
           isActive: true,
         },
         create: {
           contractNumber: contract.contractNumber,
           kitchenId: kitchen.id,
-          projectId: defaultProjectId,
           isActive: true,
         },
       });
     }
 
-    await applyConfirmedContractAddresses(onlyKitchenSlug);
     console.log(`Seeded kitchen ${onlyKitchenSlug}.`);
     return;
   }
@@ -5420,23 +5247,15 @@ async function main() {
       where: { contractNumber: contract.contractNumber },
       update: {
         kitchenId: kitchen.id,
-        projectId: defaultProjectId,
         isActive: true,
       },
       create: {
         contractNumber: contract.contractNumber,
         kitchenId: kitchen.id,
-        projectId: defaultProjectId,
         isActive: true,
       },
     });
   }
-
-  const linkedContractNumbers = await linkImplementedKitchenContracts(defaultProjectId);
-  await applyConfirmedContractAddresses();
-  console.log(
-    `Linked ${linkedContractNumbers.length} kitchen contract numbers to ${DEFAULT_PROPERTY_PROJECT.projectName}.`,
-  );
 
   for (const entry of SERVICE_CLAIM_KNOWLEDGE_ENTRIES) {
     await prisma.serviceClaimKnowledgeEntry.upsert({

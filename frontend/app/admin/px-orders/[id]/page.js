@@ -31,7 +31,7 @@ import { AdminOrderEmailDelivery } from "../../../../components/admin-order-emai
 import { attachOrderEmailDelivery } from "../../../../lib/email/order-email-store";
 import { OrderEmailReviewModal } from "../../../../components/order-email-review-modal";
 import { getFormMessage } from "../../../../lib/admin-forms";
-import { requirePxAdminPage } from "../../../../lib/admin-role-guards";
+import { requireAdminPage } from "../../../../lib/auth";
 import { getTestOrderById } from "../../../../lib/catalog";
 import { getPriceBreakdown } from "../../../../lib/price-utils";
 import { buildOrderConfirmationAttachmentLabels, buildOrderConfirmationEmailDraft, buildOrderConfirmationEmailStaticHtml } from "../../../../lib/email/order-notifications";
@@ -80,7 +80,7 @@ function ItemTypeLabel({ type }) {
 }
 
 export default async function AdminPxOrderDetailPage({ params, searchParams }) {
-  const admin = await requirePxAdminPage();
+  const admin = await requireAdminPage("PX_FRG_VIEW");
   const { id } = await params;
   const resolvedSearchParams = (await searchParams) || {};
   const [order] = await attachOrderEmailDelivery([await getTestOrderById(id)], "test");

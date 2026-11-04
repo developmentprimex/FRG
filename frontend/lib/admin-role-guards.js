@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { requireAdminApi, requireAdminPage } from "./auth";
-import { hasFullAdminAccess } from "./admin-roles";
+import { hasFullAdminAccess, isSuperAdmin } from "./admin-roles";
 
 export async function requireSuperAdminPage() {
   const admin = await requireAdminPage();
-  if (!hasFullAdminAccess(admin)) {
+  if (!isSuperAdmin(admin)) {
     redirect("/admin");
   }
   return admin;
@@ -12,7 +12,7 @@ export async function requireSuperAdminPage() {
 
 export async function requireSuperAdminApi() {
   const admin = await requireAdminApi();
-  if (!hasFullAdminAccess(admin)) {
+  if (!isSuperAdmin(admin)) {
     const error = new Error("Forbidden");
     error.status = 403;
     throw error;
@@ -20,5 +20,18 @@ export async function requireSuperAdminApi() {
   return admin;
 }
 
-export const requirePxAdminPage = requireSuperAdminPage;
-export const requirePxAdminApi = requireSuperAdminApi;
+export async function requirePxAdminPage() {
+  const admin = await requireAdminPage(["PX_FRG_VIEW", "PX_ASC_VIEW"]);
+  if (!hasFullAdminAccess(admin)) redirect("/admin");
+  return admin;
+}
+
+export async function requirePxAdminApi() {
+  const admin = await requireAdminApi(["PX_FRG_VIEW", "PX_ASC_VIEW"]);
+  if (!hasFullAdminAccess(admin)) {
+    const error = new Error("Forbidden");
+    error.status = 403;
+    throw error;
+  }
+  return admin;
+}

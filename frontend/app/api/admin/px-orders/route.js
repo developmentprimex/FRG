@@ -1,12 +1,11 @@
+import { withAdminPermission } from "../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../lib/admin-forms";
-import { requirePxAdminApi } from "../../../../lib/admin-role-guards";
 import { getTestOrdersForAdmin } from "../../../../lib/catalog";
 import { deleteAllTestOrders } from "../../../../lib/orders";
 
-export async function GET(request) {
-  try { await requirePxAdminApi(); }
-  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
+async function handleGET(request) {
+  await requireAdminApi();
   const { searchParams } = new URL(request.url);
   const orders = await getTestOrdersForAdmin({
     kitchenId: searchParams.get("kitchenId") || "",
@@ -19,9 +18,8 @@ export async function GET(request) {
   return NextResponse.json(orders);
 }
 
-export async function POST(request) {
-  try { await requirePxAdminApi(); }
-  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
+async function handlePOST(request) {
+  await requireAdminApi();
 
   try {
     const formData = await request.formData();
@@ -43,3 +41,6 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/px-orders", "error", message);
   }
 }
+
+export const GET = withAdminPermission("PX_FRG_VIEW", handleGET);
+export const POST = withAdminPermission("PX_FRG_MANAGE", handlePOST);

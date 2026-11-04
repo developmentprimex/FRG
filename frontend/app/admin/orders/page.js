@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import Link from "next/link";
 import {
   AdminSection,
@@ -13,6 +14,7 @@ import {
   thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
+import { AdminDatePicker } from "../../../components/admin-date-picker";
 import { AdminEmailDeliveryStatus } from "../../../components/admin-order-email-delivery";
 import { attachOrderEmailDelivery } from "../../../lib/email/order-email-store";
 import { AdminPagination } from "../../../components/admin-pagination";
@@ -28,7 +30,6 @@ import AdminConfirmSubmitButton from "../../../components/admin-confirm-submit-b
 import { getFormMessage } from "../../../lib/admin-forms";
 import { getOrdersPageForAdmin, listKitchensForAdmin } from "../../../lib/catalog";
 import { requireAdminPage } from "../../../lib/auth";
-import { requirePxAdminPage } from "../../../lib/admin-role-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -110,7 +111,7 @@ function DeleteAllPxOrdersAction() {
 }
 
 export default async function AdminOrdersPage({ searchParams = {}, pxOnly = false }) {
-  const admin = await (pxOnly ? requirePxAdminPage() : requireAdminPage());
+  const admin = await requireAdminPage(pxOnly ? "PX_FRG_VIEW" : "FRG_VIEW");
   const basePath = pxOnly ? "/admin/px-orders" : "/admin/orders";
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {
@@ -152,7 +153,7 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
             </dl>
           </div>
 
-          <form action={basePath} method="get" style={filterPanelStyle}>
+          <AdminFilterForm action={basePath} style={filterPanelStyle}>
             <div className="orders-filter-grid" style={{ ...filterGridStyle, gridTemplateColumns: pxOnly ? filterGridStyle.gridTemplateColumns : "minmax(0, 2fr) repeat(2, minmax(0, 1fr)) max-content" }}>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="contractsAdmin.search" fallback="Search" /></span>
@@ -175,18 +176,17 @@ export default async function AdminOrdersPage({ searchParams = {}, pxOnly = fals
               </label> : null}
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
-                <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
+                <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
               </label>
               <label style={filterFieldStyle}>
                 <span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span>
-                <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
+                <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
               </label>
               <div style={filterActionsStyle}>
-                <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
                 <Link href={basePath} scroll={false} style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
               </div>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <div className="admin-list-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
             <table style={ordersTableStyle}>

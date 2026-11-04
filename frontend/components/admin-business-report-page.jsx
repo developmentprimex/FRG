@@ -1,3 +1,4 @@
+import AdminFilterForm from "./admin-filter-form";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AdminShell } from "./admin-shell";
@@ -10,6 +11,7 @@ import { loadAscKitchenReport, normalizeAscKitchenFilters } from "../lib/asc-kit
 import { AdminAscClaimReport } from "./admin-asc-claim-report";
 import { loadAscClaimReport } from "../lib/asc-claim-report.js";
 import { AdminBusinessReportPeriods } from "./admin-business-report-periods";
+import { AdminDatePicker } from "./admin-date-picker";
 import { AdminReportScopeLink } from "./admin-report-scope-link";
 import { requireAdminPage } from "../lib/auth";
 import { normalizeActivityReportFilters } from "../lib/admin-activity-reports";
@@ -17,10 +19,11 @@ import { normalizeBusinessReportFilters, buildBusinessReportQuery, getActiveBusi
 
 export async function AdminBusinessReportPage({ scope, searchParams }) {
   if (scope === "FRG") return AdminFrgMonthlyReportPage({ searchParams });
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("ASC_VIEW");
   const params = (await searchParams) || {};
   const now = new Date();
   const filters = normalizeAscKitchenFilters(params, now);
+  const latestReportDate = normalizeAscKitchenFilters({}, now).asOfDate;
   const activityFilters = normalizeActivityReportFilters(params);
   const path = scope === "FRG" ? "/admin/reports/frg" : "/admin/reports/asc";
   const activePeriod = getActiveBusinessReportPeriod(filters, params.preset);
@@ -30,20 +33,19 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
     href: path + "?" + buildBusinessReportQuery(normalizeBusinessReportFilters({ ...filters, period }), activityFilters),
   }));
   return <AdminShell adminEmail={admin.email}>
-    <div style={{ ...pageGridStyle, gap: 12 }}>
+    <div style={{ ...pageGridStyle, gap: 12, minWidth: 0, gridTemplateColumns: "minmax(0, 1fr)" }}>
       <AdminSection compact title={scope === "FRG" ? "Fragmento" : "ASC"}
         actions={<>
           <AdminReportScopeLink compact href={"/admin/reports?" + query}><AdminText i18nKey="reportsAdmin.backToReports" fallback="Back to reports" /></AdminReportScopeLink>
-          <AdminReportScopeLink compact href={(scope === "FRG" ? "/admin/reports/asc?" : "/admin/reports/frg?") + query}>{scope === "FRG" ? "ASC" : "FRG"}</AdminReportScopeLink>
           <Link href={"/api/admin/reports/orders/export?scope=" + scope + "&" + query} prefetch={false} style={{ ...compactButtonStyle, textDecoration: "none" }}><AdminText i18nKey="reportsAdmin.exportExcel" fallback="Export Excel" /></Link>
         </>}>
         <AdminBusinessReportPeriods periods={periods} activePeriod={activePeriod} />
-        <form key={query} action={path} method="get" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, alignItems: "end" }}>
+        <AdminFilterForm action={path} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 8, alignItems: "end" }}>
           <input type="hidden" name="period" value="CUSTOM" />
           <input type="hidden" name="type" value={activityFilters.type} />
           <input type="hidden" name="status" value={activityFilters.status} />
-          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span><input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={compactInputStyle} /></label>
-          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span><input name="dateTo" type="date" defaultValue={filters.dateTo} style={compactInputStyle} /></label>
+          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span><AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} max={latestReportDate} style={compactInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" /></label>
+          <label style={fieldStyle}><span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span><AdminDatePicker name="dateTo" defaultValue={filters.dateTo} max={latestReportDate} style={compactInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" /></label>
           <label style={fieldStyle}><span><AdminText i18nKey="ascKitchenReport.source" fallback="Kitchen source" /></span>
             <AdminSelect name="contractType" defaultValue={filters.contractType} style={compactInputStyle}>
               <option value=""><AdminText i18nKey="ascKitchenReport.allSources" fallback="All sources" /></option>
@@ -52,10 +54,9 @@ export async function AdminBusinessReportPage({ scope, searchParams }) {
             </AdminSelect>
           </label>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            <button type="submit" style={compactButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-            <Link href={path} style={linkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+            <Link scroll={false} href={path} style={linkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
           </div>
-        </form>
+        </AdminFilterForm>
       </AdminSection>
       <Suspense key={query} fallback={<AdminSection compact><p role="status" style={{ margin: 0, color: "var(--app-text-muted)", padding: "24px 0" }}><AdminText i18nKey="businessReports.updating" fallback="Updating report…" /></p></AdminSection>}>
         <BusinessReportContent filters={filters} now={now} />

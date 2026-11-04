@@ -2,13 +2,20 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import vm from "node:vm";
-import { ADMIN_ROLES, hasFullAdminAccess, canAccessPx, canAccessClaim, parseAdminRole, formatAdminRoleLabel } from "../lib/admin-roles.js";
+import { ADMIN_ROLES, hasFullAdminAccess, isSuperAdmin, canAccessPx, canAccessClaim, parseAdminRole, formatAdminRoleLabel } from "../lib/admin-roles.js";
 import { getAdminUserActionRestrictions } from "../lib/admin-user-management.js";
 
 function loadSource(relative, context) {
+  if (relative.includes("/route.js") && !context.withAdminPermission) {
+    context.Response = context.NextResponse;
+    context.requireAdminApi ||= async () => { throw Object.assign(new Error("Forbidden"), { status: 403 }); };
+    const auth = readFileSync(new URL("../lib/auth.js", import.meta.url), "utf8");
+    vm.runInContext(auth.slice(auth.indexOf("export function withAdminPermission")).replace("export function", "function"), context);
+  }
   const source = readFileSync(new URL(relative, import.meta.url), "utf8")
     .replace(/^import[\s\S]*?;\s*$/gm, "")
-    .replace(/export (async function|function|const)/g, "$1");
+    .replace(/export (async function|function)/g, "$1")
+    .replace(/export const/g, "var");
   vm.runInContext(source, context);
 }
 
@@ -23,16 +30,22 @@ for (const role of ADMIN_ROLES) {
   });
   test(`${role} page and API guards enforce full access`, async () => {
     const context = vm.createContext({
-      hasFullAdminAccess, requireAdminPage: async () => ({ role }), requireAdminApi: async () => ({ role }),
+      hasFullAdminAccess, isSuperAdmin, requireAdminPage: async () => ({ role }), requireAdminApi: async () => ({ role }),
       redirect: () => { throw new Error("redirected"); },
     });
     loadSource("../lib/admin-role-guards.js", context);
-    if (hasFullAdminAccess({ role })) {
+    if (isSuperAdmin({ role })) {
       assert.equal((await context.requireSuperAdminPage()).role, role);
-      assert.equal((await vm.runInContext("requirePxAdminApi()", context)).role, role);
     } else {
-      await assert.rejects(vm.runInContext("requirePxAdminPage()", context), /redirected/);
+      await assert.rejects(context.requireSuperAdminPage(), /redirected/);
       await assert.rejects(context.requireSuperAdminApi(), error => error.status === 403);
+    }
+    if (hasFullAdminAccess({ role })) {
+      assert.equal((await context.requirePxAdminPage()).role, role);
+      assert.equal((await context.requirePxAdminApi()).role, role);
+    } else {
+      await assert.rejects(context.requirePxAdminPage(), /redirected/);
+      await assert.rejects(context.requirePxAdminApi(), error => error.status === 403);
     }
   });
 }
@@ -71,7 +84,7 @@ test("shared claim delete, attachments and processing APIs reject PX claims for 
       requireAdminClaimsApi: async () => ({ role: "ADMIN" }),
       requireAdminApi: async () => ({ role: "ADMIN", email: "admin@example.com" }),
       NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200 }) },
-      prisma: { serviceClaim: { findUnique: async () => ({ contractNumber: "111123456" }) } },
+      prisma: { $queryRaw: async () => [{ contractNumber: "111123456" }], serviceClaim: { findUnique: async () => ({ contractNumber: "111123456" }) } },
       queryServiceClaimById: async () => [{ contractNumber: "111123456" }],
       WORK_TYPES: ["CLAIM"],
     });
@@ -86,6 +99,7 @@ test("shared claim delete, attachments and processing APIs reject PX claims for 
 test("PX_ADMIN can read PX orders through the API", async () => {
   const context = vm.createContext({
     URL, requirePxAdminApi: async () => ({ role: "PX_ADMIN" }),
+    requireAdminApi: async () => ({ role: "PX_ADMIN", permissions: ["FRG"] }),
     getTestOrdersForAdmin: async () => [{ id: "px-order" }],
     NextResponse: { json: body => ({ body, status: 200 }) },
   });

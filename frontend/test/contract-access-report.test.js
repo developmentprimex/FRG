@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import nodemailer from "nodemailer";
 import { fileURLToPath } from "node:url";
 import {
   buildAscAccessReport,
   buildContractAccessReport,
   getContractAccessReportWindow,
+  isContractAccessReportDay,
+  sendAscAccessReport,
+  sendContractAccessReport,
 } from "../lib/email/contract-access-report.js";
 import { PUBLIC_VISIT_EVENT_TYPES } from "../lib/public-visit-tracking.js";
 
@@ -18,6 +22,80 @@ test("daily contract report covers exactly the previous 24 hours", () => {
 
   assert.equal(window.end.toISOString(), "2026-09-16T06:00:00.000Z");
   assert.equal(window.start.toISOString(), "2026-09-15T06:00:00.000Z");
+});
+
+test("Monday reports cover Friday 08:00 through Monday 08:00 in Berlin, including clock changes", () => {
+  for (const [now, expectedStart] of [
+    ["2026-09-21T06:00:00Z", "2026-09-18T06:00:00.000Z"],
+    ["2026-11-02T07:00:00Z", "2026-10-30T07:00:00.000Z"],
+    ["2026-03-30T06:00:00Z", "2026-03-27T07:00:00.000Z"],
+    ["2026-10-26T07:00:00Z", "2026-10-23T06:00:00.000Z"],
+  ]) {
+    const { start, end } = getContractAccessReportWindow(new Date(now));
+    assert.equal(start.toISOString(), expectedStart);
+    assert.equal(end.getTime(), new Date(now).getTime());
+    for (const buildReport of [buildContractAccessReport, buildAscAccessReport]) {
+      const report = buildReport({ start, end });
+      assert.match(report.subject, /since Friday at 08:00/);
+      assert.doesNotMatch(report.html, /last 24 hours/);
+    }
+  }
+});
+
+test("consecutive weekday cutoffs meet exactly despite timer delays", () => {
+  const monday = getContractAccessReportWindow(new Date("2026-10-26T07:00:35Z"));
+  const tuesday = getContractAccessReportWindow(new Date("2026-10-27T07:00:05Z"));
+  assert.equal(monday.end.toISOString(), "2026-10-26T07:00:00.000Z");
+  assert.equal(tuesday.start.getTime(), monday.end.getTime());
+  assert.equal(tuesday.end.toISOString(), "2026-10-27T07:00:00.000Z");
+});
+
+test("report weekdays are determined in Berlin rather than UTC or the host time zone", () => {
+  assert.equal(isContractAccessReportDay(new Date("2026-10-30T23:30:00Z")), false);
+  assert.equal(isContractAccessReportDay(new Date("2026-11-01T23:30:00Z")), true);
+});
+
+test("both access reports skip Saturday and Sunday before database or SMTP access", async () => {
+  for (const now of [new Date("2026-10-31T07:00:00Z"), new Date("2026-11-01T07:00:00Z")]) {
+    for (const sendReport of [sendContractAccessReport, sendAscAccessReport]) {
+      const result = await sendReport({
+        now,
+        env: { CONTRACT_ACCESS_REPORT_ENABLED: "true" },
+        db: { publicVisitEvent: { findMany() { assert.fail("Weekend must not query the database"); } } },
+      });
+      assert.equal(result.skipped, true);
+      assert.equal(result.reason, "weekend");
+    }
+  }
+});
+
+test("both Monday deliveries query the complete weekend with adjacent exclusive/inclusive cutoffs", async (t) => {
+  const messages = [];
+  t.mock.method(nodemailer, "createTransport", () => ({
+    async sendMail(message) {
+      messages.push(message);
+      return { accepted: ["reports@example.com"] };
+    },
+  }));
+  for (const sendReport of [sendContractAccessReport, sendAscAccessReport]) {
+    await sendReport({
+      now: new Date("2026-10-26T07:00:30Z"),
+      env: {
+        CONTRACT_ACCESS_REPORT_ENABLED: "true",
+        CONTRACT_ACCESS_REPORT_EMAIL: "reports@example.com",
+        SMTP_USER: "sender@example.com",
+        SMTP_PASS: "test-only",
+        SMTP_FROM: "sender@example.com",
+      },
+      db: { publicVisitEvent: { async findMany(query) {
+        assert.equal(query.where.createdAt.gt.toISOString(), "2026-10-23T06:00:00.000Z");
+        assert.equal(query.where.createdAt.lte.toISOString(), "2026-10-26T07:00:00.000Z");
+        return [];
+      } } },
+    });
+  }
+  assert.equal(messages.length, 2);
+  for (const message of messages) assert.match(message.subject, /since Friday at 08:00/);
 });
 
 test("daily contract report contains complete attempted numbers and outcomes", () => {
@@ -101,7 +179,7 @@ test("Hetzner deployment owns the 08:00 Europe-Berlin schedule", () => {
     "utf8",
   );
 
-  assert.match(workflow, /OnCalendar=\*-\*-\* 08:00:00 Europe\/Berlin/);
+  assert.match(workflow, /OnCalendar=Mon\.\.Fri \*-\*-\* 08:00:00 Europe\/Berlin/);
   assert.match(workflow, /Environment=CONTRACT_ACCESS_REPORT_ENABLED=true/);
   assert.match(workflow, /EnvironmentFile=\/etc\/fragmento-contract-access-report\.env/);
   assert.match(workflow, /Fragmento daily contract and ASC access reports/);
@@ -110,4 +188,5 @@ test("Hetzner deployment owns the 08:00 Europe-Berlin schedule", () => {
     /Environment=CONTRACT_ACCESS_REPORT_EMAIL=it@forestdream\.de,334primex\.eu@gmail\.com,01primex\.eu@gmail\.com/,
   );
   assert.match(workflow, /systemctl enable --now fragmento-contract-access-report\.timer/);
+  assert.match(workflow, /systemctl restart fragmento-contract-access-report\.timer/);
 });

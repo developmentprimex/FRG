@@ -8,7 +8,7 @@ import { canAccessClaim, canAccessPx } from "../../../../lib/admin-roles";
 
 export async function POST(request) {
   let admin;
-  try { admin = await requireAdminApi(); }
+  try { admin = await requireAdminApi("ASC_MANAGE"); }
   catch (error) { return NextResponse.json({ error: "Unauthorized" }, { status: error.status || 401 }); }
   // Reject cross-origin browser mutations; worker identity comes from the session.
   const origin = request.headers.get("origin");

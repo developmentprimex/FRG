@@ -1,3 +1,4 @@
+import { AdminContractActivityLinks } from "../../../../components/admin-contract-activity-links";
 import { ClaimEmailReview } from "../../../../components/claim-email-review";
 import Link from "next/link";
 import { REPORT_TIME_ZONE } from "../../../../lib/admin-date-time";
@@ -157,6 +158,9 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
   const claims = await queryServiceClaimById(prisma, id);
   if (claims[0] && !canAccessClaim(admin, claims[0].contractNumber)) redirect("/admin");
 
+  if (claims[0] && String(claims[0].contractNumber || "").replace(/\s/g, "").startsWith("111")) {
+    await requireAdminClaimsPage(true);
+  }
   let [claim] = await attachWorkProcessing(processingDb, await attachClaimEmailDelivery(claims), "CLAIM");
 
   if (!claim) {
@@ -241,7 +245,7 @@ export default async function AdminClaimDetailPage({ params, searchParams }) {
           title={<AdminText i18nKey="claimsAdmin.claimTitle" fallback="Claim {claimNumber}" values={{ claimNumber: formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber) }} />}
           description={<AdminText i18nKey="claimsAdmin.claimDetailDescription" fallback="Details from the submitted claim." />}
           actions={<div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <ClaimEmailReview claimId={claim.id} submissionId={selectedSubmission?.id} />
+            <AdminContractActivityLinks admin={admin} contractNumber={claim.contractNumber} target="orders" /><ClaimEmailReview claimId={claim.id} submissionId={selectedSubmission?.id} />
             {!reportsReturnHref && <ActionLink href="/admin/claims"><AdminText i18nKey="claimsAdmin.backToClaims" fallback="Back to claims" /></ActionLink>}
             <form action={`/api/admin/claims/${claim.id}`} method="post" style={{ margin: 0 }}>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>

@@ -2,17 +2,61 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import { normalizeAscKitchenFilters } from "./asc-kitchen-report.js";
 import { frgReportPeriodLabel, reportDisplayDate } from "./frg-monthly-report.js";
-import { classifyClaimArea, extractClaimAnalyticsAreas } from "./claim-analytics.js";
-import { getKitchenSpecification } from "./order-kitchen-specifications.js";
+import { isElectricalApplianceProblemArea } from "./service-claim-serial-number.js";
+import { stripProductDimensionsFromLabel } from "./product-label-format.js";
+import { getKitchenSpecification } from "./frg-monthly-report.js";
 import { inferApplianceBrand, getContractApplianceBrandLabel, getInventoryApplianceTypes, normalizeContractApplianceType } from "./contract-appliances.js";
-import { formatServiceClaimReference } from "./service-claim-email-subject.js";
+import { formatBusinessClaimReference as formatServiceClaimReference } from "./business-report-reference.js";
+
+const AREA_PREFIXES = /^(?:Küchenbereiche:|Kitchen areas:|Mutfak bölgeleri:|Zonas de la cocina:|Zones concernées :|Кухонные зоны:)/;
+const text = (value) => String(value || "").trim();
+const normalized = (value) => text(value).toLowerCase().replace(/\s+/g, " ");
+
+function parseArray(value) {
+  if (Array.isArray(value)) return value;
+  try { const parsed = JSON.parse(value || "[]"); return Array.isArray(parsed) ? parsed : []; }
+  catch { return []; }
+}
+
+export function classifyClaimArea(area = {}) {
+  const identity = normalized(`${area.componentId || ""} ${area.code || ""} ${area.claimPartKey || ""}`);
+  const name = normalized(`${area.name || ""} ${area.nameDe || ""}`);
+  // A furniture front, drawer or filter is not the appliance behind it.
+  if (/front|drawer|filter|blende|panel|worktop|sink|faucet/.test(identity + " " + name)
+      && !/sink-cabinet|sinkbase|sink base cabinet|sink lower cabinet/.test(identity + " " + name)) {
+    return /front|drawer/.test(identity + " " + name) ? "cabinets" : "other";
+  }
+  if (isElectricalApplianceProblemArea(area)) return "electrical";
+  if (/cabinet|sinkbase|\bschrank\b|unterschrank|oberschrank|hochschrank|\bcab-|\bus\d|\bwu\d|furniture-front|oven-drawer/.test(identity + " " + name)) return "cabinets";
+  if (!identity.includes("reference-furniture") && /\b(?:kühlschrank|kuehlschrank|geschirrspüler|geschirrspueler|waschmaschine|backofen|kochfeld|dunstabzugshaube|herd)\b/.test(name)) return "electrical";
+  if (/reference-furniture|\btop-|\bsink|worktop|blende|faucet|spüle|spuele|arbeitsplatte|sockel|rückwand|rueckwand|armatur|besteck|beleuchtung|lighting/.test(identity + " " + name)) return "other";
+  return "unknown";
+}
+
+export function extractClaimAnalyticsAreas(claim) {
+  const structured = parseArray(claim.problemAreasJson).filter((area) => area && typeof area === "object" && (area.name || area.code || area.componentId));
+  if (structured.length) return structured;
+  // Older submissions store only the selected-area header. Never classify free problem text.
+  const lines = text(claim.problemDescription).split("\n").map((line) => line.trim());
+  let names = [];
+  if (AREA_PREFIXES.test(lines[0] || "")) {
+    const inline = lines[0].replace(AREA_PREFIXES, "").trim();
+    if (inline) names = inline.split(",");
+    else for (const line of lines.slice(1)) { if (!line) break; names.push(line.split(":")[0]); }
+  } else {
+    const index = lines.indexOf("Ausgewählte Küchenbereiche:");
+    if (index >= 0) for (const line of lines.slice(index + 1)) { if (!line.startsWith("-")) break; names.push(line.slice(1)); }
+  }
+  return names.map((name) => ({ name: stripProductDimensionsFromLabel(name).trim() })).filter((area) => area.name);
+}
+
 
 export const ASC_CLAIM_RECIPIENTS = ["kd@myarchitecto.de", "verwaltung@hbi-wohnen.de"];
 export const ASC_CLAIM_METRICS = [["claims", "Claims"], ["emailsKd", `Emails to ${ASC_CLAIM_RECIPIENTS[0]}`], ["emailsHbi", `Emails to ${ASC_CLAIM_RECIPIENTS[1]}`]];
 export const ASC_CLAIM_NOTES = [
   "Claims count distinct retained cases by their original creation date. Follow-up submissions within the same open case do not create another claim. Test contract numbers starting with 111 and test ticket series are excluded.",
   "Emails count successful logged recipient deliveries on their actual send dates, independently of the claim creation date. The two listed recipients are counted separately. Successful resends count again; duplicate entries for the same recipient within one attempt count once. Customer confirmations, other recipients, failed, skipped, unknown and historical unlogged deliveries are excluded.",
-  "Claim details has one row per case up to the report cutoff, combining affected products, manufacturers and serial numbers from its submissions, including follow-ups. Each recipient's Yes/No flag indicates whether a successful delivery was recorded through the cutoff, including previous periods. No means no recorded successful delivery, not proof that an unlogged email was never sent. Email deliveries retains the individual successful sends and their dates.",
+  "Claim details has one row per case up to the report cutoff, combining affected products, manufacturers and serial numbers from its submissions, including follow-ups. Each recipient's Yes/No flag indicates whether a successful delivery was recorded through the cutoff, including previous periods. No means no recorded successful delivery, not proof that an unlogged email was never sent.",
   "Kitchen claim totals include cases up to the report cutoff: Fragmento contracts sharing a Kitchen record are grouped together; other uploaded kitchens use their individual contract identity, never their shared technical shell. Case ordinal is the chronological case number within that kitchen, not the highest stored contract sequence.",
   "Manufacturers use recorded claim data or an exact article match against the kitchen AB/product/inventory metadata. Electrical claims without a real article code can also match a single installed appliance type in that contract's saved inventory, including legacy appliance labels. Lookup sources are shown; current metadata is not a historical manufacturer snapshot. Missing or ambiguous manufacturers/categories are marked Not recorded. No default brand is assumed for uploaded kitchens.",
   "Processing status and completion date are current operational data at export time, not reconstructed historical status. Historical repeat counts and submissions are bounded by the report cutoff.",
@@ -91,29 +135,37 @@ export function buildAscClaimDeliveriesSql(filters) {
     ORDER BY d."attemptedAt", d."attemptId", d.recipient`;
 }
 
+// The main schema does not include the separate claim-processing feature.
+// Read existing follow-ups when that optional table is present; never create it.
+export async function loadReportSubmissions(db, ids, cutoff) {
+  const [table] = await db.$queryRaw`SELECT to_regclass('"ServiceClaimSubmission"')::text AS relation`;
+  if (!table?.relation) return [];
+  return db.$queryRaw`SELECT id, "claimId", payload, "createdAt" FROM "ServiceClaimSubmission"
+    WHERE "claimId" IN (${Prisma.join(ids)}) AND "createdAt" AT TIME ZONE 'UTC' < ${cutoff}
+    ORDER BY "createdAt", id`;
+}
+
 export async function loadAscClaimDetails(filters, db = prisma) {
   const claims = await db.$queryRaw(buildAscClaimDetailsSql(filters));
   if (!claims.length) return { claims: [], deliveries: [] };
   const ids = claims.map(claim => claim.id);
   const contractIds = [...new Set(claims.map(claim => claim.contractId).filter(Boolean))];
-  const [submissions, contracts, processing, deliveries] = await Promise.all([
-    db.serviceClaimSubmission.findMany({ where: { claimId: { in: ids }, createdAt: { lt: filters.end } }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+  const [submissions, contracts, deliveries] = await Promise.all([
+    loadReportSubmissions(db, ids, filters.end),
     contractIds.length ? db.kitchenContract.findMany({ where: { id: { in: contractIds } }, include: {
       kitchen: { include: { items: { include: { catalogArticle: true } } } }, appliances: true,
       project: { include: { housingCompany: true, propertyObject: true } },
     } }) : [],
-    db.workProcessing.findMany({ where: { workType: "CLAIM", workId: { in: ids } } }),
     db.$queryRaw(buildAscClaimDeliveriesSql(filters)),
   ]);
   const byContract = new Map(contracts.map(contract => [contract.id, contract]));
-  const byProcessing = new Map(processing.map(row => [row.workId, row]));
   const bySubmission = new Map();
   for (const row of submissions) {
     if (!bySubmission.has(row.claimId)) bySubmission.set(row.claimId, []);
     bySubmission.get(row.claimId).push(row);
   }
   return { claims: claims.map(claim => ({ ...claim, contract: byContract.get(claim.contractId) || null,
-    processing: byProcessing.get(claim.id) || null, submissions: bySubmission.get(claim.id) || [] })), deliveries };
+    submissions: bySubmission.get(claim.id) || [] })), deliveries };
 }
 
 const clean = value => String(value || "").trim();
@@ -182,7 +234,6 @@ export function claimReportSubmissions(claim, cutoff) {
 }
 
 const reference = claim => formatServiceClaimReference(claim.contractNumber, claim.claimSequence, claim.ticketNumber);
-const sourceLabel = claim => claim.contractType === "FRG" ? "Fragmento" : claim.contractType === "ARC" ? "Other kitchens" : "Not recorded";
 const periodOf = (date, filters) => filters.start && new Date(date) < filters.start ? "Previous" : "Selected period";
 
 export function getAscClaimReportSheets(report, data = { claims: [], deliveries: [] }) {
@@ -191,7 +242,7 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
   const summary = { name: "ASC", title: `CLAIMS AND EMAILS | ${range}`,
     headers: ["Description", filters.previousDate ? `Through ${reportDisplayDate(filters.previousDate)}` : "Before selected period", frgReportPeriodLabel(filters), "Total"],
     rows: report.metrics.map(([key, label]) => [label, report.previous[key], report.current[key], report.total[key]]), highlightHeader: true };
-  const claimRows = [], deliveryRows = [];
+  const claimRows = [];
   const observed = [];
   const sentByClaim = new Map();
   const claimById = new Map(data.claims.map(claim => [claim.id, claim]));
@@ -205,8 +256,6 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
     const counts = sentByClaim.get(claim.id);
     counts[key] = (counts[key] || 0) + 1;
     observed.push({ bucket, metric: key, value: 1 });
-    deliveryRows.push([periodOf(delivery.attemptedAt, filters), delivery.attemptedAt, reference(claim), claim.contractNumber, sourceLabel(claim),
-      delivery.recipient, "SENT", delivery.attemptId, delivery.kind]);
   }
   for (const claim of data.claims) {
     const contract = claim.contract || {}, project = contract.project || {};
@@ -221,7 +270,7 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
     }
     const sent = sentByClaim.get(claim.id) || {};
     claimRows.push([claim.createdAt, reference(claim), claim.contractNumber, project.housingCompany?.name || "",
-      claim.fullName, claim.email || "", claim.phone || "", [claim.clientAddress, claim.clientPostalCode, claim.clientCity, claim.clientCountry].filter(Boolean).join(", "),
+      claim.fullName, claim.email || "", claim.phone || "", claim.clientAddress || "", claim.clientPostalCode || "", claim.clientCity || "", claim.clientCountry || "",
       unique(products.map(product => product.category)).join(" / "), unique(products.map(product => product.product)).join("\n"),
       unique(products.map(product => product.manufacturer)).join(" / "), unique([clean(claim.serialNumber), ...products.map(product => product.serialNumber)]).join("\n"),
       sent.emailsKd ? "Yes" : "No", sent.emailsHbi ? "Yes" : "No"]);
@@ -232,11 +281,8 @@ export function getAscClaimReportSheets(report, data = { claims: [], deliveries:
   }
   return [summary, {
     name: "Claim details", title: `CLAIM DETAILS | ${range}`, highlightHeader: true,
-    headers: ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address",
+    headers: ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address", "Postal code", "City", "Country",
       "Categories", "Affected products", "Manufacturers", "Serial number(s)",
       ...ASC_CLAIM_RECIPIENTS.map(email => `Email sent to ${email}`)], rows: claimRows,
-  }, {
-    name: "Email deliveries", title: `SUCCESSFUL CLAIM EMAIL DELIVERIES | ${range}`, highlightHeader: true,
-    headers: ["Delivery period", "Sent (Berlin)", "Claim reference", "Contract number", "Kitchen source", "Recipient", "Status", "Attempt ID", "Email kind"], rows: deliveryRows,
   }];
 }

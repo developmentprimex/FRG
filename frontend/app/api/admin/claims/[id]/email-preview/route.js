@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { requireAdminClaimsApi } from "../../../../../../lib/admin-claims-access";
 import { canAccessClaim } from "../../../../../../lib/admin-roles";
@@ -8,7 +9,7 @@ import { buildClaimEmailPreview } from "../../../../../../lib/email/claim-email-
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   const admin = await requireAdminClaimsApi();
   const { id } = await params;
   const [claim] = await queryServiceClaimById(prisma, id);
@@ -22,3 +23,5 @@ export async function GET(request, { params }) {
   const preview = buildClaimEmailPreview({ claim, submission, isFollowUp: !!submission && submissions.indexOf(submission) > 0, kitchenPlan });
   return NextResponse.json(preview, { headers: { "Cache-Control": "no-store" } });
 }
+
+export const GET = withAdminPermission("ASC_VIEW", handleGET);

@@ -1,21 +1,21 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
+import visitorTableStyles from "../../../components/admin-visitor-table.module.css";
 import Link from "next/link";
 import {
   AdminSection,
   inputStyle,
   pageGridStyle,
   primaryButtonStyle,
-  tableStyle,
-  tableWrapStyle,
-  tdStyle,
-  thStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
+import { AdminDatePicker } from "../../../components/admin-date-picker";
 import {
   AdminCountryName,
   AdminDateTime,
   AdminText,
 } from "../../../components/admin-i18n";
-import { requireSuperAdminPage } from "../../../lib/admin-role-guards";
+import { requireAdminPage } from "../../../lib/auth";
+import { canViewTestContracts } from "../../../lib/admin-permissions";
 import { ORDER_KIND_TEST } from "../../../lib/order-kind";
 import {
   loadRecentServiceVisitData,
@@ -34,7 +34,6 @@ function ClaimActivityResultBadge({ event }) {
   if (event.eventType === PUBLIC_VISIT_EVENT_TYPES.SERVICE_CLAIM_SUBMITTED) {
     return (
       <span style={isTestEvent(event) ? testStyle : claimStyle}>
-        <span aria-hidden="true" style={badgeDotStyle} />
         <AdminText
           i18nKey={isTestEvent(event) ? "claimActivityAdmin.resultClaimTest" : "claimActivityAdmin.resultClaim"}
           fallback={isTestEvent(event) ? "Claim (test)" : "Claim submitted"}
@@ -46,7 +45,6 @@ function ClaimActivityResultBadge({ event }) {
   if (event.eventType === PUBLIC_VISIT_EVENT_TYPES.SERVICE_CONTRACT_FOUND) {
     return (
       <span style={isTestEvent(event) ? testStyle : foundStyle}>
-        <span aria-hidden="true" style={badgeDotStyle} />
         <AdminText
           i18nKey={isTestEvent(event) ? "claimActivityAdmin.resultTest" : "claimActivityAdmin.resultFound"}
           fallback={isTestEvent(event) ? "Test" : "Found"}
@@ -57,7 +55,6 @@ function ClaimActivityResultBadge({ event }) {
 
   return (
     <span style={failedStyle}>
-      <span aria-hidden="true" style={badgeDotStyle} />
       <AdminText i18nKey="claimActivityAdmin.resultNotFound" fallback="Not found" />
     </span>
   );
@@ -73,8 +70,9 @@ function SummaryCard({ label, value }) {
 }
 
 export default async function AdminClaimActivityPage({ searchParams = {} }) {
-  const admin = await requireSuperAdminPage();
+  const admin = await requireAdminPage("ASC_VIEW");
   const filters = normalizePublicVisitReportFilters((await searchParams) || {});
+  filters.excludeTestContracts = !canViewTestContracts(admin);
   const [summary, events] = await Promise.all([
     loadServiceVisitSummary(filters),
     loadRecentServiceVisitData(filters),
@@ -83,25 +81,24 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
-        <AdminSection>
-          <form action="/admin/claim-activity" method="get" style={filterPanelStyle}>
+        <AdminSection
+          title={<AdminText i18nKey="claimActivityAdmin.title" fallback="Claim activity" />}
+        >
+          <AdminFilterForm action="/admin/claim-activity" style={filterPanelStyle}>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateFrom" fallback="Date from" /></span>
-              <input name="dateFrom" type="date" defaultValue={filters.dateFrom} style={filterInputStyle} />
+              <AdminDatePicker name="dateFrom" defaultValue={filters.dateFrom} style={filterInputStyle} labelKey="ordersAdmin.dateFrom" label="Date from" />
             </label>
             <label style={filterFieldStyle}>
               <span><AdminText i18nKey="ordersAdmin.dateTo" fallback="Date to" /></span>
-              <input name="dateTo" type="date" defaultValue={filters.dateTo} style={filterInputStyle} />
+              <AdminDatePicker name="dateTo" defaultValue={filters.dateTo} style={filterInputStyle} labelKey="ordersAdmin.dateTo" label="Date to" />
             </label>
             <div style={filterActionsStyle}>
-              <button type="submit" style={filterApplyButtonStyle}>
-                <AdminText i18nKey="dashboard.apply" fallback="Apply" />
-              </button>
               <Link href="/admin/claim-activity" scroll={false} style={filterClearLinkStyle}>
                 <AdminText i18nKey="dashboard.clearFilters" fallback="Clear filters" />
               </Link>
             </div>
-          </form>
+          </AdminFilterForm>
 
           <div style={summaryGridStyle}>
             <SummaryCard
@@ -128,72 +125,60 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
               label={<AdminText i18nKey="claimActivityAdmin.claimsSubmitted" fallback="Claims submitted" />}
               value={summary.claimsSubmitted}
             />
-            <SummaryCard
+            {canViewTestContracts(admin) ? <SummaryCard
               label={<AdminText i18nKey="claimActivityAdmin.testLookups" fallback="Test lookups" />}
               value={summary.testLookups}
-            />
+            /> : null}
           </div>
-        </AdminSection>
 
-        <AdminSection title={<AdminText i18nKey="claimActivityAdmin.title" fallback="Claim activity" />}>
-          <div className="admin-claim-activity-table" style={{ ...tableWrapStyle, borderRadius: 4 }}>
-            <table style={{ ...tableStyle, tableLayout: "auto", minWidth: 1000 }}>
+          <div className={`admin-claim-activity-table ${visitorTableStyles.wrapper}`}>
+            <table className={visitorTableStyles.table}>
               <thead>
                 <tr>
-                  <th scope="col" style={{ ...activityThStyle, width: 48, textAlign: "center" }}><AdminText i18nKey="reportsAdmin.rowNumber" fallback="No." /></th>
-                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.accessTime" fallback="Time" /></th>
-                  <th scope="col" style={activityThStyle}><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
-                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.source" fallback="Source" /></th>
-                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.device" fallback="Device" /></th>
-                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.contract" fallback="Contract" /></th>
-                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.project" fallback="Project" /></th>
-                  <th scope="col" style={activityThStyle}><AdminText i18nKey="claimActivityAdmin.result" fallback="Result" /></th>
+                  <th className={visitorTableStyles.numberCell}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.accessTime" fallback="Time" /></th>
+                  <th><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.device" fallback="Device" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.contract" fallback="Contract" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.project" fallback="Project" /></th>
+                  <th><AdminText i18nKey="claimActivityAdmin.result" fallback="Result" /></th>
                 </tr>
               </thead>
               <tbody>
                 {!events.length ? (
                   <tr>
-                    <td style={activityTdStyle} colSpan={8}>
+                    <td colSpan={7}>
                       <AdminText i18nKey="claimActivityAdmin.noEvents" fallback="No claim activity events found." />
                     </td>
                   </tr>
                 ) : null}
                 {events.map((event, index) => {
                   const contract = event.kitchenContract;
-                  const source = event.source || event.referrerHost || "direct";
 
                   return (
                     <tr key={event.id}>
-                      <td style={{ ...activityTdStyle, textAlign: "center", color: "var(--app-text-muted)", fontSize: "var(--admin-text-label)", fontWeight: 500 }}>{index + 1}</td>
-                      <td style={activityTdStyle}><AdminDateTime value={event.createdAt} stacked /></td>
-                      <td style={activityTdStyle}><AdminCountryName code={event.countryCode} /></td>
-                      <td style={activityTdStyle}>
-                        <strong>
-                          {source === "direct"
-                            ? <AdminText i18nKey="claimActivityAdmin.directVisit" fallback="Direct visit" />
-                            : source}
-                        </strong>
-                        {event.utmCampaign ? <span style={mutedLineStyle}>{event.utmCampaign}</span> : null}
-                      </td>
-                      <td style={activityTdStyle}>
+                      <td className={visitorTableStyles.numberCell}>{events.length - index}</td>
+                      <td><AdminDateTime value={event.createdAt} /></td>
+                      <td><AdminCountryName code={event.countryCode} /></td>
+                      <td>
                         {event.deviceType || <AdminText i18nKey="claimActivityAdmin.notCaptured" fallback="Not captured" />}
                         {event.browserFamily ? (
                           <span style={mutedLineStyle}>{event.browserFamily} · {event.operatingSystem}</span>
                         ) : null}
                       </td>
-                      <td style={activityTdStyle}>
+                      <td>
                         {contract ? (
                           <Link href={`/admin/contracts/${contract.id}`} style={contractLinkStyle}>{contract.contractNumber}</Link>
                         ) : event.contractNumberLast4 ? `••••${event.contractNumberLast4}` : "-"}
                         {contract?.kitchen?.name ? <span style={mutedLineStyle}>{contract.kitchen.name}</span> : null}
                       </td>
-                      <td style={{ ...activityTdStyle, whiteSpace: "normal", minWidth: 200, maxWidth: 300 }}>
+                      <td>
                         {contract?.project?.name || "-"}
                         {contract?.project?.housingCompany?.name ? (
                           <span style={mutedLineStyle}>{contract.project.housingCompany.name}</span>
                         ) : null}
                       </td>
-                      <td style={activityTdStyle}><ClaimActivityResultBadge event={event} /></td>
+                      <td><ClaimActivityResultBadge event={event} /></td>
                     </tr>
                   );
                 })}
@@ -277,7 +262,7 @@ const summaryGridStyle = {
 };
 
 const summaryCardStyle = {
-  borderRadius: 8,
+  borderRadius: 10,
   border: "1px solid rgba(143, 62, 44, 0.14)",
   background: "linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,241,0.72))",
   padding: "14px 16px",
@@ -300,19 +285,14 @@ const summaryValueStyle = {
 
 const badgeBaseStyle = {
   display: "inline-flex",
-  alignItems: "center",
-  gap: 7,
-  minWidth: 78,
   borderRadius: 999,
-  padding: "5px 10px",
-  fontSize: "var(--admin-text-label)",
+  padding: "6px 8px",
+  fontSize: "var(--admin-text-label, 0.75rem)",
   fontWeight: 600,
-  lineHeight: 1.4,
+  textTransform: "uppercase",
   border: "1px solid transparent",
   whiteSpace: "nowrap",
 };
-
-const badgeDotStyle = { width: 6, height: 6, borderRadius: "50%", background: "currentColor", flexShrink: 0 };
 
 const foundStyle = {
   ...badgeBaseStyle,
@@ -348,12 +328,9 @@ const contractLinkStyle = {
   fontWeight: 600,
 };
 
-const activityThStyle = { ...thStyle, padding: "16px 20px", whiteSpace: "nowrap" };
-const activityTdStyle = { ...tdStyle, padding: "16px 12px", verticalAlign: "middle", whiteSpace: "nowrap", fontSize: "var(--admin-text-body)" };
-
 const mutedLineStyle = {
   display: "block",
   color: "var(--app-text-muted)",
-  fontSize: "var(--admin-text-meta)",
-  marginTop: 3,
+  fontSize: "var(--admin-text-meta, 0.8125rem)",
+  marginTop: 4,
 };

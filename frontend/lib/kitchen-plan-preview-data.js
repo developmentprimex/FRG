@@ -1,5 +1,6 @@
 import { AB_105803_HOTSPOTS, AB_105803_LIGHT_DETAILS } from "./ab-105803-plan.js";
 import { AB_105743_FAUCET_POINTS } from "./ab-105743-fixtures.js";
+import { AB_111535_HOTSPOTS, AB_111535_LIGHT_DETAILS } from "./ab-111535-plan.js";
 // Vector plans (rendered from the source PDFs via docs/render-plan-svg.py) so the drawing
 // stays razor-sharp at any zoom. The pixel-perfect hotspot overlay sits on top unchanged
 // (the SVG keeps the PDF's aspect ratio, so the %-based boxes still line up exactly).
@@ -25,7 +26,8 @@ import { AB_105779_HOTSPOTS } from './ab-105779-plan.js';
 import { AB_105779_LAYOUT_ALIAS_SLUGS } from './ab-105779-layout.js';
 
 export const PLAN_IMAGE_BY_SLUG = {
-  "ab-105804": "/plans/670%20105804.svg",
+  "ab-111535": "/plans/AB%20670%20111535.svg",
+  "ab-105804": "/plans/670%20105804-smooth.png",
   "ab-105793": "/plans/AB%20105793.svg",
   "ab-105796": "/plans/AB%20105796.svg",
   "ab-105799": "/plans/AB%20105799.svg",
@@ -157,6 +159,7 @@ export const PLAN_IMAGE_BY_SLUG = {
 // Most legacy drawings use the 842 x 595 CAD sheet. Keep native dimensions for
 // plans exported on a different page size so neither the artwork nor hotspots stretch.
 export const PLAN_IMAGE_SOURCE_SIZE_BY_SLUG = {
+  "ab-111535": { width: 842, height: 595 },
   "ab-105804": { width: 842, height: 595 },
   "ab-105793": { width: 842, height: 595 },
   "ab-105796": { width: 842, height: 595 },
@@ -208,6 +211,7 @@ const AB_105845_DISHWASHER_LIGHT_DETAILS = [
 ];
 
 export const PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG = {
+  "ab-111535": AB_111535_LIGHT_DETAILS,
   "ab-105804": AB_105804_LIGHT_DETAILS,
   "ab-105793": AB_105793_LIGHT_DETAILS,
   "ab-105796": AB_105796_LIGHT_DETAILS,
@@ -223,8 +227,8 @@ export const PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG = {
   "ab-105800": AB_105800_LIGHT_DETAILS,
   "ab-105803": AB_105803_LIGHT_DETAILS,
   "ab-105779": [
-    { key: "dishwasher-basket", componentKey: "dishwasher-base", left: 56.208, top: 69.570, width: 8.495, height: 8.783, persistWhenSelected: true },
-    { key: "dishwasher-gs-mark", componentKey: "dishwasher-base", left: 59.671021, top: 80.759664, width: 1.683, height: 3.771428, persistWhenSelected: true },
+    { key: "dishwasher-basket", componentKey: "dishwasher-base", left: 56.208, top: 69.570, width: 8.495, height: 8.783, persistWhenSelected: true, sourceLineworkOpacity: 0.32 },
+    { key: "dishwasher-gs-mark", componentKey: "dishwasher-base", left: 59.671021, top: 80.759664, width: 1.683, height: 3.771428, persistWhenSelected: true, sourceLineworkOpacity: 0.32 },
   ],
   "ab-105789": AB_105789_LIGHT_DETAILS,
   "ab-105790": AB_105790_LIGHT_DETAILS,
@@ -355,6 +359,8 @@ AB_105760_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
 AB_105761_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
   PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG[slug] = PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG["ab-105761"];
 });
+// This layout family shares the revised PDF's smooth vector contours.
+PLAN_IMAGE_BY_SLUG["ab-105846"] = "/plans/AB%20105846-view.svg?v=3";
 AB_105846_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
   PLAN_IMAGE_BY_SLUG[slug] = PLAN_IMAGE_BY_SLUG["ab-105846"];
 });
@@ -599,6 +605,7 @@ export const AB_110401_FRG_ORDER_HOTSPOTS = [
 // linework (see docs/detect-plan-hotspots.py). Values are % of image width/height, so they
 // stay pixel-aligned at any display size. Use ?calibrate=1 on the kitchen page to verify.
 export const PLAN_HOTSPOTS_BY_SLUG = {
+  "ab-111535": AB_111535_HOTSPOTS,
   "ab-105804": AB_105804_HOTSPOTS,
   "ab-105779": AB_105779_HOTSPOTS,
   "ab-105789": AB_105789_HOTSPOTS,

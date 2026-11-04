@@ -1,8 +1,10 @@
 "use client";
 
+import AdminFilterForm from "./admin-filter-form";
+
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { AdminKitchenDisplayName, AdminText, useAdminI18n } from "./admin-i18n";
+import { AdminText, useAdminI18n } from "./admin-i18n";
+import { inputStyle, primaryButtonStyle } from "./admin-ui";
 import AdminSelect from "./admin-select";
 
 function FilterField({ label, children }) {
@@ -15,33 +17,13 @@ function FilterField({ label, children }) {
 }
 
 export default function AdminContractsFilters({
-  kitchens = [],
   owners = [],
-  projects = [],
   filters = {},
 }) {
   const { translate } = useAdminI18n();
-  const [housingCompanyId, setHousingCompanyId] = useState(filters.housingCompanyId || "");
-  const [projectId, setProjectId] = useState(filters.projectId || "");
-
-  const visibleProjects = useMemo(() => {
-    if (!housingCompanyId) return projects;
-    return projects.filter((project) => project.housingCompanyId === housingCompanyId);
-  }, [housingCompanyId, projects]);
-
-  useEffect(() => {
-    if (!projectId) return;
-    if (visibleProjects.some((project) => project.id === projectId)) return;
-    setProjectId("");
-  }, [projectId, visibleProjects]);
 
   return (
-    <form action="/admin/contracts" method="get" style={filterPanelStyle}>
-      <div style={filterHeaderStyle}>
-        <span style={filterEyebrowStyle}><AdminText i18nKey="contractsAdmin.filters" fallback="Filters" /></span>
-        <span style={filterHintStyle}><AdminText i18nKey="contractsAdmin.narrowTheContractListBelow" fallback="Narrow the contract list below" /></span>
-      </div>
-      <div style={filterGridStyle}>
+    <AdminFilterForm action="/admin/contracts" style={filterPanelStyle}>
         <FilterField label={<AdminText i18nKey="contractsAdmin.search" fallback="Search" />}>
           <input
             name="q"
@@ -57,50 +39,16 @@ export default function AdminContractsFilters({
             <option value="FRG">FRG</option>
           </AdminSelect>
         </FilterField>
-        <FilterField label={<AdminText i18nKey="dashboard.kitchen" fallback="Kitchen" />}>
-          <AdminSelect name="kitchenId" defaultValue={filters.kitchenId || ""} style={filterInputStyle}>
-            <option value=""><AdminText i18nKey="dashboard.allKitchens" fallback="All kitchens" /></option>
-            {kitchens.map((kitchen) => (
-              <option key={kitchen.id} value={kitchen.id}>
-                <AdminKitchenDisplayName slug={kitchen.slug} name={kitchen.name} />
-              </option>
-            ))}
-          </AdminSelect>
-        </FilterField>
         <FilterField label={<AdminText i18nKey="contractsAdmin.owner" fallback="Housing company" />}>
           <AdminSelect
             name="housingCompanyId"
-            value={housingCompanyId}
+            defaultValue={filters.housingCompanyId || ""}
             style={filterInputStyle}
-            onChange={(event) => setHousingCompanyId(event.target.value)}
           >
             <option value=""><AdminText i18nKey="contractsAdmin.allOwners" fallback="All owners" /></option>
             {owners.map((owner) => (
               <option key={owner.id} value={owner.id}>
               {owner.name}
-            </option>
-          ))}
-          </AdminSelect>
-        </FilterField>
-        <FilterField label={<AdminText i18nKey="contractsAdmin.project" fallback="Project" />}>
-          <AdminSelect
-            name="projectId"
-            value={projectId}
-            style={filterInputStyle}
-            onChange={(event) => setProjectId(event.target.value)}
-          >
-            <option value="">
-              {!housingCompanyId
-                ? translate("contractsAdmin.allProjects", "All projects")
-                : visibleProjects.length
-                  ? translate("contractsAdmin.allProjects", "All projects")
-                  : translate("contractsAdmin.noProjectsAvailable", "No projects available")}
-            </option>
-            {visibleProjects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {housingCompanyId
-                  ? `${project.projectCode ? `${project.projectCode} | ` : ""}${project.name || translate("contractsAdmin.unnamedProject", "Unnamed project")} | ${translate("contractsAdmin.objectContext", "Object")}: ${project.propertyObject?.name || translate("contractsAdmin.noObject", "No object")}`
-                : `${project.housingCompany.name} | ${project.projectCode ? `${project.projectCode} | ` : ""}${project.name || translate("contractsAdmin.unnamedProject", "Unnamed project")} | ${translate("contractsAdmin.objectContext", "Object")}: ${project.propertyObject?.name || translate("contractsAdmin.noObject", "No object")}`}
             </option>
           ))}
           </AdminSelect>
@@ -122,109 +70,67 @@ export default function AdminContractsFilters({
           </AdminSelect>
         </FilterField>
         <div style={filterActionsStyle}>
-          <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-          <Link href="/admin/contracts" style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+          <Link scroll={false} href="/admin/contracts" style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
         </div>
-      </div>
-    </form>
+    </AdminFilterForm>
   );
 }
 
-const filterGridStyle = {
-  display: "grid",
-  gap: 10,
-  gridTemplateColumns: "repeat(auto-fit, minmax(min(170px, 100%), 1fr))",
-  alignItems: "end",
-  minWidth: 0,
-};
-
 const filterPanelStyle = {
-  display: "grid",
+  display: "flex",
+  flexWrap: "wrap",
   gap: 12,
+  alignItems: "end",
   borderRadius: 8,
   border: "1px solid rgba(143, 62, 44, 0.16)",
   background: "linear-gradient(180deg, rgba(255,247,241,0.82), rgba(255,255,255,0.72))",
   padding: 14,
-  minWidth: 0,
-};
-
-const filterHeaderStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-  flexWrap: "wrap",
-};
-
-const filterEyebrowStyle = {
-  display: "inline-flex",
-  width: "fit-content",
-  borderRadius: 999,
-  padding: "6px 10px",
-  background: "rgba(143, 62, 44, 0.1)",
-  border: "1px solid rgba(143, 62, 44, 0.14)",
-  color: "var(--app-accent)",
-  fontSize: 12,
-  fontWeight: 800,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-};
-
-const filterHintStyle = {
-  color: "var(--app-text-muted)",
-  fontSize: 13,
-  fontWeight: 700,
 };
 
 const filterFieldStyle = {
+  flex: "1 1 160px",
+  minWidth: 0,
   display: "grid",
   gap: 6,
-  minWidth: 0,
   color: "var(--app-text-muted)",
-  fontSize: 12,
-  fontWeight: 800,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
 };
 
 const filterInputStyle = {
-  minHeight: 42,
+  ...inputStyle,
+  width: "100%",
   minWidth: 0,
+  minHeight: 42,
   borderRadius: 8,
   padding: "9px 11px",
   background: "rgba(255,255,255,0.94)",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
   boxShadow: "none",
-  border: "1px solid var(--app-border-strong)",
-  color: "var(--app-text)",
-  width: "100%",
 };
 
 const filterActionsStyle = {
+  flex: "0 0 auto",
   display: "flex",
   gap: 8,
   alignItems: "end",
   flexWrap: "wrap",
-  minWidth: 0,
 };
 
 const filterApplyButtonStyle = {
-  flex: "1 1 112px",
+  ...primaryButtonStyle,
   minHeight: 42,
   borderRadius: 8,
   padding: "9px 14px",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
+  fontWeight: 600,
   whiteSpace: "nowrap",
   boxShadow: "0 10px 20px rgba(143, 62, 44, 0.16)",
-  border: "1px solid transparent",
-  background: "var(--app-accent)",
-  color: "white",
-  fontWeight: 800,
-  cursor: "pointer",
 };
 
 const filterClearLinkStyle = {
-  flex: "1 1 112px",
   textDecoration: "none",
   borderRadius: 8,
   minHeight: 42,
@@ -232,10 +138,9 @@ const filterClearLinkStyle = {
   background: "rgba(255,255,255,0.88)",
   color: "var(--app-accent)",
   border: "1px solid rgba(143, 62, 44, 0.14)",
-  fontWeight: 800,
-  fontSize: "0.92rem",
+  fontWeight: 600,
+  fontSize: "var(--admin-text-body)",
   display: "inline-flex",
   alignItems: "center",
-  justifyContent: "center",
   whiteSpace: "nowrap",
 };

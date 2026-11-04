@@ -1,5 +1,5 @@
 import { normalizeActivityReportFilters, buildActivityReportQuery } from "./admin-activity-reports.js";
-import { workDateKey } from "./work-processing-rules.js";
+import { reportDateKey } from "./business-report-dates.js";
 
 export const BUSINESS_REPORT_PERIODS = ["TODAY", "THIS_WEEK", "THIS_MONTH", "LAST_MONTH", "ALL"];
 export const BUSINESS_REPORT_GROUPS = ["DAY", "WEEK", "MONTH"];
@@ -17,7 +17,7 @@ export function normalizeBusinessReportFilters(input = {}, now = new Date()) {
   const period = [...BUSINESS_REPORT_PERIODS, "CUSTOM"].includes(requestedPeriod) ? requestedPeriod
     : activity.dateFrom || activity.dateTo ? "CUSTOM" : "THIS_MONTH";
   const groupBy = BUSINESS_REPORT_GROUPS.includes(one(input.groupBy)) ? one(input.groupBy) : "DAY";
-  const today = workDateKey(now);
+  const today = reportDateKey(now);
   let { dateFrom, dateTo } = activity;
   if (period === "ALL") dateFrom = dateTo = "";
   if (period === "TODAY") dateFrom = dateTo = today;

@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { mapAdminMutationError, redirectWithFlash, validatePropertyObjectInput, validatePropertyOwnerInput } from "../../../../lib/admin-forms";
@@ -7,7 +8,7 @@ import { listPropertyOwnersForAdmin } from "../../../../lib/catalog";
 import { upsertProjectForObject } from "../../../../lib/property-projects";
 import { prisma } from "../../../../lib/prisma";
 
-export async function GET() {
+async function handleGET() {
   await requireAdminApi();
   return NextResponse.json(await listPropertyOwnersForAdmin());
 }
@@ -83,7 +84,7 @@ function collectPropertyObjects(formData) {
     });
 }
 
-export async function POST(request) {
+async function handlePOST(request) {
   await requireAdminApi();
   try {
     const formData = await request.formData();
@@ -123,3 +124,6 @@ export async function POST(request) {
     return redirectWithFlash(request, "/admin/property-owners?create=1", "error", mapAdminMutationError(error, "Housing company"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

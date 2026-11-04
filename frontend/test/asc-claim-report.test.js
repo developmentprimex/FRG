@@ -2,11 +2,45 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as XLSX from "xlsx/xlsx.mjs";
 import { normalizeAscKitchenFilters, assembleAscKitchenReport, getAscKitchenReportSheets } from "../lib/asc-kitchen-report.js";
-import { assembleAscClaimReport, getAscClaimReportSheets, claimProductDetails, claimReportSubmissions } from "../lib/asc-claim-report.js";
+import { assembleAscClaimReport, getAscClaimReportSheets, claimProductDetails, claimReportSubmissions, loadAscClaimDetails, loadReportSubmissions } from "../lib/asc-claim-report.js";
 import { buildStandardExcelWorkbook } from "../lib/standard-excel.js";
 
 const now = new Date("2026-10-28T10:00Z");
 const filters = normalizeAscKitchenFilters({}, now);
+
+test("ASC details work on main without the separate claim-processing schema", async () => {
+  const claim = { id: "legacy-main", createdAt: new Date("2026-10-10"), contractNumber: "670000001", claimSequence: 1, contractId: "contract" };
+  let reads = 0;
+  const db = {
+    $queryRaw: async () => {
+      reads++;
+      if (reads === 1) return [claim];
+      if (reads === 2) return [{ relation: null }];
+      return [];
+    },
+    kitchenContract: { findMany: async () => [{ id: "contract", appliances: [{ applianceType: "fridge", brand: "bosch" }] }] },
+  };
+  const details = await loadAscClaimDetails(filters, db);
+  assert.equal(details.claims.length, 1);
+  assert.deepEqual(details.claims[0].submissions, []);
+  assert.equal(details.claims[0].contract.appliances[0].brand, "bosch");
+  assert.deepEqual(details.deliveries, []);
+  assert.equal(reads, 3);
+});
+
+test("ASC reads existing optional follow-ups without requiring their feature's Prisma delegate", async () => {
+  const saved = [{ id: "followup", claimId: "case", createdAt: now, payload: { problemDescription: "Saved follow-up" } }];
+  let reads = 0;
+  const db = { $queryRaw: async (_strings, ...parameters) => {
+    reads++;
+    if (reads === 1) return [{ relation: '"ServiceClaimSubmission"' }];
+    assert.deepEqual(parameters[0].values, ["case"]);
+    assert.equal(parameters[1], filters.end);
+    return saved;
+  } };
+  assert.deepEqual(await loadReportSubmissions(db, ["case"], filters.end), saved);
+  assert.equal(reads, 2);
+});
 
 test("claim product categories distinguish appliances from their fronts, drawers and other components", () => {
   assert.equal(claimProductDetails({ name: "Amica oven", componentId: "component-claim-oven" }).category, "Electrical appliances");
@@ -19,9 +53,9 @@ test("claim product categories distinguish appliances from their fronts, drawers
 test("manufacturer resolution uses recorded data and exact articles and never assumes an upload's default brand", () => {
   assert.equal(claimProductDetails({ componentId: "reference-electrical-oven", name: "Oven", manufacturer: "Siemens" }).manufacturer, "Siemens");
   assert.equal(claimProductDetails({ componentId: "component-claim-oven", name: "BOSCH oven" }).manufacturer, "BOSCH");
-  const ab = claimProductDetails({ name: "Sink", articleCode: "526335" }, { kitchen: { slug: "ab-104968" } });
+  const ab = claimProductDetails({ name: "Sink", articleCode: "526335" }, { kitchen: { slug: "other", items: [{ articleNumber: "526335", manufacturer: "BLANCO" }] } });
   assert.equal(ab.manufacturer, "BLANCO");
-  assert.equal(ab.manufacturerSource, "Matching AB article");
+  assert.equal(ab.manufacturerSource, "Current metadata, matching article");
   const contract = { kitchen: { slug: "other", items: [{ articleNumber: "OLD", name: "Amica oven" }] },
     appliances: [{ applianceType: "oven", brand: "bosch", articleNumber: "OLD" }] };
   assert.equal(claimProductDetails({ componentId: "reference-electrical-oven", name: "Oven", articleCode: "NEW" }, contract).manufacturer, "Not recorded");
@@ -85,6 +119,7 @@ test("follow-ups remain within their original case, skip duplicate initial paylo
 
 function detailedFixture() {
   const old = { id: "old", createdAt: new Date("2026-09-10"), contractNumber: "670000001", contractType: "FRG", fullName: "Customer A", claimSequence: 1, ticketNumber: 1001,
+    clientAddress: "Example street 1", clientPostalCode: "01067", clientCity: "Dresden", clientCountry: "Germany",
     requestType: "complaint", problemDescription: "Oven does not heat", serialNumber: "SERIAL-A",
     problemAreasJson: JSON.stringify([{ componentId: "component-claim-oven", name: "Amica oven", code: "OVEN-A", serialNumber: "SERIAL-A", detail: "Does not heat" }]),
     kitchenClaimOrdinal: 1, kitchenClaimsTotal: 2, kitchenClaimsInPeriod: 1,
@@ -114,22 +149,27 @@ function detailedFixture() {
   return { report, data: { claims: [old, current, upload], deliveries } };
 }
 
-test("ASC Excel keeps only the requested claim columns and four sheets, preserving products and manufacturers from follow-ups", () => {
+test("ASC Excel keeps three sheets without email deliveries, preserving claim columns and follow-up products", () => {
   const { report, data } = detailedFixture();
   const sheets = getAscClaimReportSheets(report, data);
-  assert.deepEqual(sheets.map(sheet => sheet.name), ["ASC", "Claim details", "Email deliveries"]);
+  assert.deepEqual(sheets.map(sheet => sheet.name), ["ASC", "Claim details"]);
   assert.deepEqual(sheets[0].rows.map(row => row.slice(1)), [[1, 2, 3], [1, 2, 3], [0, 1, 1]]);
   const claims = sheets[1];
   assert.equal(claims.rows.length, 3);
   assert(claims.rows.every(row => row.length === claims.headers.length));
   const value = (sheet, row, label) => sheet.rows[row][sheet.headers.indexOf(label)];
-  assert.deepEqual(claims.headers, ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address",
+  assert.deepEqual(claims.headers, ["Claim created (Berlin)", "Claim reference", "Contract number", "Company", "Customer", "Email", "Phone", "Customer address", "Postal code", "City", "Country",
     "Categories", "Affected products", "Manufacturers", "Serial number(s)",
     "Email sent to kd@myarchitecto.de", "Email sent to verwaltung@hbi-wohnen.de"]);
   assert.equal(value(claims, 0, "Claim reference"), "#1001 670000001 KD 01");
   assert.equal(value(claims, 0, "Contract number"), "670000001");
   assert.equal(value(claims, 0, "Company"), "Company A");
   assert.equal(value(claims, 0, "Customer"), "Customer A");
+  assert.equal(value(claims, 0, "Customer address"), "Example street 1");
+  assert.equal(value(claims, 0, "Postal code"), "01067");
+  assert.equal(value(claims, 0, "City"), "Dresden");
+  assert.equal(value(claims, 0, "Country"), "Germany");
+  assert.deepEqual(claims.rows[1].slice(7, 11), ["", "", "", ""]);
   assert.equal(value(claims, 0, "Categories"), "Electrical appliances / Cabinets");
   assert.equal(value(claims, 1, "Categories"), "Not recorded");
   assert.equal(value(claims, 0, "Manufacturers"), "Amica / Burger");
@@ -137,11 +177,10 @@ test("ASC Excel keeps only the requested claim columns and four sheets, preservi
   assert.equal(value(claims, 0, "Serial number(s)"), "SERIAL-A\nSERIAL-B");
   assert.deepEqual(claims.rows.map(row => row.slice(-2)), [["Yes", "Yes"], ["No", "No"], ["No", "No"]]);
   assert.equal(value(claims, 2, "Manufacturers"), "BOSCH");
-  assert.equal(sheets[2].rows.length, 4);
   const [kitchenSheet] = getAscKitchenReportSheets(assembleAscKitchenReport([], filters));
   const { buffer } = buildStandardExcelWorkbook({ description: "ASC_CLAIMS", sheets: [kitchenSheet, ...sheets], now, timeZone: "Europe/Berlin" });
   const book = XLSX.read(buffer, { type: "buffer", cellNF: true });
-  assert.deepEqual(book.SheetNames, ["ASC kitchens", "ASC", "Claim details", "Email deliveries"]);
+  assert.deepEqual(book.SheetNames, ["ASC kitchens", "ASC", "Claim details"]);
   assert.equal(book.Sheets.ASC.C7.v, 1);
   assert.equal(book.Sheets.ASC.D7.v, 2);
   assert.equal(book.Sheets.ASC.E7.v, 3);
@@ -150,9 +189,15 @@ test("ASC Excel keeps only the requested claim columns and four sheets, preservi
   assert.equal(rows[6][0], 1);
   assert.equal(rows[6][2], "#1001 670000001 KD 01");
   assert.equal(typeof rows[6][1], "number"); // sortable Excel timestamp
-  assert.equal(rows[8][11], "BOSCH");
+  assert.equal(rows[8][claims.headers.indexOf("Manufacturers") + 1], "BOSCH");
+  const claimSheet = book.Sheets["Claim details"];
+  assert.equal(claimSheet.I7.v, "Example street 1");
+  assert.equal(claimSheet.J7.v, "01067");
+  assert.equal(claimSheet.J7.t, "s");
+  assert.equal(claimSheet.K7.v, "Dresden");
+  assert.equal(claimSheet.L7.v, "Germany");
+  assert.equal(claimSheet["!autofilter"].ref, "A6:R9");
   assert.deepEqual(rows[6].slice(-2), ["Yes", "Yes"]);
-  assert.equal(book.Sheets["Email deliveries"]["!autofilter"].ref, "A6:J10");
 });
 
 test("each email flag uses only that case and recipient, including successful deliveries before the selected month", () => {
@@ -165,9 +210,9 @@ test("each email flag uses only that case and recipient, including successful de
     { bucket: "previous", metric: "claims", value: 1 }, { bucket: "current", metric: "claims", value: 2 },
     { bucket: "previous", metric: "emailsKd", value: 1 }, { bucket: "current", metric: "emailsHbi", value: 1 },
   ], filters);
-  const [, details, deliveries] = getAscClaimReportSheets(report, data);
+  const [summary, details] = getAscClaimReportSheets(report, data);
   assert.deepEqual(details.rows.map(row => row.slice(-2)), [["Yes", "No"], ["No", "No"], ["No", "Yes"]]);
-  assert.equal(deliveries.rows.length, 2);
+  assert.deepEqual(summary.rows.map(row => row.slice(1)), [[1, 2, 3], [1, 0, 1], [0, 1, 1]]);
 });
 
 test("exports reject a mismatch between cumulative totals and the supporting cases or deliveries", () => {

@@ -65,6 +65,7 @@ const Kitchen3DViewer = dynamic(() => import("./Kitchen3DViewer"), {
 // stays razor-sharp at any zoom. The pixel-perfect hotspot overlay sits on top unchanged
 // (the SVG keeps the PDF's aspect ratio, so the %-based boxes still line up exactly).
 export const IMAGE_VIEW_BY_SLUG = {
+  "ab-111535": "/plans/AB%20670%20111535.svg",
   "ab-105793": "/plans/AB%20105793.svg",
   "ab-105796": "/plans/AB%20105796.svg",
   "ab-105799": "/plans/AB%20105799.svg",
@@ -200,6 +201,7 @@ const AB_105846_LAYOUT_ALIAS_SLUGS = [
   "ab-105858",
   "ab-105861",
 ];
+IMAGE_VIEW_BY_SLUG["ab-105846"] = PLAN_IMAGE_BY_SLUG["ab-105846"];
 AB_105846_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
   IMAGE_VIEW_BY_SLUG[slug] = IMAGE_VIEW_BY_SLUG["ab-105846"];
 });
@@ -219,6 +221,7 @@ AB_105762_LAYOUT_ALIAS_SLUGS.forEach((slug) => {
 // linework (see docs/detect-plan-hotspots.py). Values are % of image width/height, so they
 // stay pixel-aligned at any display size. Use ?calibrate=1 on the kitchen page to verify.
 export const IMAGE_HOTSPOTS_BY_SLUG = {
+  "ab-111535": PLAN_HOTSPOTS_BY_SLUG["ab-111535"],
   // The right block's end panel remains white in orders; ASC keeps its own selector.
   "ab-105793": PLAN_HOTSPOTS_BY_SLUG["ab-105793"].filter(
     (hotspot) => hotspot.claimFurniturePartKey !== "worktop-end-panel-right",
@@ -1882,6 +1885,7 @@ const SPLIT_SIDE_OVEN_KEYS = new Set(["oven-module", "oven-base"]);
 const SPLIT_SIDE_SINK_KEYS = new Set(["sink-base"]);
 const AB_105793_SIDE_LABEL_SLUGS = new Set(["ab-105793", "ab-105796", "ab-105799", "ab-105802"]);
 const SPLIT_SIDE_LABEL_SLUGS = new Set([
+  "ab-111535",
   ...AB_105793_SIDE_LABEL_SLUGS,
   ...AB_105777_LAYOUT_ALIAS_SLUGS,
   "ab-105777",
@@ -2173,6 +2177,20 @@ function cropPlanBox(box, crop) {
 
 export function getSplitKitchenSideLabels(definitions, crop, slug, translate, language, isCompactMobilePlan = false) {
   if (!SPLIT_SIDE_LABEL_SLUGS.has(slug)) return [];
+
+  if (slug === "ab-111535") {
+    // Center each label across its entire CAD frame, including the open space.
+    return [[3.36, 535.56, "A"], [571.68, 833.88, "B"]].map(([left, right, side]) =>
+      cropPlanBox({
+        label: translate(`configurator.splitKitchenSide${side}`, language === "de" ? `Seite ${side}` : `Side ${side}`),
+        left: left / 842 * 100,
+        top: 89.2 / 595 * 100,
+        width: (right - left) / 842 * 100,
+        height: (145.72 - 89.2) / 595 * 100,
+        isFrameHeader: true,
+      }, crop),
+    );
+  }
 
   if (["ab-105847", "ab-105850", "ab-105853", "ab-105856", "ab-105859", "ab-105862"].includes(slug)) {
     // Use the actual SVG header bands, between the frame and cabinet tops.
@@ -3051,7 +3069,7 @@ export default function useKitchenSvgStage({
                       styles.planImageInteractive,
                       styles.planPersistentLightDetail,
                       isDetailComponentSelected ? styles.planPersistentSelectedDetail : "",
-                      detail.preserveWhiteBackground ? styles.planPersistentSourceLinework : "",
+                      styles.planPersistentSourceLinework,
                     ]
                       .filter(Boolean)
                       .join(" ");
@@ -3078,7 +3096,7 @@ export default function useKitchenSvgStage({
                             idSuffix={`${normalizedKitchenSlug}-${detail.key}`}
                             clipGeometry={detail}
                             className={persistentDetailClassName}
-                            style={{ inset: 0, width: "100%", height: "100%" }}
+                            style={{ inset: 0, width: "100%", height: "100%", opacity: detail.sourceLineworkOpacity }}
                           />
                         </Fragment>
                       );
@@ -3108,6 +3126,7 @@ export default function useKitchenSvgStage({
                           className={persistentDetailClassName}
                           style={{
                             ...planImageInteractiveStyle,
+                            opacity: detail.sourceLineworkOpacity,
                             clipPath,
                             WebkitClipPath: clipPath,
                           }}

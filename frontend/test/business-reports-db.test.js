@@ -93,7 +93,7 @@ test("SQL counts each ARC kitchen by its contract creation date, with shared mod
     const frg = assembleBusinessReport(await prisma.$queryRaw(Prisma.sql`${fixture}${frgTail}`), frgFilters);
     assert.equal(frg.ASC.total.arcKitchens, 0);
     assert.equal(frg.ASC.total.frgKitchens, 1);
-    const where = buildServiceClaimListWhere({ dateFrom: "2026-10-25", dateTo: "2026-10-25", claimType: "live" });
+    const where = buildServiceClaimListWhere({ dateFrom: "2026-10-25", dateTo: "2026-10-25", claimType: "live", reportTimeZone: "Europe/Berlin" });
     const detailRows = await prisma.$queryRaw(Prisma.sql`${fixture} filtered AS (SELECT sc.id FROM "ServiceClaim" sc ${where}) SELECT * FROM filtered`);
     assert.deepEqual(detailRows.map(row => row.id), ["new-claim"]);
   } finally { await prisma.$disconnect(); }

@@ -282,7 +282,7 @@
     "customer": "Customer",
     "copy": "Sender copy",
     "lastAttempt": "Last recorded attempt",
-    "hint": "Sent means accepted by the mail server; inbox delivery is not confirmed.",
+    "hint": "Last recorded attempt. Sent means accepted by the mail server, not verified inbox delivery. Status is saved after processing; refresh to see updates. If tracking is unavailable, this result may be missing or outdated.",
     "status": {
       "SENT": "Sent",
       "SKIPPED": "Not sent (email not configured)",
@@ -350,7 +350,9 @@
     "closeSidebar": "Close sidebar",
     "sidebar": "Sidebar",
     "poweredBy": "Powered by",
-    "loading": "Loading"
+    "loading": "Loading",
+    "fragmentoVisitors": "Fragmento visitors",
+    "claimVisitors": "Claims visitors"
   },
   "settingsAdmin": {
     "settings": "Settings",
@@ -406,7 +408,7 @@
     "roleDescription": {
       "SUPERADMIN": "Full access, including user management.",
       "PX_ADMIN": "Full access, including PX orders, PX claims and user management.",
-      "ADMIN": "Admin access without PX orders, PX claims, users, claim activity or contract access.",
+      "ADMIN": "Standard admin access to the current dashboard.",
       "USER": "Basic admin access with the same workflows for now."
     },
     "changeEmailOrPassword": "Change email or password.",
@@ -433,7 +435,7 @@
   "usersAdmin": {
     "workspace": "Administration",
     "title": "User management",
-    "description": "Create admin accounts and assign roles. Superadmins and PX admins can access this page.",
+    "description": "Create admin accounts and assign roles. Only superadmins can access this page.",
     "createUser": "Create user",
     "createUserDescription": "Add a new admin account with an email, password, and role.",
     "createUserButton": "Create user",
@@ -450,12 +452,12 @@
     "role": "Role",
     "roleGuide": "Role guide",
     "actionRestrictions": "Action restrictions",
-    "roleGuideDescription": "Detailed permissions will be added later. For now, all roles can use the existing admin workflows.",
+    "roleGuideDescription": "Workspace access is assigned separately below. Superadmins have full access.",
     "roleDescription": {
       "SUPERADMIN": "Full access, including user management.",
-      "PX_ADMIN": "Full access, including PX orders, PX claims and user management.",
-      "ADMIN": "Admin access without PX orders, PX claims, users, claim activity or contract access.",
-      "USER": "Basic admin access with the same workflows for now."
+      "PX_ADMIN": "Access follows the assigned workspace permissions.",
+      "ADMIN": "Access follows the assigned workspace permissions.",
+      "USER": "Access follows the assigned workspace permissions."
     },
     "allUsers": "All users",
     "allUsersDescription": "Update roles or deactivate accounts. Protected actions are disabled with an explanation.",
@@ -1260,7 +1262,10 @@
       "unchanged": "Unchanged",
       "conflicts": "Conflicts",
       "failed": "Failed"
-    }
+    },
+    "resultCountOne": "{count} contract",
+    "resultCountMany": "{count} contracts",
+    "deleteConfirmMessage": "Delete contract number {contractNumber}?\nThis action cannot be undone."
   },
   "contractDetailAdmin": {
     "manualAppliancesHelp": "Keep only the installed appliances. Removed appliances cannot be selected in claims.",
@@ -1311,7 +1316,9 @@
     "applianceFridge": "Fridge / freezer",
     "applianceOven": "Oven",
     "applianceHob": "Cooktop / hob",
-    "applianceExtractorHood": "Extractor hood"
+    "applianceExtractorHood": "Extractor hood",
+    "kitchenSketchLabel": "Kitchen sketch",
+    "kitchenPlanPdfLabel": "Kitchen plan (PDF)"
   },
   "contractAddressFields": {
     "country": "Country",
@@ -1442,7 +1449,10 @@
     "confirmDeleteObject": "Delete this object?",
     "viewMoreObjects": "View more",
     "showLessObjects": "Show less",
-    "close": "Close"
+    "close": "Close",
+    "resultCountOne": "{count} company",
+    "resultCountMany": "{count} companies",
+    "companyAddress": "Company address"
   },
   "ordersAdmin": {
     "filterWithoutKitchen": "Filter by customer, contract number, address, or date.",
@@ -1652,7 +1662,7 @@
     "rowNumber": "No."
   },
   "contractAccessAdmin": {
-    "title": "Contract access",
+    "title": "Fragmento visitors and contract access",
     "description": "Successful, test, and failed contract access attempts for the selected date range. Access logs are kept indefinitely.",
     "page": "Page",
     "entries": "entries",
@@ -1672,7 +1682,7 @@
     "notCaptured": "Not captured"
   },
   "claimActivityAdmin": {
-    "title": "Claim activity",
+    "title": "Claims visitors and activity",
     "description": "Successful contract lookups and submitted claims on the public /service page for the selected date range.",
     "uniqueVisitors": "Estimated daily visitors",
     "pageOpens": "Page opens",
@@ -2042,5 +2052,59 @@
     "waitingKitchen": "Waiting for kitchen",
     "view": "View PDF",
     "activate": "Use this version"
+  },
+  "reportCalendar": {
+    "selectDate": "Select date",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "previousYear": "Previous year",
+    "nextYear": "Next year",
+    "chooseMonth": "Choose month",
+    "clear": "Clear",
+    "today": "Today",
+    "thisMonth": "This month"
+  },
+  "permissions": {
+    "title": "Workspace permissions",
+    "FRG_VIEW": "FRG: view orders and reports",
+    "FRG_MANAGE": "FRG: manage orders and setup",
+    "ASC_VIEW": "ASC: view claims and reports",
+    "ASC_MANAGE": "ASC: manage claims",
+    "save": "Save permissions",
+    "denied": "You do not have access to this workspace. Ask a superadmin to assign permissions.",
+    "relatedClaim": "Claim for this contract",
+    "relatedOrder": "Order for this contract",
+    "FRG": "FRG access: view and manage",
+    "ASC": "ASC access: view and manage"
+  },
+  "ascDashboard": {
+    "title": "Service overview",
+    "subtitle": "Claims, affected contracts and reported items at a glance.",
+    "all": "View all claims",
+    "total": "Total claims",
+    "received": "Received in the selected period",
+    "contracts": "Affected contracts",
+    "unique": "Distinct contract numbers",
+    "files": "With attachments",
+    "documents": "Claims with uploaded files",
+    "cities": "Cities",
+    "locations": "Distinct submitted cities",
+    "items": "Most reported items",
+    "itemNote": "One claim can include several items.",
+    "cityTitle": "Claims by city",
+    "cityNote": "Based on the address submitted with each claim.",
+    "emptyItems": "No reported items for these filters.",
+    "emptyCities": "No city data for these filters.",
+    "activity": "Claim activity",
+    "activityNote": "Number received on each day with activity.",
+    "empty": "No claims for these filters.",
+    "recent": "Latest claims",
+    "recentNote": "Up to 8 latest claims in the selected period",
+    "contract": "Contract",
+    "customer": "Customer",
+    "city": "City",
+    "created": "Received",
+    "action": "Action",
+    "view": "View"
   }
 }

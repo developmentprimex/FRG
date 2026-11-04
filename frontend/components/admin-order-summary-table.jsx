@@ -1,4 +1,5 @@
 import { AdminDateTime, AdminText } from "./admin-i18n";
+import styles from "./admin-detail-table.module.css";
 
 export function AdminOrderSummaryTable({ order }) {
   const rows = [
@@ -22,29 +23,12 @@ export function AdminOrderSummaryTable({ order }) {
     ["orderDetailAdmin.notes", "Notes", order.notes],
     ["orderDetailAdmin.stripeSession", "Stripe session", order.stripeCheckoutSessionId],
   ];
-  return <div className="order-overview">
+  return <div className={styles.overview}>
     <table><tbody>{rows.map(([key, label, value]) => <tr key={key}>
       <th scope="row"><AdminText i18nKey={key} fallback={label} /></th><td>{value || "—"}</td>
     </tr>)}</tbody></table>
     <details><summary><AdminText i18nKey="orderItemsAdmin.moreDetails" fallback="More order details" /></summary>
       <table><tbody>{extraRows.map(([key, label, value]) => <tr key={key}><th scope="row"><AdminText i18nKey={key} fallback={label} /></th><td>{value || "—"}</td></tr>)}</tbody></table>
     </details>
-    <style>{`
-      .order-overview table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:14px; }
-      .order-overview th,.order-overview td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--app-border); vertical-align:top; overflow-wrap:anywhere; }
-      .order-overview th { color:#66513e; background:#f4eee7; font-weight:600; width:28%; }
-      .order-overview td { color:#302a25; }
-      .order-overview tr:nth-child(even) td { background:#faf7f3; }
-      .order-overview > table tr:first-child td { font-weight:650; }
-      .order-overview a { color:#694b34; text-underline-offset:3px; }
-      .order-overview details { margin-top:14px; }
-      .order-overview summary { cursor:pointer; font-size:13px; font-weight:600; color:#66513e; background:#f4eee7; padding:10px 12px; border-radius: 8px; }
-      .order-overview summary:focus-visible { outline:2px solid #806044; outline-offset:3px; }
-      .order-overview details table { margin-top:8px; table-layout:fixed; }
-      @media(max-width:700px) {
-        .order-overview th { width:35%; }
-        .order-overview th,.order-overview td { padding:8px; }
-      }
-    `}</style>
   </div>;
 }

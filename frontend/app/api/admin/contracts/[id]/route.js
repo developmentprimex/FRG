@@ -1,7 +1,10 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash, validateKitchenContractInput } from "../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../lib/auth";
 import { prisma } from "../../../../../lib/prisma";
+import { canViewTestContracts } from "../../../../../lib/admin-permissions";
+import { isTestContractNumber } from "../../../../../lib/order-kind";
 import { ensurePdfOnlyKitchen } from "../../../../../lib/service-claim-reference-plan";
 import {
   readContractClaimPlanUploads,
@@ -14,8 +17,8 @@ function getReturnPath(formData, fallback) {
   return rawPath.startsWith("/admin/") ? rawPath : fallback;
 }
 
-export async function GET(_request, { params }) {
-  await requireAdminApi();
+async function handleGET(_request, { params }) {
+  const admin = await requireAdminApi();
   const { id } = await params;
   const contract = await prisma.kitchenContract.findUnique({
     where: { id },
@@ -24,6 +27,9 @@ export async function GET(_request, { params }) {
 
   if (!contract) {
     return NextResponse.json({ error: "Contract number not found" }, { status: 404 });
+  }
+  if (!canViewTestContracts(admin) && isTestContractNumber(contract.contractNumber)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const [ownerRow] = await prisma.$queryRaw`
@@ -117,8 +123,8 @@ export async function GET(_request, { params }) {
   });
 }
 
-export async function POST(request, { params }) {
-  await requireAdminApi();
+async function handlePOST(request, { params }) {
+  const admin = await requireAdminApi();
   const { id } = await params;
   let kitchenId = "";
   let returnPath = "/admin/contracts";
@@ -133,12 +139,16 @@ export async function POST(request, { params }) {
         id: true,
         kitchenId: true,
         contractType: true,
+        contractNumber: true,
         claimPlanPreviewPath: true,
       },
     });
 
     if (!contract) {
       throw new Error("Contract number not found.");
+    }
+    if (!canViewTestContracts(admin) && isTestContractNumber(contract.contractNumber)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     kitchenId = contract.kitchenId;
     returnPath = getReturnPath(formData, `/admin/kitchens/${contract.kitchenId}`);
@@ -271,3 +281,6 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, pathname, "error", mapAdminMutationError(error, "Contract number"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash, validatePropertyObjectInput } from "../../../../../lib/admin-forms";
 import { addressVerificationSnapshotKey, buildAddressVerificationSnapshot } from "../../../../../lib/address-verification";
 import { isAddressVerificationRecordValid } from "../../../../../lib/address-verification-server";
@@ -21,7 +22,7 @@ function parseAddressVerificationRecord(formData) {
   }
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   let detailPath = "/admin/property-owners";
@@ -106,3 +107,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, detailPath, "error", mapAdminMutationError(error, "Property object"));
   }
 }
+
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

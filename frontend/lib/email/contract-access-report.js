@@ -1,6 +1,7 @@
 import { createGuardedSmtpTransport } from "./local-email-safety.js";
 import { PUBLIC_VISIT_EVENT_TYPES } from "../public-visit-tracking.js";
 import { isJunkServiceClaimVisitEvent } from "../service-claim-lookup.js";
+import { reportDateKey, reportDayStart } from "../business-report-dates.js";
 
 export const CONTRACT_ACCESS_REPORT_EVENT_TYPES = [
   PUBLIC_VISIT_EVENT_TYPES.CONTRACT_ACCEPTED,
@@ -49,10 +50,26 @@ function getDevice(event) {
     .join(" / ") || "-";
 }
 
+export function isContractAccessReportDay(now = new Date()) {
+  const day = new Date(`${reportDateKey(now)}T00:00:00Z`).getUTCDay();
+  return day !== 0 && day !== 6;
+}
+
 export function getContractAccessReportWindow(now = new Date()) {
-  const end = new Date(now);
-  const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+  const dateKey = reportDateKey(now);
+  const previousDay = new Date(`${dateKey}T00:00:00Z`);
+  previousDay.setUTCDate(previousDay.getUTCDate() - (previousDay.getUTCDay() === 1 ? 3 : 1));
+  // Use scheduled Berlin cutoffs so timer delays cannot leave gaps. Weekday
+  // cutoffs also stay at 08:00 across the Sunday daylight-saving changes.
+  const end = new Date(reportDayStart(dateKey).getTime() + 8 * 60 * 60 * 1000);
+  const start = new Date(reportDayStart(previousDay.toISOString().slice(0, 10)).getTime() + 8 * 60 * 60 * 1000);
   return { start, end };
+}
+
+function getReportPeriodLabel(start, end) {
+  return end.getTime() - start.getTime() > 24 * 60 * 60 * 1000
+    ? "since Friday at 08:00"
+    : "in the last 24 hours";
 }
 
 function buildAccessReport({
@@ -147,8 +164,8 @@ export function buildContractAccessReport({ events = [], start, end }) {
     events,
     start,
     end,
-    subjectLabel: "Contract access attempts in the last 24 hours",
-    heading: "Contract access attempts in the last 24 hours",
+    subjectLabel: `Contract access attempts ${getReportPeriodLabel(start, end)}`,
+    heading: `Contract access attempts ${getReportPeriodLabel(start, end)}`,
     resultLabels: RESULT_LABELS,
   });
 }
@@ -158,8 +175,8 @@ export function buildAscAccessReport({ events = [], start, end }) {
     events: events.filter((event) => !isJunkServiceClaimVisitEvent(event)),
     start,
     end,
-    subjectLabel: "ASC contract lookups in the last 24 hours",
-    heading: "ASC contract lookups in the last 24 hours",
+    subjectLabel: `ASC contract lookups ${getReportPeriodLabel(start, end)}`,
+    heading: `ASC contract lookups ${getReportPeriodLabel(start, end)}`,
     resultLabels: ASC_RESULT_LABELS,
   });
 }
@@ -187,6 +204,10 @@ function getMailConfig(env) {
 async function sendAccessReport({ db, now, env, eventTypes, buildReport }) {
   if (env.CONTRACT_ACCESS_REPORT_ENABLED !== "true") {
     throw new Error("Contract access report is disabled. Set CONTRACT_ACCESS_REPORT_ENABLED=true on the Hetzner report service.");
+  }
+
+  if (!isContractAccessReportDay(now)) {
+    return { skipped: true, reason: "weekend", count: 0, recipients: [] };
   }
 
   const { start, end } = getContractAccessReportWindow(now);

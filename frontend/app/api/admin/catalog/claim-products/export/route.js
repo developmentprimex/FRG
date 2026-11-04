@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { requireAdminApi } from "../../../../../../lib/auth";
@@ -67,7 +68,7 @@ function appendSheet(workbook, sheetName, rows, widths) {
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
 }
 
-export async function GET() {
+async function handleGET() {
   await requireAdminApi();
 
   const claimProducts = await prisma.$queryRaw`
@@ -125,3 +126,5 @@ export async function GET() {
     },
   });
 }
+
+export const GET = withAdminPermission("ASC_VIEW", handleGET);

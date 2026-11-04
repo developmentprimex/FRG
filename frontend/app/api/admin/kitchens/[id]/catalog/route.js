@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../../lib/admin-forms";
 import { requireAdminApi } from "../../../../../../lib/auth";
@@ -5,7 +6,7 @@ import { getKitchenById } from "../../../../../../lib/catalog";
 import { buildKitchenCatalogWorkbook, parseKitchenCatalogSheet } from "../../../../../../lib/kitchen-catalog-sheet";
 import { prisma } from "../../../../../../lib/prisma";
 
-export async function GET(_request, { params }) {
+async function handleGET(_request, { params }) {
   await requireAdminApi();
   const { id } = await params;
   const kitchen = await getKitchenById(id);
@@ -26,7 +27,7 @@ export async function GET(_request, { params }) {
   });
 }
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   await requireAdminApi();
   const { id } = await params;
 
@@ -110,3 +111,6 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, `/admin/kitchens/${id}`, "error", mapAdminMutationError(error, "Catalog import"));
   }
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);
+export const POST = withAdminPermission("FRG_MANAGE", handlePOST);

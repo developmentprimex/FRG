@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import path from "path";
@@ -68,7 +69,7 @@ async function readReferencePlanPreview(contractNumber, previewImagePath) {
   return readFile(assetPath).catch(() => null);
 }
 
-export async function GET(request, { params }) {
+async function handleGET(request, { params }) {
   let admin;
   try {
     admin = await requireAdminClaimsApi();
@@ -148,3 +149,5 @@ export async function GET(request, { params }) {
     },
   });
 }
+
+export const GET = withAdminPermission("ASC_VIEW", handleGET);

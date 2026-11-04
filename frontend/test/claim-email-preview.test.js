@@ -43,12 +43,18 @@ test("legacy claims without submission metadata can still be reviewed", () => {
   assert.equal(result.notification.attachments.length, 0);
 });
 
-const routeSource = readFileSync(new URL("../app/api/admin/claims/[id]/email-preview/route.js", import.meta.url), "utf8").replace(/^import[\s\S]*?;\r?\n/gm, "").replace(/export /g, "");
+const routeSource = readFileSync(new URL("../app/api/admin/claims/[id]/email-preview/route.js", import.meta.url), "utf8").replace(/^import[\s\S]*?;\r?\n/gm, "").replace(/export const GET/g, "var GET").replace(/export /g, "");
+const authSource = readFileSync(new URL("../lib/auth.js", import.meta.url), "utf8");
+const permissionGuardSource = authSource.slice(authSource.indexOf("export function withAdminPermission")).replace("export function", "function");
 function routeContext(overrides = {}) {
   let submissionReads = 0;
   const context = vm.createContext({
     NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200, headers: options.headers }) },
     requireAdminClaimsApi: async () => ({ role: "ADMIN" }),
+    requireAdminApi: async required => {
+      assert.equal(required, "ASC_VIEW");
+      return { role: "SUPERADMIN" };
+    },
     canAccessClaim: () => true,
     queryServiceClaimById: async () => [claim],
     prisma: { serviceClaimSubmission: { findMany: async () => { submissionReads++; return [submission]; } } },
@@ -56,6 +62,8 @@ function routeContext(overrides = {}) {
     buildClaimEmailPreview: input => ({ selected: input.submission?.id }),
     ...overrides,
   });
+  context.Response = context.NextResponse;
+  vm.runInContext(permissionGuardSource, context);
   vm.runInContext(routeSource, context);
   return { context, reads: () => submissionReads };
 }

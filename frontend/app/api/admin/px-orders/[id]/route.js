@@ -1,6 +1,6 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
-import { requirePxAdminApi } from "../../../../../lib/admin-role-guards";
 import { getTestOrderById } from "../../../../../lib/catalog";
 import { confirmOrder, deleteOrder, resendOrderEmail, updateOrderStatus } from "../../../../../lib/orders";
 import { cancelOrderPayment, createCheckoutSessionForOrder } from "../../../../../lib/stripe-payments";
@@ -41,9 +41,8 @@ function parseEmailExcludedAttachments(value) {
   }
 }
 
-export async function GET(_request, { params }) {
-  try { await requirePxAdminApi(); }
-  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
+async function handleGET(_request, { params }) {
+  await requireAdminApi();
   const { id } = await params;
   const order = await getTestOrderById(id);
   if (!order) {
@@ -52,9 +51,8 @@ export async function GET(_request, { params }) {
   return NextResponse.json(order);
 }
 
-export async function POST(request, { params }) {
-  try { await requirePxAdminApi(); }
-  catch (error) { return NextResponse.json({ error: error.message }, { status: error.status || 401 }); }
+async function handlePOST(request, { params }) {
+  await requireAdminApi();
   const { id } = await params;
   let returnPath = `/admin/px-orders/${id}`;
   try {
@@ -125,3 +123,6 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, returnPath, "error", message);
   }
 }
+
+export const GET = withAdminPermission("PX_FRG_VIEW", handleGET);
+export const POST = withAdminPermission("PX_FRG_MANAGE", handlePOST);

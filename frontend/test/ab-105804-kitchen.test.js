@@ -27,8 +27,8 @@ test("clicking the left end panel selects the left worktop assembly, leaving the
   assert.deepEqual(resolveServiceClaimPlanDisplayComponentIds([leftId], groups), [leftId, panelId]);
   assert.deepEqual(resolveServiceClaimPlanDisplayComponentIds([rightId], groups), [rightId]);
 });
-test("105804 uses its own sharp vector plan in orders and claims", async () => {
-  assert.equal(PLAN_IMAGE_BY_SLUG[slug], "/plans/670%20105804.svg");
+test("105804 uses its antialiased plan and matching vector source in orders and claims", async () => {
+  assert.equal(PLAN_IMAGE_BY_SLUG[slug], "/plans/670%20105804-smooth.png");
   assert.equal(await loadKitchenSvgMarkup(slug), readFileSync(new URL("../public/plans/670 105804.svg",import.meta.url),"utf8").trim());
   assert.equal(isLShapedClaimKitchen(slug), false, "two independent runs are not an L-shaped corner");
   assert.equal(allowsKitchenArticleNumberAlias(slug), true);
@@ -42,6 +42,7 @@ test("all supplier rows have correct labels, and hood rays select the hood packa
   const end=boxes.find(h=>h.componentKey==="sink-end-blende");
   near(end.points[0][0],467.4/842*100); near(end.points[1][0],475.08/842*100);
   assert.deepEqual(PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG[slug].map(h=>h.key),["dishwasher-basket","dishwasher-gs-mark"]);
+  assert.ok(PLAN_PERSISTENT_LIGHT_DETAILS_BY_SLUG[slug].every(detail => detail.preserveWhiteBackground), "basket and GS linework must not paint grey rectangles");
 });
 test("claims split exact fixtures, oven drawer seam and both separate worktops", () => {
   const definitions = [["oven","oven-module"],["oven-drawer","oven-module"],["cooktop","oven-module"],["sink","sink-faucet"],["faucet","sink-faucet"],["worktop-left","worktop"],["worktop-right","worktop"],["worktop-end-panel","worktop"]];

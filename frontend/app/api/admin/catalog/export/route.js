@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { DEFAULT_KITCHEN_PROGRAMM_ID } from "../../../../../lib/admin-forms";
@@ -197,7 +198,7 @@ function appendCombinedProgramSheet(workbook, programmId, articles, blenden, ser
   );
 }
 
-export async function GET(request) {
+async function handleGET(request) {
   await requireAdminApi();
   const searchParams = new URL(request.url).searchParams;
   const programmId = searchParams.get("programmId")?.trim() || DEFAULT_KITCHEN_PROGRAMM_ID;
@@ -314,3 +315,5 @@ export async function GET(request) {
     },
   });
 }
+
+export const GET = withAdminPermission("FRG_VIEW", handleGET);

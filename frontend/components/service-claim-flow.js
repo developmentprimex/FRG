@@ -729,6 +729,7 @@ const COPY = {
     attachmentsSelected: "{count} Datei(en) ausgew\u00e4hlt",
     attachmentsErrorTooMany: "Maximal 20 Anh\u00e4nge m\u00f6glich.",
     attachmentsErrorFileTooLarge: "Jede Datei darf h\u00f6chstens 4 MB gro\u00df sein.",
+    attachmentsErrorEmpty: "Die Datei ist leer (0 Bytes). Bitte w\u00e4hle eine Datei mit Inhalt aus.",
     attachmentsErrorType: "Dateityp nicht erlaubt (z. B. PDF, Bilder, Word/Excel).",
     submit: "Reklamation senden",
     submitting: "Wird gesendet...",
@@ -1038,6 +1039,7 @@ const COPY = {
     attachmentsSelected: "{count} file(s) selected",
     attachmentsErrorTooMany: "You can attach at most 20 files.",
     attachmentsErrorFileTooLarge: "Each file must be 4 MB or smaller.",
+    attachmentsErrorEmpty: "The file is empty (0 bytes). Please choose a non-empty file.",
     attachmentsErrorType: "This file type is not allowed. Use PDF, images, or common office formats.",
     contractLookupLoading: "Checking contract number...",
     contractLookupSuccess: "Contract found. Please check your details and complete any missing fields.",
@@ -1362,6 +1364,7 @@ const COPY = {
     attachmentsSelected: "{count} dosya se\u00e7ildi",
     attachmentsErrorTooMany: "En fazla 20 dosya ekleyebilirsiniz.",
     attachmentsErrorFileTooLarge: "Her dosya en fazla 4 MB olabilir.",
+    attachmentsErrorEmpty: "Dosya bo\u015f (0 bayt). L\u00fctfen i\u00e7eri\u011fi olan bir dosya se\u00e7in.",
     attachmentsErrorType: "Bu dosya t\u00fcr\u00fcne izin verilmiyor (PDF, g\u00f6rsel, Word/Excel vb.).",
     submit: "\u015eikayeti g\u00f6nder",
     submitting: "G\u00f6nderiliyor...",
@@ -1610,6 +1613,7 @@ const COPY = {
     attachmentsSelected: "{count} archivo(s) seleccionado(s)",
     attachmentsErrorTooMany: "Puede adjuntar como m\u00e1ximo 20 archivos.",
     attachmentsErrorFileTooLarge: "Cada archivo debe tener 4 MB o menos.",
+    attachmentsErrorEmpty: "El archivo est\u00e1 vac\u00edo (0 bytes). Selecciona un archivo con contenido.",
     attachmentsErrorType: "Tipo de archivo no permitido (p. ej. PDF, im\u00e1genes, Word/Excel).",
     submit: "Enviar reclamaci\u00f3n",
     submitting: "Enviando...",
@@ -1858,6 +1862,7 @@ const COPY = {
     attachmentsSelected: "{count} fichier(s) s\u00e9lectionn\u00e9(s)",
     attachmentsErrorTooMany: "Vous pouvez joindre au maximum 20 fichiers.",
     attachmentsErrorFileTooLarge: "Chaque fichier doit faire 4 Mo ou moins.",
+    attachmentsErrorEmpty: "Le fichier est vide (0 octet). Choisissez un fichier avec du contenu.",
     attachmentsErrorType: "Type de fichier non autoris\u00e9 (PDF, images, Word/Excel, etc.).",
     submit: "Envoyer la r\u00e9clamation",
     submitting: "Envoi en cours...",
@@ -2105,6 +2110,7 @@ const COPY = {
     attachmentsSelected: "\u0412\u044b\u0431\u0440\u0430\u043d\u043e \u0444\u0430\u0439\u043b\u043e\u0432: {count}",
     attachmentsErrorTooMany: "\u041d\u0435 \u0431\u043e\u043b\u0435\u0435 20 \u0432\u043b\u043e\u0436\u0435\u043d\u0438\u0439.",
     attachmentsErrorFileTooLarge: "\u041a\u0430\u0436\u0434\u044b\u0439 \u0444\u0430\u0439\u043b \u2014 \u043d\u0435 \u0431\u043e\u043b\u0435\u0435 4 \u041c\u0411.",
+    attachmentsErrorEmpty: "\u0424\u0430\u0439\u043b \u043f\u0443\u0441\u0442 (0 \u0431\u0430\u0439\u0442). \u0412\u044b\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u0430\u0439\u043b \u0441 \u0441\u043e\u0434\u0435\u0440\u0436\u0438\u043c\u044b\u043c.",
     attachmentsErrorType: "\u0422\u0438\u043f \u0444\u0430\u0439\u043b\u0430 \u043d\u0435 \u0440\u0430\u0437\u0440\u0435\u0448\u0451\u043d (PDF, \u0438\u0437\u043e\u0431\u0440\u0430\u0436\u0435\u043d\u0438\u044f, Word/Excel).",
     submit: "\u041e\u0442\u043f\u0440\u0430\u0432\u0438\u0442\u044c \u0440\u0435\u043a\u043b\u0430\u043c\u0430\u0446\u0438\u044e",
     submitting: "\u041e\u0442\u043f\u0440\u0430\u0432\u043a\u0430...",
@@ -3685,6 +3691,10 @@ export default function ServiceClaimFlow({ initialLanguage = "de" }) {
 
       for (const file of picked) {
         const currentCount = fixedAttachmentCount + nextFiles.length;
+        if (file.size <= 0) {
+          message = copy.attachmentsErrorEmpty;
+          continue;
+        }
         if (currentCount >= MAX_CLAIM_ATTACHMENT_COUNT) {
           message = copy.attachmentsErrorTooMany;
           break;

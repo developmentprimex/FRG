@@ -1,3 +1,4 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import { KitchenStatus } from "@prisma/client";
 import Link from "next/link";
 import {
@@ -16,7 +17,7 @@ import {
   tableStyle,
   tableWrapStyle,
   tdStyle as baseTdStyle,
-  thStyle,
+  thStyle as baseThStyle,
   textareaStyle,
 } from "../../../components/admin-ui";
 import { AdminShell } from "../../../components/admin-shell";
@@ -32,12 +33,13 @@ import { requireAdminPage } from "../../../lib/auth";
 export const dynamic = "force-dynamic";
 
 const tdStyle = { ...baseTdStyle, padding: "16px 12px", verticalAlign: "middle" };
+const thStyle = { ...baseThStyle, padding: "16px 12px" };
 const numberCellStyle = { width: 64, textAlign: "center", whiteSpace: "nowrap", overflowWrap: "normal", fontVariantNumeric: "tabular-nums", color: "var(--app-text-muted)", fontSize: "var(--admin-text-label, 12px)", fontWeight: 500 };
 
 const KITCHEN_STATUS_OPTIONS = Object.values(KitchenStatus);
 
 export default async function AdminKitchensPage({ searchParams }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = (await searchParams) || {};
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
@@ -54,7 +56,6 @@ export default async function AdminKitchensPage({ searchParams }) {
       <div style={pageGridStyle}>
         <AdminSection
           title={<AdminText i18nKey="kitchensAdmin.addKitchen" fallback="Add Kitchen" />}
-          description={<AdminText i18nKey="kitchensAdmin.addKitchenDescription" fallback="Create a kitchen record with the three default catalog items. Add the remaining items from the kitchen detail page." />}
         >
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
@@ -104,7 +105,7 @@ export default async function AdminKitchensPage({ searchParams }) {
         <AdminSection
           title={<AdminText i18nKey="adminShellLogin.kitchens" fallback="Kitchens" />}
         >
-          <form action="/admin/kitchens" method="get" style={searchPanelStyle}>
+          <AdminFilterForm action="/admin/kitchens" style={searchPanelStyle}>
             <label style={searchFieldStyle}>
               <span><AdminText i18nKey="kitchensAdmin.search" fallback="Search kitchens" /></span>
               <AdminTranslatedInput
@@ -117,16 +118,13 @@ export default async function AdminKitchensPage({ searchParams }) {
               />
             </label>
             <div style={searchActionsStyle}>
-              <button type="submit" style={primaryButtonStyle}>
-                <AdminText i18nKey="kitchensAdmin.searchButton" fallback="Search" />
-              </button>
               {kitchenSearchQuery ? (
                 <ActionLink href="/admin/kitchens">
                   <AdminText i18nKey="kitchensAdmin.clearSearch" fallback="Clear" />
                 </ActionLink>
               ) : null}
             </div>
-          </form>
+          </AdminFilterForm>
 
           {kitchenSearchQuery ? (
             <p style={searchResultsStyle}>

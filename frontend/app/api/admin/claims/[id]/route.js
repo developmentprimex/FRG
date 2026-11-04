@@ -1,3 +1,4 @@
+import { withAdminPermission } from "../../../../../lib/auth";
 import { mapAdminMutationError, redirectWithFlash } from "../../../../../lib/admin-forms";
 import { requireAdminClaimsApi } from "../../../../../lib/admin-claims-access";
 import { prisma } from "../../../../../lib/prisma";
@@ -5,7 +6,7 @@ import { deleteServiceClaimAttachments } from "../../../../../lib/service-claim-
 import { NextResponse } from "next/server";
 import { canAccessClaim } from "../../../../../lib/admin-roles";
 
-export async function POST(request, { params }) {
+async function handlePOST(request, { params }) {
   const admin = await requireAdminClaimsApi();
   const { id } = await params;
   const claim = await prisma.serviceClaim.findUnique({ where: { id }, select: { contractNumber: true } });
@@ -38,3 +39,5 @@ export async function POST(request, { params }) {
     return redirectWithFlash(request, returnPath, "error", mapAdminMutationError(error, "Reklamation"));
   }
 }
+
+export const POST = withAdminPermission("ASC_MANAGE", handlePOST);

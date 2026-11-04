@@ -576,7 +576,7 @@
   /* Map white to white and the pale CAD strokes to visible grey. */
   filter: grayscale(1) brightness(0.529412) contrast(17);
   mix-blend-mode: multiply;
-  opacity: 0.9;
+  opacity: 0.12;
 }
 
 .planHotspotLayer {

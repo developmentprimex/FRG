@@ -130,26 +130,25 @@ test("FRG Excel keeps three sheets and only the requested order columns with num
     firstName: "Customer", lastName: "Example", email: "customer@example.com", phone: "+4912345678",
     contractNumber: "670105777", totalPrice: 119, kitchen: { slug: "other", name: "Kitchen" },
     kitchenContract: { project: { housingCompany: { name: "Company A" } } },
-    address1: "Example street 1", postalCode: "10115", city: "Berlin", country: "Germany",
+    address1: "Example street 1", address2: "Apartment 2", postalCode: "01067", city: "Dresden", country: "Germany",
     paidAt: new Date("2026-10-10T10:05Z"), preferredDeliveryDate: new Date("2026-10-15T10:00Z"),
-    items: [{ code: "OVEN", nameSnapshot: "BOSCH oven", articleNumberSnapshot: "BOSCH-01", itemType: "COMPONENT", priceSnapshot: 59.5, quantity: 2 },
-      { code: "BASE", nameSnapshot: "Base cabinet", itemType: "COMPONENT", priceSnapshot: 1000, quantity: 1, kitchenItem: { isLocked: true } }] };
+    items: [{ code: "BASE", nameSnapshot: "Base cabinet", itemType: "COMPONENT", priceSnapshot: 1000, quantity: 1, kitchenItem: { isLocked: true } },
+      { code: "OVEN", nameSnapshot: "BOSCH oven", articleNumberSnapshot: "BOSCH-01", itemType: "COMPONENT", priceSnapshot: 59.5, quantity: 2 }] };
   const sheets = getFrgMonthlySheets(report, [order]);
   assert.deepEqual(sheets.map(sheet => sheet.name), ["Fragmento", "Order details", "Item details"]);
   assert.deepEqual(sheets[0].rows[0].slice(1), [140, 20, 160]);
-  assert.deepEqual(sheets[1].headers, ["Sale date (Berlin)", "Order created", "Order", "Customer", "Email", "Phone", "Contract number", "Company", "Customer address",
+  assert.deepEqual(sheets[1].headers, ["Sale date (Berlin)", "Order created", "Order", "Customer", "Email", "Phone", "Contract number", "Company", "Customer address", "Postal code", "City", "Country",
     "Paid at", "Requested delivery", "Purchased units", "Net (EUR)", "VAT (EUR)", "Gross (EUR)"]);
   assert.equal(sheets[1].rows[0].length, sheets[1].headers.length);
-  assert.deepEqual(sheets[1].rows[0].slice(0, 12), [order.saleAt, order.createdAt, "FRG-1", "Customer Example", "customer@example.com", "+4912345678",
-    "670105777", "Company A", "Example street 1, 10115, Berlin, Germany", order.paidAt, order.preferredDeliveryDate, 2]);
-  assert.deepEqual(sheets[1].rows[0].slice(12), [100, 19, 119]);
+  assert.deepEqual(sheets[1].rows[0].slice(0, 15), [order.saleAt, order.createdAt, "FRG-1", "Customer Example", "customer@example.com", "+4912345678",
+    "670105777", "Company A", "Example street 1, Apartment 2", "01067", "Dresden", "Germany", order.paidAt, order.preferredDeliveryDate, 2]);
+  assert.deepEqual(sheets[1].rows[0].slice(15), [100, 19, 119]);
   const items = sheets[2];
-  assert.deepEqual(items.headers, ["Sale date (Berlin)", "Customer", "Contract number", "Article number", "Product", "Category", "Manufacturer",
+  assert.deepEqual(items.headers, ["Sale date (Berlin)", "Customer", "Order", "Article number", "Product", "Category", "Manufacturer",
     "Quantity", "Line net (EUR)", "Line VAT (EUR)", "Line gross (EUR)"]);
   assert(items.rows.every(row => row.length === items.headers.length));
-  assert.deepEqual(items.rows[0], [order.saleAt, "Customer Example", "670105777", "BOSCH-01", "BOSCH oven", "Electrical appliance", "BOSCH", 2, 100, 19, 119]);
-  assert.equal(items.rows[1][6], "Not recorded");
-  assert.deepEqual(items.rows[1].slice(7), [1, 0, 0, 0]);
+  assert.deepEqual(items.rows[0], [order.saleAt, "Customer Example", "FRG-1", "BOSCH-01", "BOSCH oven", "Electrical appliance", "BOSCH", 2, 100, 19, 119]);
+  assert.equal(items.rows.length, 1);
   const { buffer } = buildStandardExcelWorkbook({ description: "MONTHLY_TEST", timeZone: "Europe/Berlin", sheets, now });
   const book = XLSX.read(buffer, { type: "buffer", cellNF: true });
   assert.deepEqual(book.SheetNames, ["Fragmento", "Order details", "Item details"]);
@@ -165,29 +164,63 @@ test("FRG Excel keeps three sheets and only the requested order columns with num
   const orderSheet = book.Sheets["Order details"];
   assert.deepEqual(XLSX.utils.sheet_to_json(orderSheet, { header: 1 })[5], ["NR", ...sheets[1].headers.map(header => header.toUpperCase())]);
   assert.equal(orderSheet.A7.v, 1);
-  for (const [cell, value] of [["N7", 100], ["O7", 19], ["P7", 119]]) {
+  assert.equal(orderSheet.J7.v, "Example street 1, Apartment 2");
+  assert.equal(orderSheet.K7.v, "01067");
+  assert.equal(orderSheet.K7.t, "s");
+  assert.equal(orderSheet.L7.v, "Dresden");
+  assert.equal(orderSheet.M7.v, "Germany");
+  for (const [cell, value] of [["Q7", 100], ["R7", 19], ["S7", 119]]) {
     assert.equal(orderSheet[cell].v, value);
     assert.equal(orderSheet[cell].t, "n");
     assert.equal(orderSheet[cell].z, "#,##0.00");
   }
-  for (const cell of ["B7", "C7", "K7", "L7"]) {
+  for (const cell of ["B7", "C7", "N7", "O7"]) {
     assert.equal(orderSheet[cell].t, "n");
     assert.equal(orderSheet[cell].z, "dd.mm.yyyy hh:mm");
   }
-  assert.equal(orderSheet["!autofilter"].ref, "A6:P7");
+  assert.equal(orderSheet["!autofilter"].ref, "A6:S7");
   const itemSheet = book.Sheets["Item details"];
   assert.deepEqual(XLSX.utils.sheet_to_json(itemSheet, { header: 1 })[5], ["NR", ...items.headers.map(header => header.toUpperCase())]);
   assert.equal(itemSheet.A7.v, 1);
+  assert.equal(itemSheet.D7.v, orderSheet.D7.v);
+  assert.equal(itemSheet.D7.v, "FRG-1");
   assert.equal(itemSheet.H7.v, "BOSCH");
   assert.equal(itemSheet.I7.v, 2);
   assert.equal(itemSheet.B7.t, "n");
   assert.equal(itemSheet.B7.z, "dd.mm.yyyy hh:mm");
-  for (const [cell, value] of [["J7", 100], ["K7", 19], ["L7", 119], ["J8", 0], ["K8", 0], ["L8", 0]]) {
+  for (const [cell, value] of [["J7", 100], ["K7", 19], ["L7", 119]]) {
     assert.equal(itemSheet[cell].v, value);
     assert.equal(itemSheet[cell].t, "n");
     assert.equal(itemSheet[cell].z, "#,##0.00");
   }
-  assert.equal(itemSheet["!autofilter"].ref, "A6:L8");
+  assert.equal(itemSheet["!autofilter"].ref, "A6:L7");
+});
+
+test("purchased items identify their order when the same customer and contract have multiple orders", () => {
+  const report = assembleFrgMonthlyReport([], filters);
+  const order = { saleAt: new Date("2026-10-10T10:00Z"), firstName: "Customer", lastName: "Example",
+    contractNumber: "670105777", totalPrice: 119,
+    items: [{ articleNumberSnapshot: "H6002", nameSnapshot: "Upper cabinet", quantity: 1, priceSnapshot: 119 }] };
+  const [, sales, items] = getFrgMonthlySheets(report, [
+    { ...order, orderNumber: "FRG-1" }, { ...order, orderNumber: "FRG-2" },
+  ]);
+  assert.equal(items.headers.includes("Contract number"), false);
+  assert.deepEqual(items.rows.map(row => row[items.headers.indexOf("Order")]), ["FRG-1", "FRG-2"]);
+  assert.deepEqual(items.rows.map(row => row[items.headers.indexOf("Order")]), sales.rows.map(row => row[sales.headers.indexOf("Order")]));
+});
+
+test("FRG item details exclude base items and preserve selected additions and their metadata", () => {
+  const base = { code: "BASE", priceSnapshot: 0, quantity: 1, kitchenItem: { isLocked: true } };
+  const addition = { code: "ADD", articleNumberSnapshot: "ADD-01", nameSnapshot: "Selected addition", priceSnapshot: 0, quantity: 2,
+    kitchenItem: { isLocked: false } };
+  const legacy = { code: "LEGACY", articleNumberSnapshot: "OLD-01", nameSnapshot: "Saved product", priceSnapshot: 119, quantity: 1, kitchenItem: null };
+  const report = assembleFrgMonthlyReport([], filters);
+  const order = { totalPrice: 119, items: [base, addition, { ...base, priceSnapshot: 999 }, legacy] };
+  const [, sales, items] = getFrgMonthlySheets(report, [order, { totalPrice: 0, items: [base] }, { totalPrice: 0 }]);
+  assert.deepEqual(sales.rows.map(row => row[sales.headers.indexOf("Purchased units")]), [3, 0, 0]);
+  assert.deepEqual(sales.rows[2].slice(8, 12), ["", "", "", ""]);
+  assert.deepEqual(items.rows.map(row => row.slice(3, 5)), [["ADD-01", "Selected addition"], ["OLD-01", "Saved product"]]);
+  assert.deepEqual(items.rows.map(row => row.slice(6)), [["Not recorded", 2, 0, 0, 0], ["Not recorded", 1, 100, 19, 119]]);
 });
 
 test("daily, arbitrary and all-time Excel headers describe the actual reporting bounds", () => {

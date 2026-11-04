@@ -1,16 +1,14 @@
+import AdminFilterForm from "../../../components/admin-filter-form";
 import {
-  ActionLink,
   AdminSection,
   FlashMessage,
   FormField,
   secondaryButtonStyle,
-  cardListStyle,
   inputStyle,
-  itemCardStyle,
   mutedTextStyle,
   pageGridStyle,
   primaryButtonStyle,
-  subMetaStyle,
+  thStyle, tdStyle,
   tableStyle,
   tableWrapStyle,
   textareaStyle,
@@ -18,7 +16,6 @@ import {
 import Link from "next/link";
 import { AdminShell } from "../../../components/admin-shell";
 import { AdminDateTime, AdminPluralText, AdminText, AdminTranslatedInput } from "../../../components/admin-i18n";
-import AdminSelect from "../../../components/admin-select";
 import AdminPropertyOwnerObjectBuilder from "../../../components/admin-property-owner-object-builder";
 import { getFormMessage } from "../../../lib/admin-forms";
 import { requireAdminPage } from "../../../lib/auth";
@@ -36,14 +33,7 @@ function ownerName(owner) {
 }
 
 function ownerContact(owner) {
-  return [owner.address, owner.email].filter(Boolean);
-}
-
-function ownerLocation(owner) {
-  const firstObject = (owner.propertyObjects || []).find((object) => object.city || object.country || object.address1);
-  if (!firstObject) return owner.address || "-";
-
-  return [firstObject.city, firstObject.country].filter(Boolean).join(", ") || firstObject.address1 || owner.address || "-";
+  return [owner.email, owner.phone].filter(Boolean);
 }
 
 function matchingObjects(owner, query) {
@@ -117,33 +107,27 @@ function filterOwners(owners, filters) {
   return owners.filter((owner) => {
     const searchIndex = buildOwnerSearchIndex(owner);
     const matchesQuery = !filters.query || searchIndex.includes(filters.query.toLowerCase());
-    const matchesLocation = !filters.location || (owner.propertyObjects || []).some((object) => String(object.country || "").trim() === filters.location);
-    return matchesQuery && matchesLocation;
+    return matchesQuery;
   });
 }
 
 function getExportHref(filters) {
   const query = new URLSearchParams();
   if (filters.query) query.set("q", filters.query);
-  if (filters.location) query.set("location", filters.location);
   const search = query.toString();
   return search ? `/api/admin/property-owners/export?${search}` : "/api/admin/property-owners/export";
 }
 
 export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
-  const admin = await requireAdminPage();
+  const admin = await requireAdminPage("FRG_VIEW");
   const resolvedSearchParams = (await searchParams) || {};
   const filters = {
     query: normalizeParam(resolvedSearchParams.q).trim(),
-    location: normalizeParam(resolvedSearchParams.location).trim(),
     create: normalizeParam(resolvedSearchParams.create).trim(),
   };
   const owners = await listPropertyOwnersForAdmin();
   const filteredOwners = filterOwners(owners, filters);
   const exportHref = getExportHref(filters);
-  const availableLocations = [...new Set(
-    owners.flatMap((owner) => (owner.propertyObjects || []).map((object) => String(object.country || "").trim()).filter(Boolean)),
-  )].sort((left, right) => left.localeCompare(right));
   const successMessage = getFormMessage(resolvedSearchParams, "success");
   const errorMessage = getFormMessage(resolvedSearchParams, "error");
   const createOpen = filters.create === "1";
@@ -153,7 +137,6 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
       <div className="housing-company-admin" style={pageGridStyle}>
         <AdminSection
           title={<AdminText i18nKey="propertyOwnersAdmin.propertyOwners" fallback="Housing Companies" />}
-          description={<AdminText i18nKey="propertyOwnersAdmin.manageOwnersAttachedToReusableContractNumbers" fallback="Manage housing companies, objects, and assigned contract numbers." />}
           actions={!createOpen ? (
             <Link href="/admin/property-owners?create=1" scroll={false} style={createOwnerCtaStyle}>
               <AdminText i18nKey="propertyOwnersAdmin.addHousingCompany" fallback="Add Housing Company" />
@@ -199,27 +182,19 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
         </AdminSection>
 
         <AdminSection
-          title={<AdminText i18nKey="propertyOwnersAdmin.configuredCompanies" fallback="Housing Companies" />}
-          description={(
-            <AdminPluralText
-              count={filteredOwners.length}
-              singularKey="propertyOwnersAdmin.companyMatchesFilters"
-              pluralKey="propertyOwnersAdmin.companiesMatchFilters"
-              singularFallback="{count} housing company matches the current filters."
-              pluralFallback="{count} housing companies match the current filters."
-            />
-          )}
+          title={<span style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+            <AdminText i18nKey="propertyOwnersAdmin.configuredCompanies" fallback="Housing Companies" />
+            <span style={{ color: "var(--app-text-muted)", fontSize: "var(--admin-text-body)", fontWeight: 400 }}>
+              <AdminPluralText count={filteredOwners.length} singularKey="propertyOwnersAdmin.resultCountOne" pluralKey="propertyOwnersAdmin.resultCountMany" singularFallback="{count} company" pluralFallback="{count} companies" />
+            </span>
+          </span>}
           actions={(
             <Link href={exportHref} prefetch={false} style={exportButtonStyle}>
               <AdminText i18nKey="propertyOwnersAdmin.exportExcel" fallback="Export Excel" />
             </Link>
           )}
         >
-          <form action="/admin/property-owners" method="get" style={filterPanelStyle}>
-            <div style={filterHeaderStyle}>
-              <span style={filterEyebrowStyle}><AdminText i18nKey="contractsAdmin.filters" fallback="Filters" /></span>
-              <span style={filterHintStyle}><AdminText i18nKey="propertyOwnersAdmin.searchEverythingHint" fallback="Search by company, address, project, object, city, or postal code." /></span>
-            </div>
+          <AdminFilterForm action="/admin/property-owners" style={filterPanelStyle}>
             <div className="housing-filter-grid" style={filterGridStyle}>
               <FilterField label={<AdminText i18nKey="contractsAdmin.search" fallback="Search" />}>
                 <AdminTranslatedInput
@@ -230,39 +205,20 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
                   style={filterInputStyle}
                 />
               </FilterField>
-              <FilterField label={<AdminText i18nKey="propertyOwnersAdmin.location" fallback="Location" />}>
-                <AdminSelect name="location" defaultValue={filters.location} style={filterInputStyle}>
-                  <option value=""><AdminText i18nKey="propertyOwnersAdmin.allLocations" fallback="All locations" /></option>
-                  {availableLocations.map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </AdminSelect>
-              </FilterField>
               <div style={filterActionsStyle}>
-                <button type="submit" style={filterApplyButtonStyle}><AdminText i18nKey="contractsAdmin.applyFilters" fallback="Apply filters" /></button>
-                <Link href="/admin/property-owners" style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
+                <Link scroll={false} href="/admin/property-owners" style={filterClearLinkStyle}><AdminText i18nKey="contractsAdmin.clear" fallback="Clear" /></Link>
               </div>
             </div>
-          </form>
+          </AdminFilterForm>
 
-          <div className="admin-list-table" style={tableWrapStyle}>
-            <table style={tableStyle}>
-              <colgroup>
-                <col style={{ width: "22%" }} />
-                <col style={{ width: "22%" }} />
-                <col style={{ width: "18%" }} />
-                <col style={{ width: "10%" }} />
-                <col style={{ width: "12%" }} />
-                <col style={{ width: "11%" }} />
-                <col style={{ width: "5%" }} />
-              </colgroup>
+          <div style={{ ...tableWrapStyle, borderRadius: 4 }}>
+            <table style={{ ...tableStyle, tableLayout: "auto", minWidth: 1000 }}>
               <thead>
                 <tr>
+                  <th scope="col" style={{ ...compactThStyle, width: 48, textAlign: "center" }}><AdminText i18nKey="reportsAdmin.rowNumber" fallback="No." /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.owner" fallback="Housing Company" /></th>
+                  <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.companyAddress" fallback="Company address" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.contact" fallback="Contact" /></th>
-                  <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.location" fallback="Location" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.objectsCount" fallback="Objects" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.contracts" fallback="Contract numbers" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.created" fallback="Created at" /></th>
@@ -272,40 +228,29 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
               <tbody>
                 {!filteredOwners.length ? (
                   <tr>
-                    <td style={compactTdStyle} colSpan={7}><AdminText i18nKey="propertyOwnersAdmin.noPropertyOwnersMatchFilters" fallback="No housing companies match the current filters." /></td>
+                    <td style={compactTdStyle} colSpan={8}><AdminText i18nKey="propertyOwnersAdmin.noPropertyOwnersMatchFilters" fallback="No housing companies match the current filters." /></td>
                   </tr>
                 ) : null}
-                {filteredOwners.map((owner) => (
+                {filteredOwners.map((owner, index) => (
                   <tr key={owner.id}>
+                    <td style={{ ...compactTdStyle, textAlign: "center", color: "var(--app-text-muted)" }}>{index + 1}</td>
                     <td style={compactTdStyle}>
                       <strong>{ownerName(owner)}</strong>
                       {filters.query ? <div style={matchSummaryStyle}>{buildSearchSummary(owner, filters.query)}</div> : null}
                     </td>
+                    <td style={compactTdStyle}>{owner.address || "—"}</td>
                     <td style={compactTdStyle}><ContactValue owner={owner} /></td>
-                    <td style={compactTdStyle}>{ownerLocation(owner)}</td>
                     <td style={compactTdStyle}>
-                      <AdminPluralText
-                        count={owner._count.propertyObjects}
-                        singularKey="propertyOwnersAdmin.objectCountSingular"
-                        pluralKey="propertyOwnersAdmin.objectCountPlural"
-                        singularFallback="{count} object"
-                        pluralFallback="{count} objects"
-                      />
+                      {owner._count.propertyObjects}
                     </td>
                     <td style={compactTdStyle}>
-                      <AdminPluralText
-                        count={owner._count.contracts}
-                        singularKey="propertyOwnersAdmin.contractNumberCountSingular"
-                        pluralKey="propertyOwnersAdmin.contractNumberCountPlural"
-                        singularFallback="{count} contract number"
-                        pluralFallback="{count} contract numbers"
-                      />
+                      {owner._count.contracts}
                     </td>
                     <td style={compactTdStyle}><AdminDateTime value={owner.createdAt} /></td>
                     <td style={compactTdStyle}>
-                      <ActionLink href={`/admin/property-owners/${owner.id}`}>
+                      <Link href={`/admin/property-owners/${owner.id}`} style={manageLinkStyle}>
                         <AdminText i18nKey="propertyOwnersAdmin.manage" fallback="Manage" />
-                      </ActionLink>
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -313,53 +258,9 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
             </table>
           </div>
 
-          <div className="admin-list-cards" style={mobileCardListStyle}>
-            {!filteredOwners.length ? <p style={mutedTextStyle}><AdminText i18nKey="propertyOwnersAdmin.noPropertyOwnersMatchFilters" fallback="No housing companies match the current filters." /></p> : null}
-            {filteredOwners.map((owner) => (
-              <article key={owner.id} style={itemCardStyle}>
-                <div style={{ display: "grid", gap: 6 }}>
-                  <strong>{ownerName(owner)}</strong>
-                  {filters.query ? <div style={matchSummaryStyle}>{buildSearchSummary(owner, filters.query)}</div> : null}
-                  <div style={subMetaStyle}>
-                    <ContactValue owner={owner} />
-                    <span>{owner._count.propertyObjects} <AdminText i18nKey="propertyOwnersAdmin.objectCount" fallback="objects" /></span>
-                    <span>
-                      <AdminPluralText
-                        count={owner._count.contracts}
-                        singularKey="propertyOwnersAdmin.contractNumberCountSingular"
-                        pluralKey="propertyOwnersAdmin.contractNumberCountPlural"
-                        singularFallback="{count} contract number"
-                        pluralFallback="{count} contract numbers"
-                      />
-                    </span>
-                    <span><AdminText i18nKey="propertyOwnersAdmin.location" fallback="Location" />: {ownerLocation(owner)}</span>
-                    <span><AdminText i18nKey="propertyOwnersAdmin.created" fallback="Created at" />: <AdminDateTime value={owner.createdAt} /></span>
-                  </div>
-                </div>
-                <ActionLink href={`/admin/property-owners/${owner.id}`}>
-                  <AdminText i18nKey="propertyOwnersAdmin.manage" fallback="Manage" />
-                </ActionLink>
-              </article>
-            ))}
-          </div>
-
           <style>{`
-            .admin-list-cards {
-              display: none;
-            }
-
             @media (max-width: 760px) {
-              .admin-list-table {
-                display: none;
-              }
-
-              .admin-list-cards {
-                display: grid;
-              }
-
-              .housing-filter-grid {
-                grid-template-columns: 1fr !important;
-              }
+              .housing-filter-grid { grid-template-columns: 1fr !important; }
             }
 
             .create-owner-summary::-webkit-details-marker {
@@ -409,7 +310,7 @@ const contactStackStyle = {
 const filterGridStyle = {
   display: "grid",
   gap: 10,
-  gridTemplateColumns: "minmax(260px, 1.4fr) minmax(170px, 0.7fr) auto",
+  gridTemplateColumns: "minmax(0, 1fr) auto",
   alignItems: "end",
 };
 
@@ -422,40 +323,13 @@ const filterPanelStyle = {
   padding: 14,
 };
 
-const filterHeaderStyle = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  gap: 12,
-  flexWrap: "wrap",
-};
-
-const filterEyebrowStyle = {
-  display: "inline-flex",
-  width: "fit-content",
-  borderRadius: 999,
-  padding: "6px 10px",
-  background: "rgba(143, 62, 44, 0.1)",
-  border: "1px solid rgba(143, 62, 44, 0.14)",
-  color: "var(--app-accent)",
-  fontSize: 12,
-  fontWeight: 800,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
-};
-
-const filterHintStyle = {
-  color: "var(--app-text-muted)",
-  fontSize: 13,
-  fontWeight: 700,
-};
-
 const filterFieldStyle = {
   display: "grid",
   gap: 6,
   color: "var(--app-text-muted)",
-  fontSize: 12,
-  fontWeight: 800,
+  minWidth: 0,
+  fontSize: "var(--admin-text-label)",
+  fontWeight: 600,
   letterSpacing: "0.06em",
   textTransform: "uppercase",
 };
@@ -466,7 +340,7 @@ const filterInputStyle = {
   borderRadius: 8,
   padding: "9px 11px",
   background: "rgba(255,255,255,0.94)",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
   boxShadow: "none",
 };
 
@@ -482,7 +356,7 @@ const filterApplyButtonStyle = {
   minHeight: 42,
   borderRadius: 8,
   padding: "9px 14px",
-  fontSize: "0.92rem",
+  fontSize: "var(--admin-text-body)",
   whiteSpace: "nowrap",
   boxShadow: "0 10px 20px rgba(143, 62, 44, 0.16)",
 };
@@ -495,8 +369,8 @@ const filterClearLinkStyle = {
   background: "rgba(255,255,255,0.88)",
   color: "var(--app-accent)",
   border: "1px solid rgba(143, 62, 44, 0.14)",
-  fontWeight: 800,
-  fontSize: "0.92rem",
+  fontWeight: 600,
+  fontSize: "var(--admin-text-body)",
   display: "inline-flex",
   alignItems: "center",
   whiteSpace: "nowrap",
@@ -525,10 +399,6 @@ const createOwnerBodyStyle = {
   display: "grid",
   gap: 12,
   paddingTop: 4,
-};
-
-const mobileCardListStyle = {
-  gap: cardListStyle.gap,
 };
 
 const matchSummaryStyle = {
@@ -598,23 +468,18 @@ const compactPrimaryButtonStyle = {
   fontSize: "0.92rem",
 };
 
-const compactThStyle = {
-  textAlign: "left",
-  padding: "12px 14px",
-  fontSize: 12,
-  color: "var(--app-text-muted)",
-  textTransform: "uppercase",
-  letterSpacing: "0.08em",
-  borderBottom: "1px solid var(--app-border)",
-  background: "var(--app-surface-muted)",
-  fontWeight: 800,
-};
-
-const compactTdStyle = {
-  padding: "14px",
-  borderBottom: "1px solid var(--app-border)",
-  color: "var(--app-text)",
-  verticalAlign: "middle",
-  fontSize: 14,
-  lineHeight: 1.5,
+const compactThStyle = { ...thStyle, padding: "16px 12px", whiteSpace: "nowrap" };
+const compactTdStyle = { ...tdStyle, padding: "16px 12px", verticalAlign: "middle" };
+const manageLinkStyle = {
+  ...secondaryButtonStyle,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  minHeight: 38,
+  padding: "9px 12px",
+  borderRadius: 8,
+  fontSize: "var(--admin-text-meta)",
+  fontWeight: 600,
+  textDecoration: "none",
+  whiteSpace: "nowrap",
 };
