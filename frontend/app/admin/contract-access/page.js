@@ -79,7 +79,6 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
                   <th className={visitorTableStyles.numberCell}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
                   <th><AdminText i18nKey="contractAccessAdmin.accessTime" fallback="Time" /></th>
                   <th><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
-                  <th><AdminText i18nKey="contractAccessAdmin.source" fallback="Source" /></th>
                   <th><AdminText i18nKey="contractAccessAdmin.device" fallback="Device" /></th>
                   <th><AdminText i18nKey="contractAccessAdmin.contract" fallback="Contract" /></th>
                   <th><AdminText i18nKey="contractAccessAdmin.project" fallback="Project" /></th>
@@ -89,28 +88,19 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
               <tbody>
                 {!events.length ? (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={7}>
                       <AdminText i18nKey="contractAccessAdmin.noContractAccess" fallback="No contract access events found." />
                     </td>
                   </tr>
                 ) : null}
                 {events.map((event, index) => {
                   const contract = event.kitchenContract;
-                  const source = event.source || event.referrerHost || "direct";
 
                   return (
                     <tr key={event.id}>
                       <td className={visitorTableStyles.numberCell}>{total - (page - 1) * 100 - index}</td>
                       <td><AdminDateTime value={event.createdAt} timeZone="Europe/Berlin" /></td>
                       <td><AdminCountryName code={event.countryCode} /></td>
-                      <td>
-                        <strong>
-                          {source === "direct"
-                            ? <AdminText i18nKey="contractAccessAdmin.directVisit" fallback="Direct visit" />
-                            : source}
-                        </strong>
-                        {event.utmCampaign ? <span style={mutedLineStyle}>{event.utmCampaign}</span> : null}
-                      </td>
                       <td>
                         {event.deviceType || <AdminText i18nKey="contractAccessAdmin.notCaptured" fallback="Not captured" />}
                         {event.browserFamily ? (

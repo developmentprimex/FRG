@@ -1022,6 +1022,8 @@
     "contractTitle": "Contract {contractNumber}",
     "registrationHistory": "Registration history",
     "editContract": "Edit contract",
+    "kitchenSketchLabel": "Kitchen sketch",
+    "kitchenPlanPdfLabel": "Kitchen plan (PDF)",
     "type": "Type",
     "orderCount": "{count} order(s)",
     "overview": "Overview",
