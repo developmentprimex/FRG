@@ -23,6 +23,10 @@ const CLAIM_COMPONENT_LABEL_OVERRIDES = {
 
 const CLAIM_BLENDE_COMPONENT_PREFIX = "component-claim-blende-";
 const CLAIM_BLENDE_LABELS_BY_CODE = {
+  UPK10: {
+    name: "Filler Panel up to 10 cm",
+    nameDe: "Passblende bis 10 cm",
+  },
   UPK20: {
     name: "Filler Panel up to 20 cm",
     nameDe: "Passblende bis 20 cm",
