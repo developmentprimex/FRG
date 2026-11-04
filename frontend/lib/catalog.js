@@ -602,7 +602,7 @@ export async function listPropertyOwnersForAdmin() {
       hc."createdAt",
       hc."updatedAt",
       COUNT(DISTINCT pobj."id")::int AS "objectCount",
-      COUNT(kc."id")::int AS "contractCount"
+      COUNT(kc."id") FILTER (WHERE REGEXP_REPLACE(kc."contractNumber", '[[:space:]]', '', 'g') NOT LIKE '111%')::int AS "contractCount"
     FROM "HousingCompany" hc
     LEFT JOIN "PropertyObject" pobj ON pobj."housingCompanyId" = hc."id"
     LEFT JOIN "Project" prj ON prj."propertyObjectId" = pobj."id"
@@ -630,7 +630,7 @@ export async function listPropertyOwnersForAdmin() {
       pobj."address2",
       pobj."createdAt",
       pobj."updatedAt",
-      COUNT(kc."id")::int AS "contractCount"
+      COUNT(kc."id") FILTER (WHERE REGEXP_REPLACE(kc."contractNumber", '[[:space:]]', '', 'g') NOT LIKE '111%')::int AS "contractCount"
     FROM "PropertyObject" pobj
     LEFT JOIN "Project" prj ON prj."propertyObjectId" = pobj."id"
     LEFT JOIN "KitchenContract" kc ON kc."projectId" = prj."id"
@@ -723,7 +723,7 @@ export async function listPropertyObjectsForAdmin(filters = {}) {
       hc."name" AS "housingCompanyName",
       hc."email" AS "housingCompanyEmail",
       hc."phone" AS "housingCompanyPhone",
-      COUNT(kc."id")::int AS "contractCount"
+      COUNT(kc."id") FILTER (WHERE REGEXP_REPLACE(kc."contractNumber", '[[:space:]]', '', 'g') NOT LIKE '111%')::int AS "contractCount"
     FROM "PropertyObject" pobj
     JOIN "HousingCompany" hc ON hc."id" = pobj."housingCompanyId"
     LEFT JOIN "Project" prj ON prj."propertyObjectId" = pobj."id"
@@ -787,7 +787,7 @@ export async function listProjectsForAdmin(filters = {}) {
       hc."name" AS "housingCompanyName",
       hc."email" AS "housingCompanyEmail",
       hc."phone" AS "housingCompanyPhone",
-      COUNT(kc."id")::int AS "contractCount"
+      COUNT(kc."id") FILTER (WHERE REGEXP_REPLACE(kc."contractNumber", '[[:space:]]', '', 'g') NOT LIKE '111%')::int AS "contractCount"
     FROM "Project" prj
     JOIN "PropertyObject" pobj ON pobj."id" = prj."propertyObjectId"
     JOIN "HousingCompany" hc ON hc."id" = prj."housingCompanyId"

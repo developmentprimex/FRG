@@ -94,6 +94,9 @@ Adresa e kompanisë shfaqet te `/admin/property-owners`, në kolonën Company ad
 te fusha Address në faqen e kompanisë dhe në eksportin Excel. Kolona Contact
 shfaq email-in dhe telefonin. Vendndodhjet e objekteve nuk shfaqen si kolonë më vete
 në këtë listë; adresat e tyre menaxhohen brenda kompanisë.
+Numërimi i kontratave për kompani, objekte dhe projekte përjashton prefiksin `111`,
+edhe kur numri përmban hapësira. Kjo vlen edhe për totalet në API dhe eksportin e
+kompanive. Kontratat `111` vazhdojnë të jenë të lidhura me kompanitë e tyre.
 Nuk kopjohet te objektet, kuzhinat ose adresat e porosive. Objektet e reja krijohen
 pa adresë; adresat e objekteve ekzistuese nuk ndryshohen. Pas rilidhjes,
 formularët që marrin adresën nga projekti lexojnë objektin e ri. Për shembull,

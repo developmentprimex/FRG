@@ -30,7 +30,7 @@ async function handleGET(_request, { params }) {
       hc."createdAt",
       hc."updatedAt",
       COUNT(DISTINCT pobj."id")::int AS "objectCount",
-      COUNT(kc."id")::int AS "contractCount"
+      COUNT(kc."id") FILTER (WHERE REGEXP_REPLACE(kc."contractNumber", '[[:space:]]', '', 'g') NOT LIKE '111%')::int AS "contractCount"
     FROM "HousingCompany" hc
     LEFT JOIN "PropertyObject" pobj ON pobj."housingCompanyId" = hc."id"
     LEFT JOIN "Project" prj ON prj."propertyObjectId" = pobj."id"
