@@ -12,6 +12,13 @@ const OBJECT_RULES = [
   ["Haus 8", 105833, 105844], ["Haus 9", 105845, 105862],
 ];
 const PREFIXES = ["111", "670"];
+// Ownership confirmed separately from the original workbook. No company address
+// was provided; preserve existing contact details and leave new ones empty.
+const CONFIRMED_ASSIGNMENTS = [{
+  name: "D.R.S. Glinde Holstenkamp Immobilien GmbH & Co. KG",
+  objectName: "103898",
+  base: "103898",
+}];
 const normalizeName = (value) => String(value || "").normalize("NFKC").trim().replace(/\s+/g, " ").toLocaleLowerCase("de");
 const isSharedShell = (contract) => contract.contractType === "ARC" && contract.kitchen?.slug === "pdf-only-kitchen";
 function kitchenCodes(kitchen) {
@@ -54,6 +61,25 @@ function parseWorkbook(file) {
   return companies;
 }
 
+function loadImportCompanies(file) {
+  const companies = parseWorkbook(file);
+  for (const assignment of CONFIRMED_ASSIGNMENTS) {
+    const existing = companies.find((company) => company.entries.some((entry) => entry.base === assignment.base));
+    if (existing) {
+      if (normalizeName(existing.name) !== normalizeName(assignment.name)) throw new Error(`Confirmed ownership conflict for AB-${assignment.base}: ${existing.name}`);
+      continue;
+    }
+    let company = companies.find((company) => normalizeName(company.name) === normalizeName(assignment.name));
+    if (!company) {
+      company = { name: assignment.name, objects: [], entries: [] };
+      companies.push(company);
+    }
+    if (!company.objects.includes(assignment.objectName)) company.objects.push(assignment.objectName);
+    company.entries.push({ abCode: `AB-${assignment.base}`, base: assignment.base, suffix: "", objectName: assignment.objectName });
+  }
+  return companies;
+}
+
 async function buildPlan(db, companies) {
   const [owners, objects, projects, contracts] = await Promise.all([
     db.housingCompany.findMany(), db.propertyObject.findMany(), db.project.findMany(),
@@ -64,6 +90,7 @@ async function buildPlan(db, companies) {
     const matches = owners.filter((owner) => normalizeName(owner.name) === normalizeName(company.name));
     if (matches.length > 1) conflicts.push(`Multiple companies match ${company.name}`);
     const owner = matches[0];
+    const hasSourceAddress = typeof company.address === "string" && company.address.trim() !== "";
     const objectPlans = company.objects.map((name) => {
       const matches = objects.filter((object) => object.housingCompanyId === owner?.id && normalizeName(object.name) === normalizeName(name));
       if (matches.length > 1) conflicts.push(`Multiple objects match ${company.name} / ${name}`);
@@ -74,9 +101,9 @@ async function buildPlan(db, companies) {
       if (byName && byName.id !== byObject?.id) conflicts.push(`Project name already used: ${company.name} / ${name}`);
       return { name, objectId: object?.id || null, projectId: byObject?.id || null };
     });
-    return { name: company.name, id: owner?.id || null, address: company.address,
+    return { name: company.name, id: owner?.id || null, address: hasSourceAddress ? company.address : owner?.address ?? null,
       previousAddress: owner?.address ?? null,
-      addressAction: !owner ? "create" : owner.address === company.address ? "unchanged" : "update",
+      addressAction: !owner ? "create" : !hasSourceAddress || owner.address === company.address ? "unchanged" : "update",
       objects: objectPlans };
   });
   const byNumber = new Map(contracts.map((contract) => [contract.contractNumber, contract]));
@@ -176,4 +203,4 @@ async function applyImport(prisma, companies) {
   }, { isolationLevel: "Serializable", timeout: 120000 });
 }
 
-module.exports = { parseWorkbook, buildPlan, applyImport };
+module.exports = { parseWorkbook, loadImportCompanies, buildPlan, applyImport };

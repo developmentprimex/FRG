@@ -28,6 +28,16 @@ Lidhja është `HousingCompany → PropertyObject → Project → KitchenContrac
 Çdo objekt ka një projekt për lidhjet e kontratave, sipas skemës ekzistuese.
 Dy objektet `Diverse` i përkasin kompanive të ndryshme.
 
+Përveç Excel-it, pronësia e kuzhinës `103898` është konfirmuar veçmas për
+**D.R.S. Glinde Holstenkamp Immobilien GmbH & Co. KG**. `loadImportCompanies`
+shton këtë kompani dhe objektin/projektin `103898` në planin e importit:
+gjithsej 6 kompani, 15 objekte dhe 258 kode kuzhinash. Lidhen `111103898`,
+`670103898` dhe çdo kontratë tjetër e lidhur me kuzhinën reale `103898`.
+Adresa e D.R.S.-së nuk është dhënë; kompania e re krijohet pa adresë, ndërsa
+adresa dhe kontaktet e një kompanie ekzistuese ruhen. Adresat e ARGE-së nuk kopjohen.
+Nëse një Excel i ardhshëm ia cakton `103898` një kompanie tjetër, importimi ndalet
+me konflikt. Ky konfirmim zëvendëson përkatësinë e mëparshme te ARGE / Hamburg.
+
 Nga dosja `frontend`, parapamja pa ndryshuar databazën:
 
 ```powershell
@@ -47,7 +57,7 @@ npm run import:housing-companies -- --offline
 ```
 
 `--input=<file.xlsx>` përdor një kopje tjetër të Excel-it me të njëjtët headers.
-Kolona `Store Address` dhe adresa për secilën kompani janë të detyrueshme;
+Kolona `Store Address` dhe adresa për secilën kompani në Excel janë të detyrueshme;
 burimet me adresa bosh refuzohen para çdo shkrimi.
 Dosja e raportit duhet të ekzistojë. `--report` ruan planin para ekzekutimit,
 përfshirë `previousProjectId`, lidhjet e synuara, numrat që mungojnë dhe

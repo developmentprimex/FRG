@@ -1,6 +1,6 @@
 const fs = require("node:fs");
 const path = require("node:path");
-const { parseWorkbook, buildPlan, applyImport } = require("../lib/housing-company-import.cjs");
+const { loadImportCompanies, buildPlan, applyImport } = require("../lib/housing-company-import.cjs");
 
 function parseArgs(argv) {
   const options = { apply: false, offline: false, input: path.resolve(__dirname, "../../VETEM_SHEET_1_HOUSING_COMPANIES_KUZHINAT.xlsx") };
@@ -20,7 +20,7 @@ function parseArgs(argv) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) return console.log("npm run import:housing-companies -- [--dry-run|--apply] [--offline] [--input=file.xlsx] [--report=plan.json]\nDefault: preview only. Offline validates the workbook without a database. Missing contracts are reported, never created.");
-  const companies = parseWorkbook(options.input);
+  const companies = loadImportCompanies(options.input);
   let prisma;
   try {
     if (!options.offline) {

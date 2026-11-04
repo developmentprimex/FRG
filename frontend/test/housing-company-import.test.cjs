@@ -4,7 +4,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 const os = require("node:os");
 const XLSX = require("xlsx");
-const { parseWorkbook, buildPlan, applyImport } = require("../lib/housing-company-import.cjs");
+const { parseWorkbook, loadImportCompanies, buildPlan, applyImport } = require("../lib/housing-company-import.cjs");
 const { parseArgs } = require("../scripts/import-housing-companies.cjs");
 const workbook = path.resolve(__dirname, "../../VETEM_SHEET_1_HOUSING_COMPANIES_KUZHINAT.xlsx");
 
@@ -218,4 +218,64 @@ test("contradictory kitchen slug and code block writes even for nonstandard numb
   const before = structuredClone(state);
   await assert.rejects(applyImport(db, parseWorkbook(workbook)), /Ambiguous kitchen codes/);
   assert.deepEqual(state, before);
+});
+
+test("confirmed DRS ownership links every 103898 contract without changing the old company or contract fields", async () => {
+  const companies = loadImportCompanies(workbook);
+  assert.equal(companies.length, 6);
+  assert.equal(companies.flatMap(company => company.entries).length, 258);
+  const name = "D.R.S. Glinde Holstenkamp Immobilien GmbH & Co. KG";
+  const oldOwner = { id: "arge", name: companies[0].name, address: companies[0].address, notes: "Keep ARGE notes" };
+  const { db, state } = fakeDb({
+    housingCompany: [oldOwner],
+    propertyObject: [{ id: "old-object", name: "Hamburg", housingCompanyId: "arge", address1: "Keep old object address" }],
+    project: [{ id: "old-project", name: "Hamburg", housingCompanyId: "arge", propertyObjectId: "old-object" }],
+    kitchenContract: ["111103898", "670103898", "222103898", "custom-103898"].map(number => ({
+      id: number, contractNumber: number, projectId: "old-project", kitchenId: "burger-kitchen", contractType: "FRG",
+      notes: "Keep contract notes", floor: "2", kitchen: { slug: "burger-103898", kitchenCode: "103 898" },
+    })),
+  });
+  const before = structuredClone(state);
+  const preview = await buildPlan(db, companies);
+  assert.equal(preview.summary.relink, 4);
+  assert.deepEqual(preview.conflicts, []);
+  assert.deepEqual(state, before);
+  await applyImport(db, companies);
+  const owner = state.housingCompany.find(company => company.name === name);
+  assert.equal(owner.address, null);
+  const project = state.project.find(project => project.housingCompanyId === owner.id);
+  assert.equal(project.name, "103898");
+  assert.deepEqual(state.housingCompany[0], oldOwner);
+  assert.deepEqual(state.propertyObject[0], before.propertyObject[0]);
+  state.kitchenContract.forEach((contract, index) => {
+    assert.equal(contract.projectId, project.id);
+    assert.deepEqual({ ...contract, projectId: before.kitchenContract[index].projectId }, before.kitchenContract[index]);
+  });
+  const after = structuredClone(state);
+  await applyImport(db, companies);
+  assert.deepEqual(state, after);
+});
+
+test("confirmed ownership without a source address preserves an existing company's address and contacts", async () => {
+  const company = loadImportCompanies(workbook).find(company => company.name.startsWith("D.R.S."));
+  const owner = { id: "drs", name: company.name, address: "Confirmed existing address", email: "office@example.com", phone: "123", notes: "Keep notes" };
+  const { db, state } = fakeDb({ housingCompany: [owner] });
+  const plan = await buildPlan(db, [company]);
+  assert.equal(plan.summary.updateCompanyAddresses, 0);
+  await applyImport(db, [company]);
+  assert.deepEqual(state.housingCompany, [owner]);
+});
+
+test("a conflicting workbook assignment cannot move confirmed 103898 ownership to another company", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "housing-confirmed-test-"));
+  const file = path.join(dir, "conflicting.xlsx");
+  try {
+    const book = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([
+      ["Housing Company / Company Name", "Kuzhina", "Objektet", "Kodet e kuzhinave (AB)", "Store Address"],
+      ["Another company", 1, "Object", "AB-103898", "Address"],
+    ]), "Sheet1");
+    XLSX.writeFile(book, file);
+    assert.throws(() => loadImportCompanies(file), /Confirmed ownership conflict for AB-103898/);
+  } finally { fs.rmSync(file); fs.rmdirSync(dir); }
 });
