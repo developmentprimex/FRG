@@ -33,6 +33,8 @@ async function main() {
     const report = { mode: options.offline ? "offline (database not checked)" : options.apply ? "apply" : "dry-run", input: options.input, ...plan };
     if (options.report) fs.writeFileSync(options.report, JSON.stringify(report, null, 2) + "\n");
     console.log(JSON.stringify({ mode: report.mode, summary: plan.summary, conflicts: plan.conflicts,
+      companyAddressChanges: plan.companies.filter((company) => company.addressAction !== "unchanged")
+        .map(({ name, previousAddress, address, addressAction }) => ({ name, previousAddress, address, action: addressAction })),
       unmatchedContracts: plan.unmatchedContracts,
       missingContracts: plan.entries.filter((entry) => entry.action === "missing"),
       objects: companies.flatMap((company) => company.objects.map((object) => ({ company: company.name, object,

@@ -28,10 +28,12 @@ function parseWorkbook(file) {
   if (headerIndex < 0) throw new Error("Workbook company/code headers were not found.");
   const header = rows[headerIndex];
   const index = (name) => header.indexOf(name);
-  for (const name of ["Kuzhina", "Objektet"]) if (index(name) < 0) throw new Error(`Missing header: ${name}`);
+  for (const name of ["Kuzhina", "Objektet", "Store Address"]) if (index(name) < 0) throw new Error(`Missing header: ${name}`);
   const seen = new Set();
   const companies = rows.slice(headerIndex + 1).filter((row) => row[index("Housing Company / Company Name")]).map((row) => {
     const name = String(row[index("Housing Company / Company Name")]).trim();
+    const address = String(row[index("Store Address")]).trim();
+    if (!address) throw new Error(`Missing Store Address for ${name}`);
     const objects = String(row[index("Objektet")]).split(",").map((s) => s.trim()).filter(Boolean);
     const tokens = String(row[index("Kodet e kuzhinave (AB)")]).split(/[,\s]+/).filter(Boolean);
     const entries = tokens.map((abCode) => {
@@ -45,8 +47,8 @@ function parseWorkbook(file) {
     });
     if (entries.length !== Number(row[index("Kuzhina")])) throw new Error(`Code count mismatch for ${name}`);
     if (objects.some((object) => !entries.some((entry) => entry.objectName === object))) throw new Error(`Unmapped object for ${name}`);
-    // Store Address is intentionally never read or copied.
-    return { name, objects, entries };
+    // This is the company's postal address, never the kitchen/building address.
+    return { name, address, objects, entries };
   });
   if (!companies.length || new Set(companies.map((c) => normalizeName(c.name))).size !== companies.length) throw new Error("Missing or duplicate companies.");
   return companies;
@@ -72,7 +74,10 @@ async function buildPlan(db, companies) {
       if (byName && byName.id !== byObject?.id) conflicts.push(`Project name already used: ${company.name} / ${name}`);
       return { name, objectId: object?.id || null, projectId: byObject?.id || null };
     });
-    return { name: company.name, id: owner?.id || null, objects: objectPlans };
+    return { name: company.name, id: owner?.id || null, address: company.address,
+      previousAddress: owner?.address ?? null,
+      addressAction: !owner ? "create" : owner.address === company.address ? "unchanged" : "update",
+      objects: objectPlans };
   });
   const byNumber = new Map(contracts.map((contract) => [contract.contractNumber, contract]));
   const entries = [];
@@ -135,6 +140,7 @@ async function buildPlan(db, companies) {
     matchedByKitchen: entries.filter((entry) => entry.matchedBy === "kitchen").length,
     companies: companies.length, abCodes: companies.reduce((n, c) => n + c.entries.length, 0),
     createCompanies: companyPlans.filter((c) => !c.id).length,
+    updateCompanyAddresses: companyPlans.filter((c) => c.addressAction === "update").length,
     createObjects: companyPlans.flatMap((c) => c.objects).filter((o) => !o.objectId).length,
     createProjects: companyPlans.flatMap((c) => c.objects).filter((o) => !o.projectId).length,
     ...Object.fromEntries(["link", "relink", "unchanged", "missing"].map((action) => [action, entries.filter((e) => e.action === action).length])),
@@ -146,7 +152,14 @@ async function applyImport(prisma, companies) {
     const plan = await buildPlan(tx, companies);
     if (plan.conflicts.length) throw new Error(plan.conflicts.join("\n"));
     for (const company of plan.companies) {
-      const owner = company.id ? company : await tx.housingCompany.create({ data: { name: company.name } });
+      const owner = company.id ? company : await tx.housingCompany.create({ data: { name: company.name, address: company.address } });
+      if (company.addressAction === "update") {
+        const result = await tx.housingCompany.updateMany({
+          where: { id: company.id, address: company.previousAddress },
+          data: { address: company.address },
+        });
+        if (result.count !== 1) throw new Error(`Company address changed during import: ${company.name}`);
+      }
       for (const object of company.objects) {
         const objectId = object.objectId || (await tx.propertyObject.create({ data: { name: object.name, housingCompanyId: owner.id } })).id;
         const projectId = object.projectId || (await tx.project.create({ data: { name: object.name, housingCompanyId: owner.id, propertyObjectId: objectId } })).id;
@@ -157,7 +170,8 @@ async function applyImport(prisma, companies) {
       }
     }
     const verification = await buildPlan(tx, companies);
-    if (verification.conflicts.length || verification.entries.some((e) => ["link", "relink"].includes(e.action))) throw new Error("Import verification failed");
+    if (verification.conflicts.length || verification.companies.some((c) => c.addressAction !== "unchanged")
+      || verification.entries.some((e) => ["link", "relink"].includes(e.action))) throw new Error("Import verification failed");
     return verification;
   }, { isolationLevel: "Serializable", timeout: 120000 });
 }

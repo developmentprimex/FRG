@@ -16,7 +16,7 @@ function fakeDb(initial = {}) {
     findMany: async () => structuredClone(state[table]),
     create: async ({ data }) => { const row = { id: `new-${++serial}`, ...data }; state[table].push(row); return row; },
     updateMany: async ({ where, data }) => {
-      const rows = state[table].filter((row) => Object.entries(where).every(([key, value]) => row[key] === value));
+      const rows = state[table].filter((row) => Object.entries(where).every(([key, value]) => value === null ? row[key] == null : row[key] === value));
       rows.forEach((row) => Object.assign(row, data));
       return { count: rows.length };
     },
@@ -38,8 +38,13 @@ test("workbook maps all 257 codes to the screenshot's 14 objects, preserving suf
   assert.equal(arge.entries.find((e) => e.base === "105759").abCode, "AB-105759-56");
   assert.ok(!arge.entries.some((e) => e.base === "105773"));
   assert.deepEqual(companies[1].objects.map((object) => companies[1].entries.filter((e) => e.objectName === object).length), [65, 49]);
-  assert.ok(!JSON.stringify(companies).includes("Store Address"));
-  assert.ok(!JSON.stringify(companies).includes("Beekebreite"));
+  assert.deepEqual(Object.fromEntries(companies.map((company) => [company.name, company.address])), {
+    "HBI Hausbau-Immobiliengesellschaft mbH": "Schwansburg 8, D 21614 Buxtehude",
+    "ARGE Nördliche Riedsiedlung": "c/o MBN GmbH, Beekebreite 2-8, D 49124 Georgsmarienhütte",
+    "SAGA Siedlungs-Aktiengesellschaft Hamburg": "Poppenhusenstr. 2, D 22305 Hamburg",
+    "S-Immobiliengesellschaft Holstein mbH & Co.KG": "Hagenstraße 19, 23843 Bad Oldesloe",
+    "Monika Wach": "Erich-Kästner-Ring 63, D 22175 Hamburg",
+  });
 });
 
 test("rejects malformed workbook codes rather than partially importing", () => {
@@ -48,15 +53,35 @@ test("rejects malformed workbook codes rather than partially importing", () => {
   try {
     const w = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(w, XLSX.utils.aoa_to_sheet([
-      ["Housing Company / Company Name", "Kuzhina", "Objektet", "Kodet e kuzhinave (AB)"],
-      ["Company", 1, "Diverse", "AB-104332oops"],
+      ["Housing Company / Company Name", "Kuzhina", "Objektet", "Kodet e kuzhinave (AB)", "Store Address"],
+      ["Company", 1, "Diverse", "AB-104332oops", "Company street 1"],
     ]), "Sheet1");
     XLSX.writeFile(w, file);
     assert.throws(() => parseWorkbook(file), /Invalid AB code/);
   } finally { fs.rmSync(file); fs.rmdirSync(dir); }
 });
 
-test("import preserves existing fields, links both prefixes and ARC shells, and is idempotent", async () => {
+test("missing company address headers and blank source addresses reject the workbook", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "housing-address-test-"));
+  const file = path.join(dir, "missing-address.xlsx");
+  try {
+    const headers = ["Housing Company / Company Name", "Kuzhina", "Objektet", "Kodet e kuzhinave (AB)"];
+    const writeWorkbook = (withHeader, address) => {
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, XLSX.utils.aoa_to_sheet([
+        withHeader ? [...headers, "Store Address"] : headers,
+        ["Company", 1, "Diverse", "AB-104332", address],
+      ]), "Sheet1");
+      XLSX.writeFile(workbook, file);
+    };
+    writeWorkbook(false, "");
+    assert.throws(() => parseWorkbook(file), /Missing header: Store Address/);
+    writeWorkbook(true, "   ");
+    assert.throws(() => parseWorkbook(file), /Missing Store Address for Company/);
+  } finally { fs.rmSync(file); fs.rmdirSync(dir); }
+});
+
+test("import saves company addresses, preserves other fields, links contracts, and is idempotent", async () => {
   const companies = parseWorkbook(workbook);
   const contract = (id, number, slug, type = "FRG") => ({ id, contractNumber: number, projectId: "old-project", kitchenId: "same-kitchen", contractType: type, notes: "retain", kitchen: { slug, kitchenCode: null } });
   const { db, state } = fakeDb({
@@ -68,15 +93,21 @@ test("import preserves existing fields, links both prefixes and ARC shells, and 
   const before = structuredClone(state);
   const preview = await buildPlan(db, companies);
   assert.equal(preview.summary.relink, 3);
+  assert.equal(preview.summary.updateCompanyAddresses, 1);
+  assert.equal(preview.companies[0].previousAddress, "Keep existing address");
+  assert.equal(preview.companies[0].address, companies[0].address);
   assert.deepEqual(state, before, "preview must not mutate the database");
   const result = await applyImport(db, companies);
   assert.equal(result.summary.unchanged, 3);
   assert.equal(result.summary.missing, 511);
   assert.equal(state.housingCompany.length, 5);
   assert.equal(state.propertyObject.length, 15);
-  assert.equal(state.housingCompany[0].address, "Keep existing address");
+  assert.equal(state.housingCompany[0].address, companies[0].address);
+  assert.equal(state.housingCompany[0].phone, "123");
+  assert.equal(result.summary.updateCompanyAddresses, 0);
+  assert.ok(result.companies.every((company) => company.addressAction === "unchanged"));
   assert.equal(state.propertyObject[0].address1, "Keep street");
-  assert.ok(state.housingCompany.slice(1).every((c) => c.address === undefined));
+  assert.ok(state.housingCompany.every((c) => c.address === companies.find((source) => source.name === c.name).address));
   assert.ok(state.propertyObject.slice(1).every((o) => o.address1 === undefined));
   assert.equal(state.kitchenContract[0].kitchenId, "same-kitchen");
   assert.equal(state.kitchenContract[0].notes, "retain");
@@ -120,12 +151,39 @@ test("CLI defaults to dry run and rejects applying an offline plan", () => {
 
 test("a failed contract update rolls back company and object creation", async () => {
   const companies = parseWorkbook(workbook);
-  const { db, state } = fakeDb({ kitchenContract: [{ id: "c", contractNumber: "670104332", projectId: null,
+  const { db, state } = fakeDb({
+    housingCompany: [{ id: "arge", name: companies[0].name, address: "Previous company address", notes: "Keep notes" }],
+    kitchenContract: [{ id: "c", contractNumber: "670104332", projectId: null,
     contractType: "FRG", kitchen: { slug: "ab-104332", kitchenCode: "104 332" } }] });
   db.kitchenContract.updateMany = async () => ({ count: 0 });
   const before = structuredClone(state);
   await assert.rejects(applyImport(db, companies), /changed during import/);
   assert.deepEqual(state, before);
+});
+
+test("a concurrent company address change blocks the import and rolls back all writes", async () => {
+  const companies = parseWorkbook(workbook);
+  const { db, state } = fakeDb({
+    housingCompany: [{ id: "arge", name: companies[0].name, address: null, email: "keep@example.com" }],
+  });
+  db.housingCompany.updateMany = async () => ({ count: 0 });
+  const before = structuredClone(state);
+  await assert.rejects(applyImport(db, companies), /Company address changed during import/);
+  assert.deepEqual(state, before);
+});
+
+test("existing companies with null or empty addresses receive the source address", async () => {
+  const companies = parseWorkbook(workbook);
+  for (const address of [null, ""]) {
+    const { db, state } = fakeDb({
+      housingCompany: [{ id: "arge", name: companies[0].name, address, notes: "Keep notes" }],
+    });
+    const plan = await buildPlan(db, companies);
+    assert.equal(plan.companies[0].previousAddress, address);
+    await applyImport(db, companies);
+    assert.equal(state.housingCompany[0].address, companies[0].address);
+    assert.equal(state.housingCompany[0].notes, "Keep notes");
+  }
 });
 
 test("all real-kitchen contracts share ownership, while unknown kitchens and ARC shells stay isolated", async () => {

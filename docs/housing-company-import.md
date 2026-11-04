@@ -47,8 +47,13 @@ npm run import:housing-companies -- --offline
 ```
 
 `--input=<file.xlsx>` përdor një kopje tjetër të Excel-it me të njëjtët headers.
+Kolona `Store Address` dhe adresa për secilën kompani janë të detyrueshme;
+burimet me adresa bosh refuzohen para çdo shkrimi.
 Dosja e raportit duhet të ekzistojë. `--report` ruan planin para ekzekutimit,
-përfshirë `previousProjectId`, lidhjet e synuara dhe numrat që mungojnë.
+përfshirë `previousProjectId`, lidhjet e synuara, numrat që mungojnë dhe
+`previousAddress` / `address` / `addressAction` për secilën kompani.
+Terminali afishon `companyAddressChanges`; `updateCompanyAddresses` numëron
+adresat e kompanive ekzistuese që do të përditësohen.
 Në fund të `--apply`, përmbledhja e verifikimit afishohet në terminal.
 
 Për çdo AB kontrollohen numrat `111` + kodi dhe `670` + kodi. Për shembull,
@@ -73,12 +78,29 @@ pa propaguar kompaninë ndërmjet tyre, dhe mbështeten pa ndryshuar
 llojin ose kuzhinën e tyre. Për kontratat e tjera kontrollohet përputhja e kuzhinës
 me kodin AB; mospërputhjet ndalojnë importimin.
 
-`Store Address` nuk lexohet. Kompanitë dhe objektet e reja krijohen pa adresa;
-adresat dhe kontaktet ekzistuese nuk përditësohen ose fshihen. Pas rilidhjes,
-formularët që marrin adresën nga projekti do të lexojnë objektin e ri, i cili mund
-të ketë adresë bosh. Plotësimi i adresave mbetet për hapin e ardhshëm.
+`Store Address` ruhet te `HousingCompany.address`, si adresë postare e kompanisë.
+Kompanitë e reja krijohen me adresë; për kompanitë ekzistuese, adresa përditësohet
+sipas Excel-it. Email-i, telefoni dhe shënimet ekzistuese ruhen.
+
+| Kompania | Adresa e kompanisë |
+| --- | --- |
+| HBI Hausbau-Immobiliengesellschaft mbH | Schwansburg 8, D 21614 Buxtehude |
+| ARGE Nördliche Riedsiedlung | c/o MBN GmbH, Beekebreite 2-8, D 49124 Georgsmarienhütte |
+| SAGA Siedlungs-Aktiengesellschaft Hamburg | Poppenhusenstr. 2, D 22305 Hamburg |
+| S-Immobiliengesellschaft Holstein mbH & Co.KG | Hagenstraße 19, 23843 Bad Oldesloe |
+| Monika Wach | Erich-Kästner-Ring 63, D 22175 Hamburg |
+
+Adresa e kompanisë shfaqet te `/admin/property-owners`, në kolonën Contact,
+te fusha Address në faqen e kompanisë dhe në eksportin Excel.
+Nuk kopjohet te objektet, kuzhinat ose adresat e porosive. Objektet e reja krijohen
+pa adresë; adresat e objekteve ekzistuese nuk ndryshohen. Pas rilidhjes,
+formularët që marrin adresën nga projekti lexojnë objektin e ri. Për shembull,
+formulari i service claims përdor porosinë e fundit kur objekti nuk ka adresë,
+ose lë adresën bosh kur nuk ka as porosi. Adresat e objekteve duhen plotësuar veçmas.
 
 Shkrimet bëhen në një transaksion serializable me verifikim përfundimtar.
+Një ndryshim konkurrues i adresës së kompanisë ose lidhjes së kontratës e ndalon
+importimin dhe transaksioni kthehet mbrapsht.
 Ekzekutimi i përsëritur nuk krijon dublikate. Kompanitë/objektet me emra të dyfishtë,
 projektet jokonsistente dhe përputhjet e paqarta raportohen si konflikte.
 
@@ -104,6 +126,18 @@ Nuk mbetet kontratë ekzistuese pa kompani në atë gjendje të të dhënave.
 Mungojnë `111111535` dhe `670111535` për SAGA / AB-111535; nuk krijohen nga importi.
 Këto janë rezultate të kontrollit, jo konfirmim aplikimi. Raportet e vjetra në
 `tmp/housing-company-*` janë historike dhe duhen rigjeneruar për një ekzekutim të ri.
+
+## Aplikimi lokal më 2026-11-04
+
+Importimi u aplikua vetëm në databazën `localhost`, pas ruajtjes së gjendjes së
+mëparshme në `frontend/.local-data/housing-company-import/`. U krijuan 4 kompani,
+14 objekte dhe 14 projekte; u përditësua adresa e ARGE-së dhe u ruajtën të pesë
+adresat e kompanive nga tabela. U lidhën 228 kontrata dhe u rilidhën 287.
+Nga 538 kontrata ekzistuese, 515 përputhen me burimin dhe 23 mbetën të paprekura;
+19 nga këto mbeten pa kompani. Dy numra të pritshëm kontratash mungojnë dhe
+nuk u krijuan. Ekzekutimi i dytë konfirmoi zero ndryshime të tjera.
+U verifikua që kontaktet, adresat e objekteve ekzistuese dhe fushat e kontratave
+përveç `projectId` mbetën të pandryshuara. Kjo nuk konfirmon aplikim në server.
 
 Testet:
 
