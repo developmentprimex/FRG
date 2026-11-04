@@ -92,8 +92,8 @@ sipas Excel-it. Email-i, telefoni dhe shënimet ekzistuese ruhen.
 
 Adresa e kompanisë shfaqet te `/admin/property-owners`, në kolonën Company address,
 te fusha Address në faqen e kompanisë dhe në eksportin Excel. Kolona Contact
-shfaq email-in dhe telefonin. Location shfaq vendndodhjen e objektit të parë me
-të dhëna adrese, ose `—` kur objektet nuk kanë adresa; nuk përdor adresën e kompanisë.
+shfaq email-in dhe telefonin. Vendndodhjet e objekteve nuk shfaqen si kolonë më vete
+në këtë listë; adresat e tyre menaxhohen brenda kompanisë.
 Nuk kopjohet te objektet, kuzhinat ose adresat e porosive. Objektet e reja krijohen
 pa adresë; adresat e objekteve ekzistuese nuk ndryshohen. Pas rilidhjes,
 formularët që marrin adresën nga projekti lexojnë objektin e ri. Për shembull,

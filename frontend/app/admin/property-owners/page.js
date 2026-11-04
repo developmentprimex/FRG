@@ -36,14 +36,6 @@ function ownerContact(owner) {
   return [owner.email, owner.phone].filter(Boolean);
 }
 
-function ownerLocation(owner) {
-  const firstObject = (owner.propertyObjects || []).find((object) => object.city || object.country || object.address1 || object.address2 || object.postalCode);
-  if (!firstObject) return "—";
-
-  return [firstObject.city, firstObject.country].filter(Boolean).join(", ")
-    || [firstObject.address1, firstObject.address2, firstObject.postalCode].filter(Boolean).join(", ");
-}
-
 function matchingObjects(owner, query) {
   const needle = String(query || "").trim().toLowerCase();
   if (!needle) return [];
@@ -227,7 +219,6 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.owner" fallback="Housing Company" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.companyAddress" fallback="Company address" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.contact" fallback="Contact" /></th>
-                  <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.location" fallback="Location" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.objectsCount" fallback="Objects" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.contracts" fallback="Contract numbers" /></th>
                   <th style={compactThStyle}><AdminText i18nKey="propertyOwnersAdmin.created" fallback="Created at" /></th>
@@ -237,7 +228,7 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
               <tbody>
                 {!filteredOwners.length ? (
                   <tr>
-                    <td style={compactTdStyle} colSpan={9}><AdminText i18nKey="propertyOwnersAdmin.noPropertyOwnersMatchFilters" fallback="No housing companies match the current filters." /></td>
+                    <td style={compactTdStyle} colSpan={8}><AdminText i18nKey="propertyOwnersAdmin.noPropertyOwnersMatchFilters" fallback="No housing companies match the current filters." /></td>
                   </tr>
                 ) : null}
                 {filteredOwners.map((owner, index) => (
@@ -249,7 +240,6 @@ export default async function AdminPropertyOwnersPage({ searchParams = {} }) {
                     </td>
                     <td style={compactTdStyle}>{owner.address || "—"}</td>
                     <td style={compactTdStyle}><ContactValue owner={owner} /></td>
-                    <td style={compactTdStyle}>{ownerLocation(owner)}</td>
                     <td style={compactTdStyle}>
                       {owner._count.propertyObjects}
                     </td>
