@@ -60,3 +60,11 @@ test("email confirmation subject uses the server order number", () => {
   assert.match(draft.bodyText, /Vertragsnummer: 670105840\./);
   assert.doesNotMatch(draft.bodyText, /Bestellte Küche:/);
 });
+
+test("ticket confirmations retain both the ticket reference and financial order number", () => {
+  const draft = buildOrderConfirmationEmailDraft({
+    orderNumber: "670105840-2", ticket: { reference: "#1004 670105840 NK 01" },
+    customer: { contractNumber: "670105840", firstName: "Test", lastName: "Customer" },
+  });
+  assert.equal(draft.subject, "#1004 670105840 NK 01 – Bestellung 670105840-2");
+});

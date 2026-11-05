@@ -2430,6 +2430,7 @@ function KitchenConfiguratorContent({
 
       const emailIssue = payload.notifications?.emailError;
       const webhookIssue = payload.notifications?.webhookError;
+      const ticketNote = payload.ticket?.reference ? translate("configurator.orderTicketReference", "Ticket: {reference}", { reference: payload.ticket.reference }) : "";
       setSavedOrderNumber(payload.orderNumber || "");
 
       if (payload.checkoutUrl) {
@@ -2446,14 +2447,14 @@ function KitchenConfiguratorContent({
         const notes = [emailIssue ? `E-Mail: ${emailIssue}` : "", webhookIssue ? `Webhook: ${webhookIssue}` : ""]
           .filter(Boolean)
           .join(" | ");
-        setStatus(translate("configurator.statusSavedWithIssues", "Order number: {orderNumber}. Your order has been saved. Note: {notes}", {
+        setStatus([translate("configurator.statusSavedWithIssues", "Order number: {orderNumber}. Your order has been saved. Note: {notes}", {
           orderNumber: payload.orderNumber,
           notes,
-        }));
+        }), ticketNote].filter(Boolean).join(" "));
       } else {
-        setStatus(translate("configurator.statusSavedSuccess", "Order number: {orderNumber}. Your order has been saved.", {
+        setStatus([translate("configurator.statusSavedSuccess", "Order number: {orderNumber}. Your order has been saved.", {
           orderNumber: payload.orderNumber,
-        }));
+        }), ticketNote].filter(Boolean).join(" "));
       }
       clearConfiguratorDraft(draftStorageKey);
       setStatusTone("success");

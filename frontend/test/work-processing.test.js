@@ -109,15 +109,15 @@ test("completion is final and stale updates are rejected", async () => {
   assert.equal(workState(attached, now).tone, "done");
 });
 
-test("invalid status, missing claims and order processing are rejected", async () => {
+test("invalid status, missing claims and unknown work types are rejected", async () => {
   const { db } = memoryDb();
   const args = { db, workType: "CLAIM", workId: "old", actor: "admin@example.com", status: "OPEN", expectedVersion: 0 };
   await assert.rejects(updateWorkProcessing({ ...args, status: "HACK" }), /Invalid/);
   await assert.rejects(updateWorkProcessing({ ...args, status: "IN_PROGRESS" }), /Invalid/);
   await assert.rejects(updateWorkProcessing({ ...args, workId: "missing" }), /not found/);
-  for (const workType of ["ORDER", "TEST_ORDER"]) {
+  for (const workType of ["UNKNOWN", "TEST_ORDER"]) {
     await assert.rejects(updateWorkProcessing({ ...args, workType, status: "DONE" }), /Invalid work item/);
-    await assert.rejects(attachWorkProcessing(db, [overdue], workType), /only available for claims/);
+    await assert.rejects(attachWorkProcessing(db, [overdue], workType), /Invalid work type/);
   }
 });
 

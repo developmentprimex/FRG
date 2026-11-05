@@ -797,6 +797,8 @@ function SidebarNavGroup({ item, activeHref, mobile, translate, children, isOpen
 }
 
 function isActivePath(pathname, href) {
+  if (href === "/admin/orders" && pathname.startsWith("/admin/order-tickets")) return true;
+  if (href === "/admin/px-orders" && pathname.startsWith("/admin/px-order-tickets")) return true;
   if (href === "/admin") {
     return pathname === "/admin";
   }

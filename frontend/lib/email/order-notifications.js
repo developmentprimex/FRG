@@ -1919,7 +1919,7 @@ export function buildOrderConfirmationRecipients(customerEmail, senderEmail, opt
 
 export function buildOrderConfirmationEmailDraft(order) {
   return {
-    subject: `NK ${order.orderNumber}`,
+    subject: order.ticket?.reference ? `${order.ticket.reference} – Bestellung ${order.orderNumber}` : `NK ${order.orderNumber}`,
     bodyText: [
       `Hallo ${order.customer.firstName} ${order.customer.lastName},`,
       "",

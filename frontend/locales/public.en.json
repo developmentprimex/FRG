@@ -240,7 +240,8 @@
     "productAssistantLauncher": "Product assistant",
     "productAssistantLauncherPrompt": "Ask a question",
     "productAssistantLauncherSwipeHint": "Swipe to hide",
-    "productAssistantRestore": "Show assistant"
+    "productAssistantRestore": "Show assistant",
+    "orderTicketReference": "Ticket: {reference}"
   },
   "order": {
     "title": "Complete order",

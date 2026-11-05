@@ -5,11 +5,12 @@ import { updateWorkProcessing, reviewWorkReminder } from "../../../../lib/work-p
 import { WORK_TYPES } from "../../../../lib/work-processing-rules";
 import { dispatchClaimFeedbackInvitation, feedbackBaseUrl } from "../../../../lib/claim-feedback";
 import { canAccessClaim, canAccessPx } from "../../../../lib/admin-roles";
+import { hasPermission } from "../../../../lib/admin-permissions";
 
 export async function POST(request) {
   let admin;
-  try { admin = await requireAdminApi("ASC_MANAGE"); }
-  catch (error) { return NextResponse.json({ error: "Unauthorized" }, { status: error.status || 401 }); }
+  try { admin = await requireAdminApi(["ASC_MANAGE", "FRG_MANAGE"]); }
+  catch (error) { return NextResponse.json({ error: error.status === 403 ? "Forbidden" : "Unauthorized" }, { status: error.status || 401 }); }
   // Reject cross-origin browser mutations; worker identity comes from the session.
   const origin = request.headers.get("origin");
   const allowedOrigin = new URL(request.url).origin;
@@ -20,7 +21,9 @@ export async function POST(request) {
   }
   try {
     const data = await request.json();
+    if (!data || typeof data !== "object") return NextResponse.json({ error: "Invalid work item." }, { status: 400 });
     if (data.intent === "review-reminder") {
+      if (!hasPermission(admin, "ASC_MANAGE")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       if (typeof data.batchId !== "string" || data.batchId.length > 200) throw new Error("Invalid reminder review.");
       const reminder = await prisma.workReminderBatch.findUnique({ where: { id: data.batchId } });
       if (!canAccessPx(admin) && reminder?.items.some((item) => item.workType === "TEST_ORDER" || String(item.reference || "").replace(/\s+/g, "").startsWith("111"))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -30,8 +33,12 @@ export async function POST(request) {
     if (!WORK_TYPES.includes(data.workType) || typeof data.workId !== "string" || data.workId.length > 200) {
       return NextResponse.json({ error: "Invalid work item." }, { status: 400 });
     }
-    const claim = await prisma.serviceClaim.findUnique({ where: { id: data.workId }, select: { contractNumber: true } });
-    if (claim && !canAccessClaim(admin, claim.contractNumber)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const orderTicket = data.workType === "ORDER";
+    if (!hasPermission(admin, orderTicket ? "FRG_MANAGE" : "ASC_MANAGE")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const item = await (orderTicket ? prisma.orderTicket : prisma.serviceClaim).findUnique({
+      where: { id: data.workId }, select: orderTicket ? { ticketSeries: true } : { contractNumber: true },
+    });
+    if (item && (orderTicket ? item.ticketSeries === "px" && !hasPermission(admin, "PX_FRG_MANAGE") : !canAccessClaim(admin, item.contractNumber))) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     const processing = await updateWorkProcessing({
       db: prisma, workType: data.workType, workId: data.workId,
       status: data.status,

@@ -6,6 +6,7 @@ import { getAdminPagination } from "../lib/admin-pagination.js";
 import { getPriceBreakdown } from "../lib/price-utils.js";
 import { filterAdminKitchens } from "../lib/admin-kitchen-search.js";
 import { Prisma } from "@prisma/client";
+import { canViewTestContracts } from "../lib/admin-permissions.js";
 
 function loadFunctions(file, names, dependencies) {
   const source = readFileSync(new URL(file, import.meta.url), "utf8");
@@ -128,7 +129,7 @@ test("unfiltered kitchens use bounded database reads", async () => {
 test("contracts apply usage/search filters to both count and bounded detail query", async () => {
   const queries = [];
   const api = loadFunctions("../lib/catalog.js", ["listKitchenContractsForAdmin"], {
-    Prisma, getAdminPagination,
+    Prisma, getAdminPagination, canViewTestContracts,
     attachOrdersToContracts: async rows => rows,
     attachRegistrationsToContracts: async rows => rows,
     prisma: { $queryRaw: async (strings, ...values) => {
@@ -157,7 +158,7 @@ test("contract database pagination agrees with the full filtered list", {
 }, async () => {
   const { prisma } = await import("../lib/prisma.js");
   const api = loadFunctions("../lib/catalog.js", ["listKitchenContractsForAdmin"], {
-    Prisma, prisma, getAdminPagination,
+    Prisma, prisma, getAdminPagination, canViewTestContracts,
     attachOrdersToContracts: async rows => rows,
     attachRegistrationsToContracts: async rows => rows,
   });
@@ -170,4 +171,39 @@ test("contract database pagination agrees with the full filtered list", {
       assert.deepEqual(page.items.map(row => row.id), all.slice(offset, offset + page.pageSize).map(row => row.id));
     }
   } finally { await prisma.$disconnect(); }
+});
+
+
+test("orders processing filters before pagination and counts shared tickets once", async () => {
+  const orders = [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "legacy" }];
+  let groupedWhere;
+  let pageQuery;
+  const delegate = {
+    findMany: async args => {
+      if (args.select) return orders;
+      pageQuery = args;
+      return [{ id: "c", totalPrice: 0, kitchenContractId: null }];
+    },
+    groupBy: async ({ where }) => {
+      groupedWhere = where;
+      return [{ status: "NEW", _count: { _all: 1 }, _sum: { totalPrice: 0 } }];
+    },
+  };
+  const api = loadFunctions("../lib/catalog.js", ["getAdminOrderWhere", "getOrdersPageForAdmin", "getOrdersForAdminByKind", "addContractOrderSequence"], {
+    prisma: {}, getAdminPagination, getPriceBreakdown, ORDER_KIND_LIVE: "live", OrderStatus: {},
+    getOrderDelegate: () => delegate,
+    latestOrderTickets: async (_, candidates, kind) => {
+      assert.equal(kind, "test");
+      assert.equal(candidates.length, 4);
+      return new Map([["a", { id: "shared", done: false }], ["b", { id: "shared", done: false }], ["c", { id: "closed", done: true }]]);
+    },
+    workState: ticket => ({ status: ticket.done ? "DONE" : "OPEN", overdue: !ticket.done }),
+  });
+  const result = await api.getOrdersPageForAdmin({ includeProcessing: true, processing: "DONE" }, 1, "test");
+  assert.deepEqual(Array.from(groupedWhere.id.in), ["c"]);
+  assert.deepEqual(Array.from(pageQuery.where.id.in), ["c"]);
+  assert.equal(pageQuery.take, 20);
+  assert.equal(result.processingCounts.OPEN, 1);
+  assert.equal(result.processingCounts.DONE, 1);
+  assert.equal(result.processingCounts.OVERDUE, 1);
 });

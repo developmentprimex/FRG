@@ -2106,5 +2106,19 @@
     "created": "Received",
     "action": "Action",
     "view": "View"
+  },
+  "orderTickets": {
+    "title": "Order tickets",
+    "pxTitle": "PX order tickets",
+    "ticket": "Ticket",
+    "submissions": "Submissions",
+    "empty": "No order tickets found.",
+    "back": "Back to order tickets",
+    "openOrder": "Open order",
+    "submissionHistory": "Submission history",
+    "submittedOrder": "Submitted order",
+    "quantity": "Quantity",
+    "unitPrice": "Unit price",
+    "submissionNumber": "Submission {number}"
   }
 }

@@ -19,6 +19,7 @@
     "test:product-info-route": "node --test test/product-info-ask-route.test.js",
     "test:service-claims-assistant-route": "node --test test/service-claims-assistant-route.test.js",
     "test:service-claims-contract-autofill": "node --test test/service-claims-contract-autofill.test.js",
+    "test:order-tickets": "node --test test/order-tickets.test.js test/order-ticket-permissions.test.js test/order-ticket-checkout.test.js",
     "check:contract-project-migration": "node scripts/check-contract-project-migration.js",
     "prisma:seed": "node prisma/seed.js",
     "geoip:update": "npm explore ip-location-api -- npm run updatedb -- ILA_FIELDS=country ILA_IP_LOCATION_DB=user ILA_AUTO_UPDATE=false",

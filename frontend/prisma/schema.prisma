@@ -448,6 +448,34 @@ model KitchenItem {
   @@index([catalogServiceId])
 }
 
+model OrderTicket {
+  id             String                  @id @default(cuid())
+  ticketNumber   Int                     @default(dbgenerated())
+  ticketSeries   String
+  contractNumber String
+  ticketSequence Int
+  createdAt      DateTime                @default(now())
+  submissions    OrderTicketSubmission[]
+
+  @@unique([ticketSeries, ticketNumber])
+  @@unique([ticketSeries, contractNumber, ticketSequence])
+  @@index([ticketSeries, createdAt])
+}
+
+// Immutable checkout snapshots. Financial orders retain their own lifecycle.
+model OrderTicketSubmission {
+  id        String      @id @default(cuid())
+  ticketId  String
+  ticket    OrderTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  orderId   String
+  orderKind String
+  payload   Json
+  createdAt DateTime    @default(now())
+
+  @@index([ticketId, createdAt, id])
+  @@index([orderKind, orderId, createdAt])
+}
+
 model Order {
   id                      String           @id @default(cuid())
   orderNumber             String           @unique

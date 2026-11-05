@@ -92,6 +92,7 @@ export async function POST(request) {
       success: true,
       orderNumber: order.orderNumber,
       orderKind: order.orderKind,
+      ticket: order.ticket,
       checkoutUrl: checkoutSession?.url || null,
       notifications: order.notifications || null,
     });

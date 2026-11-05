@@ -1,4 +1,5 @@
 import { AdminContractActivityLinks } from "../../../../components/admin-contract-activity-links";
+import { AdminOrderTicketPanel } from "../../../../components/admin-order-ticket-panel";
 import { getReportsReturnHref } from "../../../../lib/report-navigation";
 import { AdminOrderSummaryTable } from "../../../../components/admin-order-summary-table";
 import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
@@ -210,6 +211,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
             </div>
           }
         >
+          <AdminOrderTicketPanel orderId={order.id} />
           <AdminOrderAs400Form
             orderId={order.id}
             initialValue={order.as400Number || ""}

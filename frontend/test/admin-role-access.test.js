@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import { ADMIN_ROLES, hasFullAdminAccess, isSuperAdmin, canAccessPx, canAccessClaim, parseAdminRole, formatAdminRoleLabel } from "../lib/admin-roles.js";
 import { getAdminUserActionRestrictions } from "../lib/admin-user-management.js";
+import { hasPermission } from "../lib/admin-permissions.js";
 
 function loadSource(relative, context) {
   if (relative.includes("/route.js") && !context.withAdminPermission) {
@@ -80,9 +81,9 @@ for (const relative of ["px-orders/route.js", "px-orders/[id]/route.js", "px-ord
 test("shared claim delete, attachments and processing APIs reject PX claims for ADMIN", async () => {
   for (const relative of ["claims/[id]/route.js", "claims/[id]/attachments/[index]/route.js", "work-processing/route.js"]) {
     const context = vm.createContext({
-      URL, canAccessClaim, canAccessPx,
+      URL, canAccessClaim, canAccessPx, hasPermission,
       requireAdminClaimsApi: async () => ({ role: "ADMIN" }),
-      requireAdminApi: async () => ({ role: "ADMIN", email: "admin@example.com" }),
+      requireAdminApi: async () => ({ role: "ADMIN", permissions: ["ASC"], email: "admin@example.com" }),
       NextResponse: { json: (body, options = {}) => ({ body, status: options.status || 200 }) },
       prisma: { $queryRaw: async () => [{ contractNumber: "111123456" }], serviceClaim: { findUnique: async () => ({ contractNumber: "111123456" }) } },
       queryServiceClaimById: async () => [{ contractNumber: "111123456" }],

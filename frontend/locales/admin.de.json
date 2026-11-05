@@ -2106,5 +2106,19 @@
     "created": "Eingegangen",
     "action": "Aktion",
     "view": "Ansehen"
+  },
+  "orderTickets": {
+    "title": "Bestelltickets",
+    "pxTitle": "PX-Bestelltickets",
+    "ticket": "Ticket",
+    "submissions": "Einsendungen",
+    "empty": "Keine Bestelltickets gefunden.",
+    "back": "Zurück zu den Bestelltickets",
+    "openOrder": "Bestellung öffnen",
+    "submissionHistory": "Einsendungsverlauf",
+    "submittedOrder": "Eingereichte Bestellung",
+    "quantity": "Menge",
+    "unitPrice": "Einzelpreis",
+    "submissionNumber": "Einsendung {number}"
   }
 }

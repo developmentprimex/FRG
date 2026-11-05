@@ -1,3 +1,5 @@
+import { latestOrderTickets } from "./order-ticket-admin.js";
+import { workState } from "./work-processing-rules.js";
 import { KitchenStatus, ItemType, OrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import { canViewTestContracts } from "./admin-permissions.js";
@@ -1585,6 +1587,26 @@ async function getAdminOrderWhere(filters = {}) {
 export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, orderKind = ORDER_KIND_LIVE) {
   const where = await getAdminOrderWhere(filters);
   const delegate = getOrderDelegate(prisma, orderKind);
+  const processingCounts = { OPEN: 0, DONE: 0, OVERDUE: 0 };
+  if (filters.includeProcessing) {
+    const candidates = await delegate.findMany({ where, select: { id: true } });
+    const tickets = await latestOrderTickets(prisma, candidates, orderKind);
+    const matchingIds = [];
+    const counted = new Set();
+    const now = new Date();
+    for (const order of candidates) {
+      const ticket = tickets.get(order.id);
+      if (!ticket) continue;
+      const state = workState(ticket, now);
+      if (!counted.has(ticket.id)) {
+        processingCounts[state.status] += 1;
+        if (state.overdue) processingCounts.OVERDUE += 1;
+        counted.add(ticket.id);
+      }
+      if (filters.processing === state.status || filters.processing === "ACTIVE" && state.status === "OPEN" || filters.processing === "OVERDUE" && state.overdue) matchingIds.push(order.id);
+    }
+    if (["OPEN", "ACTIVE", "DONE", "OVERDUE"].includes(filters.processing)) where.id = { in: matchingIds };
+  }
   const groups = await delegate.groupBy({
     by: ["status"], where, _count: { _all: true }, _sum: { totalPrice: true },
   });
@@ -1601,6 +1623,7 @@ export async function getOrdersPageForAdmin(filters = {}, requestedPage = 1, ord
   const breakdown = getPriceBreakdown(confirmedGross);
   return {
     pagination: { ...pagination, items },
+    processingCounts,
     summary: { totalOrders, statusCounts, confirmedGross, confirmedNet: breakdown.net, confirmedVat: breakdown.vat },
   };
 }

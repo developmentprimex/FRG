@@ -1,4 +1,5 @@
 import { AdminOrderKitchenSpecifications } from "../../../../components/admin-order-kitchen-specifications";
+import { AdminOrderTicketPanel } from "../../../../components/admin-order-ticket-panel";
 import { loadOrderKitchenSpecifications } from "../../../../lib/kitchen-ab-runtime";
 import { AdminOrderInformation } from "../../../../components/admin-order-information";
 import Link from "next/link";
@@ -143,6 +144,7 @@ export default async function AdminPxOrderDetailPage({ params, searchParams }) {
             </div>
           )}
         >
+          <AdminOrderTicketPanel orderId={order.id} orderKind="test" />
           {successMessage ? <FlashMessage tone="success" message={successMessage} /> : null}
           {errorMessage ? <FlashMessage tone="error" message={errorMessage} /> : null}
           {paymentLink ? (

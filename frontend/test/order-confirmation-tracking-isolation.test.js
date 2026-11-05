@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { setImmediate as nextTurn } from "node:timers/promises";
 import vm from "node:vm";
 import test from "node:test";
+import { orderStatusUpdateData } from "../lib/order-confirmation-date.js";
 
 const ordersSource = readFileSync(new URL("../lib/orders.js", import.meta.url), "utf8");
 const stripeSource = readFileSync(new URL("../lib/stripe-payments.js", import.meta.url), "utf8");
@@ -23,6 +24,7 @@ for (const flow of flows) {
       const order = { id: "order-id", orderNumber: "100001-1", status: "NEW", paymentStatus: "PAID" };
       const context = vm.createContext({
         console,
+        orderStatusUpdateData,
         ORDER_KIND_LIVE: "live",
         OrderStatus: { CONFIRMED: "CONFIRMED", CANCELLED: "CANCELLED" },
         prisma: {
@@ -65,8 +67,9 @@ for (const flow of flows) {
       const shouldConfirm = flow.confirms && outcome !== "failure";
       assert.equal(writes.length, shouldConfirm ? 1 : 0);
       if (shouldConfirm) {
-        assert.deepEqual(Object.keys(writes[0].data), ["status"]);
+        assert.deepEqual(Object.keys(writes[0].data), ["status", "confirmedAt"]);
         assert.equal(writes[0].data.status, "CONFIRMED");
+        assert.ok(writes[0].data.confirmedAt instanceof Date);
       }
       const shouldThrow = outcome === "failure" && flow.name !== "maybeSendPaidOrderConfirmation";
       assert.strictEqual(returnedError, shouldThrow ? smtpError : undefined);

@@ -4,6 +4,7 @@ import { registerHooks } from "node:module";
 import vm from "node:vm";
 import test from "node:test";
 import { buildOrderSummaryHtml } from "../lib/email/order-notifications.js";
+import { orderStatusUpdateData } from "../lib/order-confirmation-date.js";
 
 // Next resolves extensionless local imports; use the same resolution in Node.
 registerHooks({
@@ -52,6 +53,7 @@ test("Stripe paid confirmation includes each cabinet's linked filler without cha
   };
   const context = vm.createContext({
     console, URL, prisma: {}, ORDER_KIND_LIVE: "live",
+    orderStatusUpdateData,
     getOrderDelegate: () => delegate,
     isTestOrderKind: () => true,
     getMissingEmailSmtpConfig: () => [],

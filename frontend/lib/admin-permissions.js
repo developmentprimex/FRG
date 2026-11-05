@@ -51,6 +51,8 @@ export function routePermission(path, method = "GET") {
   if (segment === "claim-activity") return "ASC_VIEW";
   if (segment === "px-orders") return view ? "PX_FRG_VIEW" : "PX_FRG_MANAGE";
   if (segment === "px-claims") return view ? "PX_ASC_VIEW" : "PX_ASC_MANAGE";
+  if (segment === "px-order-tickets") return view ? "PX_FRG_VIEW" : "PX_FRG_MANAGE";
+  if (segment === "order-tickets") return view ? "FRG_VIEW" : "FRG_MANAGE";
   if (["claims"].includes(segment)) return view ? "ASC_VIEW" : "ASC_MANAGE";
   if (path.includes("/catalog/claim-products")) return view ? "ASC_VIEW" : "ASC_MANAGE";
   if (["orders", "px-orders", "order-cancellations", "search"].includes(segment)) return view ? "FRG_VIEW" : "FRG_MANAGE";

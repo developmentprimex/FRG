@@ -14,7 +14,7 @@ export async function lockWorkProcessing(tx, tryOnly = false) {
 }
 
 export async function attachWorkProcessing(db, items, workType) {
-  if (!WORK_TYPES.includes(workType)) throw new Error("Processing is only available for claims.");
+  if (!WORK_TYPES.includes(workType)) throw new Error("Invalid work type.");
   const ids = items.filter(Boolean).map((item) => item.id);
   if (!ids.length) return items;
   const records = await db.workProcessing.findMany({ where: { workType, workId: { in: ids } } });
@@ -24,11 +24,14 @@ export async function attachWorkProcessing(db, items, workType) {
 
 export async function findWorkItem(db, workType, workId) {
   if (!WORK_TYPES.includes(workType) || !workId) throw new Error("Invalid work item.");
-  const item = await db.serviceClaim.findUnique({ where: { id: workId }, select: {
+  const delegate = workType === "ORDER" ? db.orderTicket : db.serviceClaim;
+  const item = await delegate.findUnique({ where: { id: workId }, select: workType === "ORDER" ? {
+    id: true, createdAt: true, contractNumber: true, ticketSeries: true,
+  } : {
     id: true, createdAt: true, contractNumber: true, fullName: true, email: true,
   } });
   if (!item) throw new Error("Work item not found.");
-  return { ...item, workType, test: isTestContractNumber(item.contractNumber) };
+  return { ...item, workType, test: workType === "ORDER" ? item.ticketSeries === "px" : isTestContractNumber(item.contractNumber) };
 }
 
 export async function updateWorkProcessing({ db, workType, workId, status, actor, expectedVersion }) {

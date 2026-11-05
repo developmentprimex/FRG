@@ -240,7 +240,8 @@
     "productAssistantLauncher": "Produktberater",
     "productAssistantLauncherPrompt": "Frage stellen",
     "productAssistantLauncherSwipeHint": "Zum Ausblenden wischen",
-    "productAssistantRestore": "Berater anzeigen"
+    "productAssistantRestore": "Berater anzeigen",
+    "orderTicketReference": "Ticket: {reference}"
   },
   "order": {
     "title": "Bestellung abschließen",

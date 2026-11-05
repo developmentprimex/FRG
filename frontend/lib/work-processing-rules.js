@@ -1,6 +1,6 @@
 export const WORK_TIME_ZONE = "Europe/Berlin";
 export const WORK_STATUSES = ["OPEN", "DONE"];
-export const WORK_TYPES = ["CLAIM"];
+export const WORK_TYPES = ["CLAIM", "ORDER"];
 const DAY_MS = 86400000;
 
 export function workUiItem(item) {

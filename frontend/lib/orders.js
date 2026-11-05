@@ -1,4 +1,7 @@
 import { ItemType, OrderStatus, Prisma } from "@prisma/client";
+import { lockOrderTickets, recordOrderTicketSubmission } from "./order-tickets.js";
+import { formatOrderTicketReference } from "./order-ticket-reference.js";
+import { latestOrderTickets } from "./order-ticket-admin.js";
 import {
   getDeliveryLeadTimeWeeks,
   getDeliveryMinOrderSettings,
@@ -295,7 +298,7 @@ function getOrderItemEffectivePrice(item) {
   return unitPrice * quantity;
 }
 
-export function buildOrderForNotifications(orderRecord, { confirmedItems = [] } = {}) {
+export function buildOrderForNotifications(orderRecord, { confirmedItems = [], ticket = null } = {}) {
   const toNotificationItem = (item) => {
     const kitchenSlug = String(orderRecord.kitchen?.slug || "").trim().toLowerCase();
     const isBurger103898 = kitchenSlug === "burger-103898";
@@ -418,6 +421,7 @@ export function buildOrderForNotifications(orderRecord, { confirmedItems = [] } 
   return {
     id: orderRecord.id,
     orderNumber: orderRecord.orderNumber,
+    ...(ticket ? { ticket: { id: ticket.id, reference: formatOrderTicketReference(ticket) } } : {}),
     createdAt: orderRecord.createdAt.toISOString(),
     total: Number(orderRecord.totalPrice),
     kitchen: {
@@ -486,6 +490,7 @@ export async function buildOrderForNotificationsWithConfirmedBaseline(
 
   return buildOrderForNotifications(orderRecord, {
     confirmedItems,
+    ticket: (await latestOrderTickets(prisma, [orderRecord], orderKind)).get(orderRecord.id),
   });
 }
 
@@ -901,10 +906,12 @@ export async function createOrderFromSubmission({ kitchenSlug, orderPayload, pdf
   }
 
   let savedOrder = null;
+  let savedTicket = null;
   let savedNewItems = [];
   for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       savedOrder = await prisma.$transaction(async (tx) => {
+        await lockOrderTickets(tx);
         const orderDelegate = getOrderDelegate(tx, orderKind);
         const orderItemDelegate = getOrderItemDelegate(tx, orderKind);
         const contractOrderState = await getContractOrderState(kitchenContract.id, tx, orderKind);
@@ -993,7 +1000,7 @@ export async function createOrderFromSubmission({ kitchenSlug, orderPayload, pdf
 
         savedNewItems = newSelectedItems.filter((item) => newSelectionKeys.has(buildOrderItemSelectionKey(item)));
 
-        return orderDelegate.findUnique({
+        const saved = await orderDelegate.findUnique({
           where: { id: order.id },
           include: {
             kitchen: true,
@@ -1010,7 +1017,9 @@ export async function createOrderFromSubmission({ kitchenSlug, orderPayload, pdf
             },
           },
         });
-      });
+        savedTicket = await recordOrderTicketSubmission(tx, saved, orderKind);
+        return saved;
+      }, { maxWait: 10000, timeout: 45000 });
       break;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002" && attempt < 2) {
@@ -1026,6 +1035,7 @@ export async function createOrderFromSubmission({ kitchenSlug, orderPayload, pdf
 
   const orderForNotifications = buildOrderForNotifications(savedOrder, {
     confirmedItems: contractOrderState.confirmedItems,
+    ticket: savedTicket,
   });
   const notificationResult = await processOrderNotifications({
     order: orderForNotifications,
@@ -1039,6 +1049,7 @@ export async function createOrderFromSubmission({ kitchenSlug, orderPayload, pdf
     ...orderForNotifications,
     orderKind,
     newItemCount: savedNewItems.length,
+    ticket: { id: savedTicket.id, ticketNumber: savedTicket.ticketNumber, ticketSequence: savedTicket.ticketSequence, contractNumber: savedTicket.contractNumber, reference: formatOrderTicketReference(savedTicket) },
     notifications: notificationResult,
   };
 }
