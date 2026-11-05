@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { safelySaveJourneyEvent } from "../../../../lib/visit-journey-server.js";
+import { isTestContractNumber } from "../../../../lib/order-kind.js";
 import { NextResponse } from "next/server";
 import { isMissingKitchenRegistrationTableError, kitchenRegistrationUnavailableMessage } from "../../../../lib/kitchen-registration-db";
 import { prisma } from "../../../../lib/prisma";
@@ -122,6 +124,10 @@ export async function POST(request) {
       });
     });
 
+    await safelySaveJourneyEvent({ request, step: "service_registered", path: "/api/kitchen-registrations/verify",
+      id: `registration:${activated.id}`, contractNumber: registration.kitchenContract.contractNumber,
+      isTest: isTestContractNumber(registration.kitchenContract.contractNumber),
+    });
     return NextResponse.json({
       success: true,
       message: "This kitchen is now registered to you. Previous active registrations for this contract were closed.",

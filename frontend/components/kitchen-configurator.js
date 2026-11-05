@@ -1,4 +1,5 @@
 "use client";
+import { trackJourneyStep, ensureJourneySession } from "../lib/visit-journey-client.js";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -1315,6 +1316,9 @@ function KitchenConfiguratorContent({
   const [savedOrderNumber, setSavedOrderNumber] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isOrderSectionOpen, setIsOrderSectionOpen] = useState(false);
+  useEffect(() => {
+    trackJourneyStep(isOrderSectionOpen ? "order_form" : "kitchen", { contractNumber: initialContractNumber });
+  }, [isOrderSectionOpen, initialContractNumber]);
   const [activeProductInfo, setActiveProductInfo] = useState(null);
   const [activeProductPhotos, setActiveProductPhotos] = useState(null);
   const [isProductAssistantOpen, setIsProductAssistantOpen] = useState(false);
@@ -1719,6 +1723,7 @@ function KitchenConfiguratorContent({
   ]);
 
   function toggleAccessory(itemCode) {
+    trackJourneyStep("products");
     const accessoryItem = kitchenConfig.accessories.find((item) => item.code === itemCode);
     if (isCutleryAccessoryItem(accessoryItem)) return;
     if (fixedAccessoryCodes.has(itemCode)) return;
@@ -1728,6 +1733,7 @@ function KitchenConfiguratorContent({
   }
 
   function toggleCutleryVariant(articleNumber) {
+    trackJourneyStep("products");
     if (orderLockedAccessoryCodes.has(cutleryBaseItem?.code)) return;
 
     const normalizedArticleNumber = String(articleNumber || "").trim().toUpperCase();
@@ -1743,6 +1749,7 @@ function KitchenConfiguratorContent({
   }
 
   function updateCutleryLineQuantity(articleNumber, quantity) {
+    trackJourneyStep("products");
     if (orderLockedAccessoryCodes.has(cutleryBaseItem?.code)) return;
 
     const normalizedArticleNumber = String(articleNumber || "").trim().toUpperCase();
@@ -1758,6 +1765,7 @@ function KitchenConfiguratorContent({
   }
 
   function toggleService(itemCode) {
+    trackJourneyStep("products");
     if (orderLockedServiceCodes.has(itemCode)) return;
     if (itemCode === SERVICE_CODE_MONTAGE && !serviceEligibility.montageEligible) {
       setStatus(translate("configurator.servicePickupError", "Pickup can only be added once at least one item has been selected."));
@@ -1842,6 +1850,7 @@ function KitchenConfiguratorContent({
   }
 
   function selectArticleVariant(componentId, articleNumber) {
+    trackJourneyStep("products");
     const item = kitchenConfig.components.find((candidate) => componentIdForItem(candidate) === componentId);
     const selectedOption = findAuszugVariantOption(item, articleNumber);
     if (!item || !selectedOption) return;
@@ -1867,6 +1876,7 @@ function KitchenConfiguratorContent({
   }
 
   function applyComponentToggle(componentId) {
+    trackJourneyStep("products");
     setSelectedComponentIds((current) =>
       toggleLinkedComponentSelection(kitchenSlug, current, componentId, fixedComponentIds),
     );
@@ -1880,6 +1890,7 @@ function KitchenConfiguratorContent({
   }
 
   function toggleComponentSelection(componentId) {
+    trackJourneyStep("products");
     if (fixedComponentIds.includes(componentId)) return;
 
     if (isLinkedComponentSelected(kitchenSlug, selectedComponentIds, componentId)) {
@@ -1946,6 +1957,7 @@ function KitchenConfiguratorContent({
   }
 
   function removeAccessory(item) {
+    trackJourneyStep("products");
     if (item.isLocked || item.isOrderLocked) return;
     if (item.isCutleryLine && item.selectionKey) {
       const line = cutleryLines.find((entry) => entry.id === item.selectionKey);
@@ -1958,11 +1970,13 @@ function KitchenConfiguratorContent({
   }
 
   function removeService(item) {
+    trackJourneyStep("products");
     if (item.isOrderLocked) return;
     setSelectedServiceCodes((current) => current.filter((code) => code !== item.code));
   }
 
   function resetSelection() {
+    trackJourneyStep("products");
     setSelectedAccessoryCodes([...fixedAccessoryCodes].filter((code) => {
       const accessoryItem = kitchenConfig.accessories.find((item) => item.code === code);
       return !isCutleryAccessoryItem(accessoryItem);
@@ -2390,6 +2404,7 @@ function KitchenConfiguratorContent({
       const pdf = await generateOrderPdf(pdfOrder);
       const pdfBase64 = await blobToBase64(pdf.blob);
 
+      ensureJourneySession("FRG");
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

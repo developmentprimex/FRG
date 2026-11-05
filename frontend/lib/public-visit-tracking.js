@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 import { prisma } from "./prisma.js";
+import { trackJourneyOutcome, journeyCookie } from "./visit-journey-server.js";
+import { journeySessionCookie } from "./visit-journey-steps.js";
 
 export const PUBLIC_VISIT_EVENT_TYPES = {
   PAGE_OPENED: "PAGE_OPENED",
@@ -229,6 +231,8 @@ export async function trackPublicVisitEvent({
   const optedOut = hasPublicTrackingOptOut(request);
   const device = optedOut ? {} : getCoarseDeviceData(userAgent);
   const countryCode = await getPublicVisitCountryCode(request);
+  const journeyFlow = path === SERVICE_PAGE_PATH || normalizedEventType.startsWith("SERVICE_") ? "ASC" : "FRG";
+  const journeySessionId = optedOut ? null : journeyCookie(request, journeySessionCookie(journeyFlow));
 
   const event = await prisma.publicVisitEvent.create({
     data: {
@@ -249,7 +253,7 @@ export async function trackPublicVisitEvent({
       contractNumberLast4: storedContractNumber ? storedContractNumber.slice(-4) : null,
       ipHash: null,
       userAgentHash: null,
-      metadata,
+      metadata: journeySessionId ? { ...(metadata || {}), journeySessionId } : metadata,
       createdAt: now,
     },
   });
@@ -259,6 +263,7 @@ export async function trackPublicVisitEvent({
 }
 
 export async function safelyTrackPublicVisitEvent(args) {
+  await trackJourneyOutcome(args);
   try {
     return await trackPublicVisitEvent(args);
   } catch (error) {

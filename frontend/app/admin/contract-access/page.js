@@ -1,4 +1,7 @@
 import AdminFilterForm from "../../../components/admin-filter-form";
+import AdminVisitHistoryDialog from "../../../components/admin-visit-history-dialog";
+import { loadFragmentoVisitors } from "../../../lib/fragmento-visitors-report";
+import journeyStyles from "../../../components/admin-visit-journeys.module.css";
 import visitorTableStyles from "../../../components/admin-visitor-table.module.css";
 import Link from "next/link";
 import {
@@ -17,7 +20,6 @@ import {
 import { requireAdminPage } from "../../../lib/auth";
 import { canViewTestContracts } from "../../../lib/admin-permissions";
 import {
-  loadContractAccessPageData,
   normalizePublicVisitReportFilters,
 } from "../../../lib/public-visit-reports";
 
@@ -42,13 +44,23 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
   const params = (await searchParams) || {};
   const filters = normalizePublicVisitReportFilters(params);
   filters.excludeTestContracts = !canViewTestContracts(admin);
-  const { events, page, total, totalPages } = await loadContractAccessPageData(filters, params.page);
+  const { rows: events, page, total, totalPages, selected, history } = await loadFragmentoVisitors(filters, params);
   function pageHref(targetPage) {
     const query = new URLSearchParams({ page: String(targetPage) });
     if (filters.dateFrom) query.set("dateFrom", filters.dateFrom);
     if (filters.dateTo) query.set("dateTo", filters.dateTo);
     return `/admin/contract-access?${query}`;
   }
+  function visitHref(visit) {
+    const query = new URLSearchParams({ page: String(page) });
+    if (filters.dateFrom) query.set("dateFrom", filters.dateFrom);
+    if (filters.dateTo) query.set("dateTo", filters.dateTo);
+    if (visit) query.set("visit", visit);
+    return `/admin/contract-access?${query}`;
+  }
+  const stepLabel = (step) => step
+    ? <AdminText i18nKey={`visitJourney.steps.${step}`} fallback={step} />
+    : <AdminText i18nKey="contractAccessAdmin.notCaptured" fallback="Not captured" />;
 
   return (
     <AdminShell adminEmail={admin.email}>
@@ -73,7 +85,7 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
           </AdminFilterForm>
 
           <div className={`admin-contract-access-table ${visitorTableStyles.wrapper}`}>
-            <table className={visitorTableStyles.table}>
+            <table className={`${visitorTableStyles.table} ${journeyStyles.unifiedTable}`}>
               <thead>
                 <tr>
                   <th className={visitorTableStyles.numberCell}><AdminText i18nKey="usersAdmin.orderNr" fallback="No." /></th>
@@ -81,14 +93,15 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
                   <th><AdminText i18nKey="contractAddressFields.country" fallback="Country" /></th>
                   <th><AdminText i18nKey="contractAccessAdmin.device" fallback="Device" /></th>
                   <th><AdminText i18nKey="contractAccessAdmin.contract" fallback="Contract" /></th>
-                  <th><AdminText i18nKey="contractAccessAdmin.project" fallback="Project" /></th>
                   <th><AdminText i18nKey="contractAccessAdmin.result" fallback="Result" /></th>
+                  <th><AdminText i18nKey="visitJourney.furthest" fallback="Furthest step" /></th>
+                  <th><AdminText i18nKey="visitJourney.history" fallback="Visit history" /></th>
                 </tr>
               </thead>
               <tbody>
                 {!events.length ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <AdminText i18nKey="contractAccessAdmin.noContractAccess" fallback="No contract access events found." />
                     </td>
                   </tr>
@@ -99,7 +112,10 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
                   return (
                     <tr key={event.id}>
                       <td className={visitorTableStyles.numberCell}>{total - (page - 1) * 100 - index}</td>
-                      <td><AdminDateTime value={event.createdAt} timeZone="Europe/Berlin" /></td>
+                      <td>
+                        <AdminDateTime value={event.activityAt || event.createdAt} timeZone="Europe/Berlin" numeric />
+                        {event.visitorId && <span style={mutedLineStyle} title={event.visitorId}>{event.visitorId.slice(0, 8)}</span>}
+                      </td>
                       <td><AdminCountryName code={event.countryCode} /></td>
                       <td>
                         {event.deviceType || <AdminText i18nKey="contractAccessAdmin.notCaptured" fallback="Not captured" />}
@@ -110,16 +126,12 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
                       <td>
                         {contract ? (
                           <Link href={`/admin/contracts/${contract.id}`} style={contractLinkStyle}>{contract.contractNumber}</Link>
-                        ) : event.contractNumber || (event.contractNumberLast4 ? `••••${event.contractNumberLast4}` : "-")}
+                        ) : event.contractNumber || (event.contractNumberLast4 ? `••••${event.contractNumberLast4}` : <AdminText i18nKey="visitJourney.anonymous" fallback="Anonymous" />)}
                         {contract?.kitchen?.name ? <span style={mutedLineStyle}>{contract.kitchen.name}</span> : null}
                       </td>
-                      <td>
-                        {contract?.project?.name || "-"}
-                        {contract?.project?.housingCompany?.name ? (
-                          <span style={mutedLineStyle}>{contract.project.housingCompany.name}</span>
-                        ) : null}
-                      </td>
-                      <td><AccessResultBadge eventType={event.eventType} /></td>
+                      <td>{event.eventType ? <AccessResultBadge eventType={event.eventType} /> : "—"}</td>
+                      <td>{stepLabel(event.furthestStep)}</td>
+                      <td>{event.kind === "visit" ? <Link href={visitHref(event.id)} scroll={false} style={filterClearLinkStyle}><AdminText i18nKey="visitJourney.view" fallback="View history" /></Link> : "—"}</td>
                     </tr>
                   );
                 })}
@@ -142,6 +154,12 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
               </Link>
             ) : null}
           </nav>
+          {selected && <AdminVisitHistoryDialog key={selected.id} closeHref={visitHref(null)} visitor={selected.contractNumber || selected.visitorId.slice(0, 8)}>
+            <ol>{history.map(event => <li key={event.id}>
+              <AdminDateTime value={event.occurredAt} timeZone="Europe/Berlin" numeric /> · {stepLabel(event.step)}
+              {event.contractNumber && <> · {event.contractNumber}</>}
+            </li>)}</ol>
+          </AdminVisitHistoryDialog>}
         </AdminSection>
       </div>
     </AdminShell>

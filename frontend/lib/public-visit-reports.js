@@ -33,7 +33,7 @@ const SERVICE_VISIT_FUNNEL_EVENT_TYPES = [
   ...SERVICE_VISIT_OUTCOME_EVENT_TYPES,
 ];
 
-const kitchenContractInclude = {
+export const kitchenContractInclude = {
   kitchenContract: {
     select: {
       id: true,
@@ -212,7 +212,7 @@ export function calculatePublicVisitBreakdowns(events = []) {
   };
 }
 
-function liveVisitSqlWhere(filters = {}) {
+export function liveVisitSqlWhere(filters = {}) {
   if (!filters.excludeTestContracts) return Prisma.sql`TRUE`;
   return Prisma.sql`
     "eventType" <> ${PUBLIC_VISIT_EVENT_TYPES.CONTRACT_TEST_ACCEPTED}

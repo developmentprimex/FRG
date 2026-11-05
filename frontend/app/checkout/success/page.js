@@ -1,4 +1,5 @@
 import Link from "next/link";
+import JourneyStepTracker from "../../../components/journey-step-tracker";
 import { redirect } from "next/navigation";
 import { ItemType } from "@prisma/client";
 import { getStripeClient } from "../../../lib/stripe";
@@ -241,6 +242,7 @@ export default async function CheckoutSuccessPage({ searchParams }) {
 
   return (
     <main style={pageStyle}>
+      <JourneyStepTracker step="checkout_return" />
       <section style={shellStyle}>
         <div style={headerStyle}>
           <span style={getBadgeStyle(statusCopy.tone)}>{getPaymentStatusLabel(effectiveStatus)}</span>

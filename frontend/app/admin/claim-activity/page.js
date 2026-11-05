@@ -1,4 +1,5 @@
 import AdminFilterForm from "../../../components/admin-filter-form";
+import AdminVisitJourneys from "../../../components/admin-visit-journeys";
 import visitorTableStyles from "../../../components/admin-visitor-table.module.css";
 import Link from "next/link";
 import {
@@ -71,7 +72,8 @@ function SummaryCard({ label, value }) {
 
 export default async function AdminClaimActivityPage({ searchParams = {} }) {
   const admin = await requireAdminPage("ASC_VIEW");
-  const filters = normalizePublicVisitReportFilters((await searchParams) || {});
+  const params = (await searchParams) || {};
+  const filters = normalizePublicVisitReportFilters(params);
   filters.excludeTestContracts = !canViewTestContracts(admin);
   const [summary, events] = await Promise.all([
     loadServiceVisitSummary(filters),
@@ -81,6 +83,7 @@ export default async function AdminClaimActivityPage({ searchParams = {} }) {
   return (
     <AdminShell adminEmail={admin.email}>
       <div style={pageGridStyle}>
+        <AdminVisitJourneys flow="ASC" filters={filters} params={params} />
         <AdminSection
           title={<AdminText i18nKey="claimActivityAdmin.title" fallback="Claim activity" />}
         >

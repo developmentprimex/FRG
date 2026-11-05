@@ -4,6 +4,7 @@ import { isTestOrderKind } from "../../../lib/order-kind";
 import { enforceRateLimit, getRequestClientIp } from "../../../lib/rate-limit";
 import { createCheckoutSessionForOrder } from "../../../lib/stripe-payments";
 import { isStripeConfigured } from "../../../lib/stripe";
+import { safelySaveJourneyEvent } from "../../../lib/visit-journey-server.js";
 
 function getRequestOrigin(request) {
   const forwardedProto = request.headers.get("x-forwarded-proto");
@@ -44,7 +45,7 @@ function buildCheckoutCancelUrl({ request, origin, order, kitchenSlug }) {
   return cancelUrl.toString();
 }
 
-async function createCheckoutSession({ request, order, kitchenSlug }) {
+async function createCheckoutSession({ request, order, kitchenSlug, journeySessionId }) {
   const origin = getRequestOrigin(request);
   const cancelUrl = buildCheckoutCancelUrl({ request, origin, order, kitchenSlug });
   const stripeMode = isTestOrderKind(order.orderKind) ? "test" : "live";
@@ -64,6 +65,7 @@ async function createCheckoutSession({ request, order, kitchenSlug }) {
     cancelUrl,
     stripeMode,
     orderKind: order.orderKind,
+    journeySessionId,
   });
 }
 
@@ -82,12 +84,20 @@ export async function POST(request) {
       pdfBase64: body.pdf_base64,
       pdfFilename: body.pdf_filename,
     });
+    const journeySessionId = await safelySaveJourneyEvent({ request, step: "order_created", path: "/api/orders",
+      id: `order:${order.orderKind}:${order.orderNumber}:created`,
+      contractNumber: order.customer.contractNumber, isTest: isTestOrderKind(order.orderKind),
+    });
     const checkoutSession = await createCheckoutSession({
       request,
       order,
       kitchenSlug: body.kitchen_slug,
+      journeySessionId,
     });
 
+    if (checkoutSession) await safelySaveJourneyEvent({ request, step: "checkout_created", path: "/api/orders",
+      id: `checkout:${checkoutSession.id}`,
+    });
     return NextResponse.json({
       success: true,
       orderNumber: order.orderNumber,

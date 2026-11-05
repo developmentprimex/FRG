@@ -1,4 +1,5 @@
 "use client";
+import { trackJourneyStep, ensureJourneySession } from "../lib/visit-journey-client.js";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -401,6 +402,7 @@ export default function FragmentoEntryFlow() {
   );
   const [selectedMode, setSelectedMode] = useState(initialEntryState?.selectedMode || "");
   const [screen, setScreen] = useState(initialEntryState?.screen || "language");
+  useEffect(() => { trackJourneyStep(screen); }, [screen]);
   const [contractNumber, setContractNumber] = useState(initialEntryState?.contractNumber || "");
   const [error, setError] = useState("");
   const [isValidatingContract, setIsValidatingContract] = useState(false);
@@ -513,6 +515,7 @@ export default function FragmentoEntryFlow() {
     setError("");
 
     try {
+      ensureJourneySession("FRG");
       const response = await fetch("/api/kitchen-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

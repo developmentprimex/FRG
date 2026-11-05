@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import { recordJourneyPayment } from "./visit-journey-server.js";
 import { orderStatusUpdateData } from "./order-confirmation-date.js";
 import { getStripeClient } from "./stripe";
 import { getDirectOrderConfirmationEnabled } from "./admin-settings";
@@ -121,10 +122,13 @@ export async function updateOrderFromCheckoutSession(session, options = {}) {
   }
 
   await maybeSendPaidOrderConfirmation(updatedOrder, { orderKind });
+  if (session.metadata?.journeySessionId && (session.payment_status === "paid" || session.payment_status === "no_payment_required")) {
+    await recordJourneyPayment(session.metadata?.journeySessionId, session.id);
+  }
   return updatedOrder;
 }
 
-export async function createCheckoutSessionForOrder({ order, origin, successPath = "/checkout/success", cancelUrl, stripeMode = "live", orderKind = ORDER_KIND_LIVE }) {
+export async function createCheckoutSessionForOrder({ order, origin, successPath = "/checkout/success", cancelUrl, stripeMode = "live", orderKind = ORDER_KIND_LIVE, journeySessionId = null }) {
   const stripe = getStripeClient(stripeMode);
 
   if (!stripe) {
@@ -171,6 +175,7 @@ export async function createCheckoutSessionForOrder({ order, origin, successPath
       stripeMode,
       kitchenSlug,
       paymentMethod,
+      ...(journeySessionId ? { journeySessionId } : {}),
     },
     success_url: stripeSuccessUrl,
     cancel_url: cancelUrl,

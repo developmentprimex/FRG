@@ -1,0 +1,32 @@
+.wrapper { overflow-x: auto; border: 1px solid var(--app-border); border-radius: 4px; }
+.table { width: 100%; min-width: 1000px; border-collapse: collapse; background: var(--app-surface); }
+.table th { text-align: left; background: var(--app-surface-muted); color: var(--app-text-muted); font-size: var(--admin-text-label, .75rem); font-weight: 700; }
+.table th, .table td { padding: 12px; border-bottom: 1px solid var(--app-border); }
+.table td { font-size: var(--admin-text-body, .875rem); }
+.note { color: var(--app-text-muted); font-size: var(--admin-text-meta, .8125rem); }
+.pagination { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+.history { margin-top: 20px; padding: 16px; background: var(--app-surface-muted); border: 1px solid var(--app-border); border-radius: 4px; }
+.history > a { float: right; }
+.history ol { padding-left: 24px; }
+.history li { margin-top: 10px; font-size: var(--admin-text-body, .875rem); }
+.unifiedTable.unifiedTable { min-width: 1100px; table-layout: fixed; }
+.unifiedTable.unifiedTable th { padding: 14px 10px; white-space: normal; letter-spacing: .04em; overflow-wrap: normal; }
+.unifiedTable.unifiedTable td { padding: 10px; overflow-wrap: normal; word-break: normal; }
+.unifiedTable.unifiedTable th:nth-child(1) { width: 4%; }
+.unifiedTable.unifiedTable th:nth-child(2) { width: 16%; }
+.unifiedTable.unifiedTable th:nth-child(3) { width: 12%; }
+.unifiedTable.unifiedTable th:nth-child(4) { width: 14%; }
+.unifiedTable.unifiedTable th:nth-child(5) { width: 13%; }
+.unifiedTable.unifiedTable th:nth-child(6) { width: 10%; }
+.unifiedTable.unifiedTable th:nth-child(7) { width: 18%; }
+.unifiedTable.unifiedTable th:nth-child(8) { width: 13%; }
+.unifiedTable.unifiedTable td:nth-child(2), .unifiedTable.unifiedTable td:nth-child(5) { white-space: nowrap; }
+.historyDialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 64px); padding: 0; border: 1px solid var(--app-border, #ddd); border-radius: 12px; background: var(--app-surface, #fff); color: var(--app-text, #222); box-shadow: 0 24px 80px #0003; }
+.historyDialog::backdrop { background: #0006; }
+.dialogHeader { display: flex; align-items: center; justify-content: space-between; gap: 20px; position: sticky; top: 0; padding: 20px 24px; border-bottom: 1px solid var(--app-border, #ddd); background: var(--app-surface, #fff); }
+.dialogHeader h2 { margin: 0; font-size: 20px; }
+.dialogClose { padding: 8px 14px; border: 1px solid var(--app-border, #ddd); border-radius: 6px; background: var(--app-surface-muted, #f5f3ef); color: inherit; cursor: pointer; font: inherit; }
+.dialogClose:focus-visible { outline: 3px solid var(--app-accent, #765b44); outline-offset: 2px; }
+.dialogContent { padding: 8px 24px 24px; }
+.dialogContent ol { padding-left: 24px; margin: 0; }
+.dialogContent li { padding: 12px 0; line-height: 1.6; border-bottom: 1px solid var(--app-border, #ddd); }

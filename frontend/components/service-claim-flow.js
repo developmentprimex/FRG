@@ -1,4 +1,5 @@
 "use client";
+import { trackJourneyStep, ensureJourneySession } from "../lib/visit-journey-client.js";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -2485,11 +2486,16 @@ export default function ServiceClaimFlow({ initialLanguage = "de" }) {
   const [language, setLanguage] = useState(() => normalizeServiceLanguage(initialLanguage));
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
   const [mode, setMode] = useState("");
+  useEffect(() => {
+    const steps = { complaint: "service_complaint", register: "service_register", "registered-next": "service_registered_next" };
+    trackJourneyStep(steps[mode] || "service_start");
+  }, [mode]);
   const [form, setForm] = useState(INITIAL_FORM);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingRegistration, setPendingRegistration] = useState(null);
+  useEffect(() => { if (pendingRegistration) trackJourneyStep("service_verification"); }, [pendingRegistration]);
   const [completedRegistration, setCompletedRegistration] = useState(null);
   const [contractLookup, setContractLookup] = useState(EMPTY_CONTRACT_LOOKUP);
   const [problemComponentIds, setProblemComponentIds] = useState([]);
@@ -3459,6 +3465,7 @@ export default function ServiceClaimFlow({ initialLanguage = "de" }) {
         const requestId = contractLookupRequestIdRef.current;
         contractLookupTimeoutRef.current = window.setTimeout(async () => {
           try {
+            ensureJourneySession("ASC");
             const response = await fetch(`/api/service-claims/contracts/${encodeURIComponent(nextContractNumber)}`);
             const payload = await response.json();
 
@@ -4709,6 +4716,7 @@ export default function ServiceClaimFlow({ initialLanguage = "de" }) {
         }
       }
 
+      ensureJourneySession("ASC");
       const response = await fetch("/api/service-claims", {
         method: "POST",
         body: formData,
@@ -4795,6 +4803,7 @@ export default function ServiceClaimFlow({ initialLanguage = "de" }) {
     setSuccessMessage("");
 
     try {
+      ensureJourneySession("ASC");
       const response = await fetch("/api/kitchen-registrations", {
         method: "POST",
         headers: {
@@ -4844,6 +4853,7 @@ export default function ServiceClaimFlow({ initialLanguage = "de" }) {
     setSuccessMessage("");
 
     try {
+      ensureJourneySession("ASC");
       const response = await fetch("/api/kitchen-registrations/verify", {
         method: "POST",
         headers: {

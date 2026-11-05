@@ -710,6 +710,35 @@ model ServiceClaim {
   @@index([createdAt])
 }
 
+model VisitJourneySession {
+  id             String   @id @db.Uuid
+  visitorId      String   @db.Uuid
+  flow           String
+  contractNumber String?
+  contractVerifiedAt DateTime?
+  isTest         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  lastSeenAt     DateTime @default(now())
+  events         VisitJourneyEvent[]
+
+  @@index([flow, lastSeenAt])
+  @@index([visitorId])
+}
+
+model VisitJourneyEvent {
+  id         String @id
+  sessionId  String @db.Uuid
+  session    VisitJourneySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  step       String
+  path       String?
+  contractNumber String?
+  sequence   Int @default(0)
+  occurredAt DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId, occurredAt])
+}
+
 model PublicVisitEvent {
   id                  String           @id @default(cuid())
   eventType           String
