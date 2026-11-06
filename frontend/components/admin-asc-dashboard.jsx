@@ -1,66 +1,115 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { AdminDateTime, useAdminI18n } from "./admin-i18n";
 import AdminFilterForm from "./admin-filter-form";
 import AdminSelect from "./admin-select";
+import s from "./admin-asc-dashboard.module.css";
 
-export function AdminAscDashboard({ claimElementData, claimCityData, summary, selectedPeriod, periodOptions, selectedKitchenId, kitchens }) {
-  const { translate } = useAdminI18n();
+const categoryKeys = ["cabinets", "electrical", "other", "unknown"];
+const categoryFallbacks = { cabinets: "Cabinets", electrical: "Electrical appliances", other: "Other components", unknown: "Not recorded" };
+const selectStyle = { width: "100%", minHeight: 38, background: "var(--app-surface)", color: "var(--app-text)", border: "1px solid var(--app-border)", borderRadius: 7, padding: "8px 11px", fontSize: 12 };
+
+function Icon({ kind }) {
+  const paths = {
+    total: <><path d="M8 4H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 11h6M9 15h4"/></>,
+    cabinets: <><rect x="4" y="3" width="16" height="17" rx="1"/><path d="M12 3v17M9 10v3m6-3v3M6 20v2m12-2v2"/></>,
+    electrical: <><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M5 8h14m-11 3v3m0-10v2"/></>,
+    repeat: <><path d="M20 7h-5V2M4 17h5v5"/><path d="M20 7a9 9 0 0 0-15-2M4 17a9 9 0 0 0 15 2"/></>,
+  };
+  return <span className={s.icon} aria-hidden="true"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{paths[kind]}</svg></span>;
+}
+
+export function AdminAscDashboard({ summary, selectedPeriod, periodOptions, filters }) {
+  const { translate, language } = useAdminI18n();
+  const [onlyRepeats, setOnlyRepeats] = useState(false);
+  const [showAllKitchens, setShowAllKitchens] = useState(false);
+  const [showAllItems, setShowAllItems] = useState(false);
   const t = (key, fallback) => translate(`ascDashboard.${key}`, fallback);
-  const cards = [
-    ["total", "Total claims", summary.total, "received", "Received in the selected period"],
-    ["contracts", "Affected contracts", summary.contracts, "unique", "Distinct contract numbers"],
-    ["files", "With attachments", summary.withAttachments, "documents", "Claims with uploaded files"],
-    ["cities", "Cities", summary.cities, "locations", "Distinct submitted cities"],
-  ];
-  function ranking(rows, empty) {
-    const top = rows.slice(0, 6);
-    const max = Math.max(1, ...top.map(row => row.claims));
-    return top.length ? <div className="rankings">{top.map((row, i) => <div className="ranking" key={row.name}>
-      <span className="rank">{i + 1}</span><div><div className="ranking-label"><span>{row.name}</span><strong>{row.claims}</strong></div><div className="track"><div style={{ width: `${row.claims / max * 100}%` }} /></div></div>
-    </div>)}</div> : <p className="empty">{empty}</p>;
+  const categoryLabel = key => t(`category_${key}`, categoryFallbacks[key]);
+  const number = value => new Intl.NumberFormat(language === "de" ? "de-DE" : "en-GB").format(value);
+  const percent = value => `${new Intl.NumberFormat(language === "de" ? "de-DE" : "en-GB", { maximumFractionDigits: 1 }).format(summary.total ? value / summary.total * 100 : 0)}%`;
+  const sourceLabel = key => key === "unknown" ? t("unlinked", "Not linked") : key;
+  const periodLabel = periodOptions.find(option => option.value === selectedPeriod);
+  function href(overrides = {}) {
+    const values = { period: selectedPeriod, contractType: filters.contractType, category: filters.category, claimKitchen: filters.kitchenKey, kitchenId: filters.kitchenId, ...overrides };
+    const params = new URLSearchParams(Object.entries(values).filter(([, value]) => value));
+    return `/admin${params.size ? `?${params}` : ""}`;
   }
-  return <div className="asc-dashboard">
-    <section className="panel header">
-      <div><span className="eyebrow">ASC</span><h1>{t("title", "Service overview")}</h1><p>{t("subtitle", "Claims, affected contracts and reported items at a glance.")}</p></div>
-      <Link className="button primary" href="/admin/claims">{t("all", "View all claims")} <span aria-hidden="true">→</span></Link>
-      <AdminFilterForm action="/admin" style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "end", width: "100%", marginTop: 6 }}>
-        <label>{translate("dashboard.dateRange", "Date range")}<AdminSelect name="period" defaultValue={selectedPeriod} style={selectStyle}>{periodOptions.map(option => <option key={option.value} value={option.value}>{translate(option.labelKey, option.fallbackLabel)}</option>)}</AdminSelect></label>
-        <label>{translate("dashboard.kitchen", "Kitchen")}<AdminSelect name="kitchenId" defaultValue={selectedKitchenId || ""} style={selectStyle}><option value="">{translate("dashboard.allKitchens", "All kitchens")}</option>{kitchens.map(kitchen => <option key={kitchen.id} value={kitchen.id}>{kitchen.name}</option>)}</AdminSelect></label>
-        <Link className="button" href="/admin">{translate("dashboard.clearFilters", "Clear filters")}</Link>
+  const kitchenRows = summary.kitchenRows.filter(row => !onlyRepeats || row.totalClaims > 1);
+  const visibleKitchens = showAllKitchens ? kitchenRows : kitchenRows.slice(0, 8);
+  const categoryRows = categoryKeys.map(key => ({ key, name: categoryLabel(key), claims: summary.categories[key], href: href({ category: filters.category === key ? "" : key }) }));
+  const cards = [
+    { key: "total", label: t("total", "Total claims"), value: summary.total, detail: t("received", "Cases received in the selected period"), icon: "total", href: href({ category: "" }) },
+    { key: "cabinets", label: categoryLabel("cabinets"), value: summary.categories.cabinets, detail: `${percent(summary.categories.cabinets)} ${t("ofClaims", "of selected claims")}`, icon: "cabinets", href: href({ category: filters.category === "cabinets" ? "" : "cabinets" }) },
+    { key: "electrical", label: categoryLabel("electrical"), value: summary.categories.electrical, detail: `${percent(summary.categories.electrical)} ${t("ofClaims", "of selected claims")}`, icon: "electrical", href: href({ category: filters.category === "electrical" ? "" : "electrical" }) },
+    { key: "repeat", label: t("repeatKitchens", "Kitchens with repeat claims"), value: summary.repeatKitchens, detail: t("repeatDetail", "Affected kitchens with 2+ cases in their history"), icon: "repeat", href: "#claims-kitchens" },
+  ];
+  function ranking(rows, empty, percentages = false) {
+    const max = Math.max(1, ...rows.map(row => row.claims));
+    return rows.length ? <div className={s.rankings}>{rows.map((row, index) => <div className={s.ranking} key={row.key || row.name}>
+      <span className={s.rank}>{String(index + 1).padStart(2, "0")}</span>
+      <div className={s.rankingContent}><div className={s.rankingLabel}>{row.href ? <Link href={row.href} scroll={false}>{row.name}</Link> : <span>{row.name}</span>}<strong>{number(row.claims)}{percentages && <span className={s.percent}>{percent(row.claims)}</span>}</strong></div>
+        <div className={s.track}><span className={`${s.fill} ${row.key === "electrical" ? s.fillElectrical : row.key === "other" ? s.fillOther : row.key === "unknown" ? s.fillUnknown : ""}`} style={{ width: `${row.claims / (percentages ? Math.max(summary.total, 1) : max) * 100}%` }} /></div>
+      </div>
+    </div>)}</div> : <p className={s.empty}>{empty}</p>;
+  }
+  return <div className={s.dashboard}>
+    <section className={`${s.panel} ${s.header}`}>
+      <div><span className={s.eyebrow}>ASC · {t("eyebrow", "Claims intelligence")}</span><h1>{t("title", "Claims overview")}</h1><p>{t("subtitle", "Every claim, affected product and repeat kitchen — in one place.")}</p></div>
+      <div className={s.actions}><Link className={s.button} href="/admin/reports/asc">{t("reports", "Reports")}</Link><Link className={`${s.button} ${s.primary}`} href="/admin/claims">{t("all", "Claims list")} <span aria-hidden="true">→</span></Link></div>
+      <AdminFilterForm action="/admin" className={s.filters}>
+        <label className={s.field}>{translate("dashboard.dateRange", "Date range")}<AdminSelect name="period" defaultValue={selectedPeriod} style={selectStyle}>{periodOptions.map(option => <option key={option.value} value={option.value}>{translate(option.labelKey, option.fallbackLabel)}</option>)}</AdminSelect></label>
+        <label className={s.field}>{t("source", "Kitchen source")}<AdminSelect name="contractType" defaultValue={filters.contractType} style={selectStyle}><option value="">{t("allSources", "All sources")}</option><option value="FRG">FRG</option><option value="ARC">ARC</option><option value="unknown">{sourceLabel("unknown")}</option></AdminSelect></label>
+        <label className={s.field}>{t("category", "Claim category")}<AdminSelect name="category" defaultValue={filters.category} style={selectStyle}><option value="">{t("allCategories", "All categories")}</option>{categoryKeys.map(key => <option key={key} value={key}>{categoryLabel(key)}</option>)}</AdminSelect></label>
+        <label className={`${s.field} ${s.fieldWide}`}>{translate("dashboard.kitchen", "Kitchen")}<AdminSelect name="claimKitchen" defaultValue={filters.kitchenKey} style={selectStyle}><option value="">{translate("dashboard.allKitchens", "All kitchens")}</option>{summary.kitchenOptions.map(kitchen => <option key={kitchen.key} value={kitchen.key}>{sourceLabel(kitchen.contractType)} · {kitchen.name || t("unnamed", "Unidentified kitchen")}</option>)}</AdminSelect></label>
+        {filters.kitchenId && <input type="hidden" name="kitchenId" value={filters.kitchenId} />}
+        <Link className={s.button} href="/admin" scroll={false}>{translate("dashboard.clearFilters", "Clear filters")}</Link>
       </AdminFilterForm>
+      <div className={s.scope}><span className={s.scopeDot} />{periodLabel && translate(periodLabel.labelKey, periodLabel.fallbackLabel)} · {t("liveOnly", "Live claims only; test cases excluded")}</div>
     </section>
-    <div className="metrics">{cards.map(([key, label, value, detailKey, detail]) => <section className="panel metric" key={key}><span>{t(key, label)}</span><strong>{value}</strong><small>{t(detailKey, detail)}</small></section>)}</div>
-    <div className="split">
-      <section className="panel"><h2>{t("items", "Most reported items")}</h2><p>{t("itemNote", "One claim can include several items.")}</p>{ranking(claimElementData, t("emptyItems", "No reported items for these filters."))}</section>
-      <section className="panel"><h2>{t("cityTitle", "Claims by city")}</h2><p>{t("cityNote", "Based on the address submitted with each claim.")}</p>{ranking(claimCityData, t("emptyCities", "No city data for these filters."))}</section>
+
+    <div className={s.metrics}>{cards.map(card => <Link key={card.key} href={card.href} scroll={card.key === "repeat"} className={`${s.panel} ${s.metric} ${filters.category === card.key ? s.metricActive : ""}`}><div className={s.metricTop}><span>{card.label}</span><Icon kind={card.icon}/></div><strong className={s.metricValue}>{number(card.value)}</strong><span className={s.metricDetail}>{card.detail}</span></Link>)}</div>
+    <div className={`${s.panel} ${s.secondary}`}>
+      {[[summary.kitchens, t("affectedKitchens", "Affected kitchens")], [summary.contracts, t("contracts", "Affected contracts")], [summary.repeatClaims, t("repeatClaims", "Cases after the first claim")], [summary.withAttachments, t("files", "Claims with attachments")]].map(([value, label]) => <div className={s.secondaryStat} key={label}><strong className={s.secondaryValue}>{number(value)}</strong><span className={s.secondaryLabel}>{label}</span></div>)}
     </div>
-    <section className="panel"><h2>{t("activity", "Claim activity")}</h2><p>{t("activityNote", "Number received on each day with activity.")}</p>
-      {summary.daily.length ? <div style={{ height: 210, marginTop: 14 }}><ResponsiveContainer width="100%" height="100%"><BarChart data={summary.daily} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}><CartesianGrid stroke="var(--app-border)" vertical={false} /><XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={date => `${date.slice(8)}.${date.slice(5, 7)}`} axisLine={false} tickLine={false} /><YAxis allowDecimals={false} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} /><Tooltip /><Bar dataKey="claims" name={t("total", "Total claims")} fill="var(--app-accent)" radius={[5,5,0,0]} maxBarSize={44} /></BarChart></ResponsiveContainer></div> : <p className="empty">{t("empty", "No claims for these filters.")}</p>}
+
+    <div className={s.split}>
+      <section className={s.panel}><div className={s.sectionHeading}><div><h2>{t("sourcesTitle", "FRG & ARC claims")}</h2><p>{t("sourcesNote", "Cases and product categories by kitchen source.")}</p></div><span className={s.sectionNumber}>{number(summary.total)}</span></div>
+        <div className={s.sourceGrid}>{summary.sources.filter(source => source.key !== "unknown").map(source => <Link key={source.key} href={href({ contractType: filters.contractType === source.key ? "" : source.key, claimKitchen: "", kitchenId: "" })} scroll={false} className={s.source}>
+          <div className={s.sourceTitle}>{source.key}<span className={s.muted}>{percent(source.claims)}</span></div><div className={s.sourceValue}><strong>{number(source.claims)}</strong><span>{t("claims", "claims")}</span></div>
+          <div className={s.track}><span className={`${s.fill} ${source.key === "ARC" ? s.fillElectrical : ""}`} style={{ width: `${summary.total ? source.claims / summary.total * 100 : 0}%` }} /></div>
+          <div className={s.sourceDetails}>{[[t("affectedKitchens", "Affected kitchens"), source.kitchens], [categoryLabel("cabinets"), source.categories.cabinets], [categoryLabel("electrical"), source.categories.electrical], [categoryLabel("other"), source.categories.other], [categoryLabel("unknown"), source.categories.unknown]].map(([label, value]) => <div className={s.sourceDetail} key={label}><span>{label}</span><strong>{number(value)}</strong></div>)}</div>
+        </Link>)}</div>
+        {summary.sources.find(source => source.key === "unknown").claims > 0 && <p className={s.note}><Link className={s.textLink} href={href({ contractType: "unknown", claimKitchen: "" })} scroll={false}>{number(summary.sources.find(source => source.key === "unknown").claims)} {t("unlinkedClaims", "claims without a linked FRG/ARC contract")}</Link></p>}
+      </section>
+      <section className={s.panel}><div className={s.sectionHeading}><div><h2>{t("categoriesTitle", "What is being reported?")}</h2><p>{t("categoriesNote", "Each case counts once in every affected category.")}</p></div></div>
+        {ranking(categoryRows, t("empty", "No claims for these filters."), true)}
+        <p className={s.note}>{number(summary.multiCategory)} {t("multiCategory", "claims affect multiple categories. Category totals can exceed total claims.")}</p>
+      </section>
+    </div>
+
+    <section className={s.panel} id="claims-kitchens"><div className={s.sectionHeading}><div><h2>{t("kitchensTitle", "Claims per kitchen")}</h2><p>{t("kitchensNote", "Compare selected claims with each kitchen’s full case history.")}</p></div><label className={s.toggle}><input type="checkbox" checked={onlyRepeats} onChange={event => { setOnlyRepeats(event.target.checked); setShowAllKitchens(false); }} />{t("onlyRepeats", "Only kitchens with repeat claims")}</label></div>
+      <div className={s.tableScroll}><table className={s.table}><thead><tr><th>{t("kitchen", "Kitchen / contracts")}</th><th>{t("source", "Kitchen source")}</th><th className={s.number}>{t("selected", "Selected")}</th><th className={s.number}>{t("history", "All time")}</th><th className={s.number}>{categoryLabel("cabinets")}</th><th className={s.number}>{categoryLabel("electrical")}</th><th>{t("lastClaim", "Latest claim · all time")}</th><th>{t("action", "Action")}</th></tr></thead><tbody>
+        {visibleKitchens.map(row => <tr key={row.key}><td><strong>{row.name || t("unnamed", "Unidentified kitchen")}</strong>{row.totalClaims > 1 && <span className={`${s.badge} ${s.repeatBadge}`}>{t("repeat", "Repeat")}</span>}<span className={s.meta}>{row.contracts.join(" · ") || "—"}</span></td><td><span className={s.badge}>{sourceLabel(row.contractType)}</span></td><td className={s.number}><strong>{number(row.claims)}</strong></td><td className={s.number}><strong>{number(row.totalClaims)}</strong></td><td className={s.number}>{number(row.categories.cabinets)}</td><td className={s.number}>{number(row.categories.electrical)}</td><td>{row.lastAt ? <AdminDateTime value={row.lastAt} /> : "—"}</td><td><Link className={s.textLink} href={href({ period: "all", category: "", claimKitchen: row.key, kitchenId: "" })} scroll={false}>{t("historyLink", "View history")} →</Link></td></tr>)}
+        {!visibleKitchens.length && <tr><td colSpan={8} className={s.empty}>{onlyRepeats ? t("noRepeats", "No kitchens with repeat claims for these filters.") : t("empty", "No claims for these filters.")}</td></tr>}
+      </tbody></table></div>
+      <div className={s.footer}><p>{t("kitchenCountsNote", "Selected and category counts follow the filters. All time includes every case for that kitchen.")}</p>{kitchenRows.length > 8 && <button className={s.button} onClick={() => setShowAllKitchens(!showAllKitchens)}>{showAllKitchens ? t("showLess", "Show less") : `${t("showAll", "Show all")} (${number(kitchenRows.length)})`}</button>}</div>
     </section>
-    <section className="panel"><div className="table-heading"><h2>{t("recent", "Latest claims")}</h2><span>{t("recentNote", "Up to 8 latest claims in the selected period")}</span></div>
-      <div className="table-scroll"><table><thead><tr>{[["contract","Contract"],["customer","Customer"],["city","City"],["created","Received"],["action","Action"]].map(([key,label])=><th key={key}>{t(key,label)}</th>)}</tr></thead><tbody>{summary.recent.map(row=><tr key={row.id}><td><strong>{row.contractNumber}</strong></td><td>{row.fullName}</td><td>{row.city || "—"}</td><td>{row.createdAt ? <AdminDateTime value={row.createdAt} /> : "—"}</td><td><Link className="button" href={`/admin/claims/${encodeURIComponent(row.id)}`}>{t("view","View")}</Link></td></tr>)}{!summary.recent.length && <tr><td colSpan={5} className="empty">{t("empty","No claims for these filters.")}</td></tr>}</tbody></table></div>
+
+    <div className={s.split}>
+      <section className={s.panel}><div className={s.sectionHeading}><div><h2>{t("items", "Most reported items")}</h2><p>{t("itemNote", "Distinct cases per product; repeated selections count once.")}</p></div><span className={s.sectionNumber}>{number(summary.items.length)}</span></div>{ranking(showAllItems ? summary.items : summary.items.slice(0, 6), t("emptyItems", "No reported items for these filters."))}{summary.items.length > 6 && <div className={s.footer}><button className={s.button} onClick={() => setShowAllItems(!showAllItems)}>{showAllItems ? t("showLess", "Show less") : `${t("showAll", "Show all")} (${number(summary.items.length)})`}</button></div>}</section>
+      <section className={s.panel}><div className={s.sectionHeading}><div><h2>{t("cityTitle", "Claims by city")}</h2><p>{t("cityNote", "Based on the customer’s submitted address.")}</p></div><span className={s.sectionNumber}>{number(summary.cities)}</span></div>{ranking(summary.cityRows.slice(0, 6), t("emptyCities", "No city data for these filters."))}{summary.missingCity > 0 && <p className={s.note}>{number(summary.missingCity)} {t("missingCityNote", "claims have no recorded city.")}</p>}</section>
+    </div>
+
+    <section className={s.panel}><div className={s.sectionHeading}><div><h2>{t("activity", "Claim activity")}</h2><p>{t("activityNote", "Cases by original creation day · Europe/Berlin. Follow-ups do not create new cases.")}</p></div></div>
+      {summary.daily.length ? <div className={s.chart}><ResponsiveContainer width="100%" height="100%"><BarChart data={summary.daily} margin={{ top: 8, right: 8, left: -24, bottom: 0 }}><CartesianGrid stroke="var(--app-border)" vertical={false}/><XAxis dataKey="date" tick={{ fontSize: 10 }} tickFormatter={date => `${date.slice(8)}.${date.slice(5, 7)}`} axisLine={false} tickLine={false}/><YAxis allowDecimals={false} tick={{ fontSize: 10 }} axisLine={false} tickLine={false}/><Tooltip labelFormatter={date => new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-GB", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${date}T12:00:00Z`))} contentStyle={{ border: "1px solid var(--app-border)", borderRadius: 8, fontSize: 12 }}/><Bar dataKey="claims" name={t("claims", "Claims")} fill="var(--app-accent)" radius={[4,4,0,0]} maxBarSize={40}/></BarChart></ResponsiveContainer></div> : <p className={s.empty}>{t("empty", "No claims for these filters.")}</p>}
     </section>
-    <style jsx>{`
-      .asc-dashboard { display:grid;gap:18px;min-width:0;color:var(--app-text) }
-      .panel { background:var(--app-surface);border:1px solid var(--app-border);border-radius:14px;padding:20px;min-width:0 }
-      .header { display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px }
-      .eyebrow { font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--app-accent) }
-      h1 { font-size:26px;line-height:1.2;margin:5px 0 8px;font-weight:650 } h2 { font-size:16px;margin:0 0 8px;font-weight:650 }
-      p { font-size:13px;color:var(--app-text-muted);margin:0;line-height:1.5 }
-      label { display:grid;gap:6px;font-size:12px;color:var(--app-text-muted);min-width:180px }
-      .asc-dashboard :global(a.button) { display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:38px;padding:8px 13px;border:1px solid var(--app-border);border-radius:7px;color:var(--app-text);text-decoration:none;font-size:13px;white-space:nowrap }
-      .asc-dashboard :global(a.primary) { background:var(--app-accent);color:white;border-color:var(--app-accent) }
-      .metrics { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px }
-      .metric { display:grid;gap:9px } .metric>span { font-size:12px;color:var(--app-text-muted) } .metric>strong { font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums } .metric>small { font-size:11px;color:var(--app-text-muted) }
-      .split { display:grid;grid-template-columns:1fr 1fr;gap:18px }
-      .rankings { display:grid;gap:18px;margin-top:24px } .ranking { display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:center } .rank { font-size:11px;color:var(--app-text-muted) } .ranking-label { display:flex;justify-content:space-between;gap:16px;font-size:13px;margin-bottom:8px } .ranking-label span { overflow-wrap:anywhere } .track { height:7px;background:var(--app-bg);border-radius:5px;overflow:hidden } .track>div { height:100%;background:var(--app-accent);border-radius:5px }
-      .table-heading { display:flex;gap:12px;flex-wrap:wrap;justify-content:space-between;align-items:baseline;margin-bottom:12px } .table-heading>span { font-size:12px;color:var(--app-text-muted) } .table-scroll { overflow-x:auto } table { width:100%;border-collapse:collapse;text-align:left;font-size:13px } th { color:var(--app-text-muted);font-size:11px;font-weight:600;background:var(--app-bg) } th,td { padding:13px 12px;border-bottom:1px solid var(--app-border) } .empty { padding:25px 0;color:var(--app-text-muted) }
-      @media(max-width:1000px) { .metrics { grid-template-columns:repeat(2,minmax(0,1fr)) } }
-      @media(max-width:700px) { .split { grid-template-columns:1fr } .panel { padding:16px } h1 { font-size:22px } label { flex:1;min-width:140px } }
-    `}</style>
+
+    <section className={s.panel}><div className={s.sectionHeading}><div><h2>{t("recent", "Latest claims")}</h2><p>{t("recentNote", "The 8 latest cases matching the filters.")}</p></div><Link className={s.textLink} href="/admin/claims">{t("all", "Claims list")} →</Link></div><div className={s.tableScroll}><table className={s.table}><thead><tr>{[t("contract", "Contract"), t("source", "Kitchen source"), t("customer", "Customer"), t("category", "Claim category"), t("city", "City"), t("created", "Received"), t("action", "Action")].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>{summary.recent.map(row => <tr key={row.id}><td><strong>{row.contractNumber || "—"}</strong><span className={s.meta}>{row.kitchenName}</span>{row.ordinal > 1 && <span className={`${s.badge} ${s.repeatBadge}`}>{t("case", "Case")} #{row.ordinal}</span>}</td><td><span className={s.badge}>{sourceLabel(row.contractType)}</span></td><td>{row.fullName || "—"}</td><td><div className={s.badges}>{row.categories.map(key => <span className={s.badge} key={key}>{categoryLabel(key)}</span>)}</div></td><td>{row.city || "—"}</td><td>{row.createdAt ? <AdminDateTime value={row.createdAt}/> : "—"}</td><td><Link className={s.button} href={`/admin/claims/${encodeURIComponent(row.id)}`}>{t("view", "View")}</Link></td></tr>)}{!summary.recent.length && <tr><td colSpan={7} className={s.empty}>{t("empty", "No claims for these filters.")}</td></tr>}</tbody></table></div></section>
+
+    <section className={s.panel}><h2>{t("completeness", "Claim data completeness")}</h2><p>{t("completenessNote", "Missing information stays visible so it can be reviewed.")}</p><div className={s.quality}>{[[summary.total - summary.withAttachments, t("missingFiles", "Without attachments")], [summary.categories.unknown, t("missingCategory", "With unclassified products / no category")], [summary.sources.find(source => source.key === "unknown").claims, t("unlinked", "Not linked to FRG / ARC")], [summary.missingCity, t("missingCity", "Without a recorded city")]].map(([value, label]) => <div className={s.qualityStat} key={label}><strong>{number(value)}</strong><span>{label}</span></div>)}</div><details className={s.definitions}><summary>{t("definitions", "How these figures are counted")}</summary><p>{t("caseDefinition", "One claim is one retained case. Follow-ups enrich the original case and do not increase the total. Test contracts starting with 111 and test ticket series are excluded.")}</p><p>{t("kitchenDefinition", "FRG contracts sharing one Kitchen record are grouped together. Each ARC contract is a separate kitchen; shared upload records are never merged. Unlinked claims use their contract number.")}</p><p>{t("repeatDefinition", "Repeat kitchens have at least two cases in their full history and at least one matching the current filters. Cases after the first claim count selected cases whose chronological kitchen case number is 2 or higher.")}</p></details></section>
   </div>;
 }
-const selectStyle = { minHeight: 38, background: "var(--app-surface)", color: "var(--app-text)", border: "1px solid var(--app-border)", borderRadius: 7, padding: "8px 12px", minWidth: 180, fontSize: 13 };

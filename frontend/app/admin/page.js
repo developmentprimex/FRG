@@ -1,5 +1,6 @@
 import { AdminAscDashboard } from "../../components/admin-asc-dashboard";
-import { summarizeAscDashboard } from "../../lib/asc-dashboard-summary";
+import { summarizeAscDashboard, getAscDashboardStartDate, ASC_DASHBOARD_CATEGORIES } from "../../lib/asc-dashboard-summary";
+import { loadAscDashboardRows } from "../../lib/asc-dashboard-query";
 import { cookies as workspaceCookies } from "next/headers";
 import { redirect as workspaceRedirect } from "next/navigation";
 import { resolveWorkspace } from "../../lib/admin-permissions";
@@ -1026,19 +1027,21 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
   const workspace = resolveWorkspace(admin, (await workspaceCookies()).get("adminWorkspace")?.value);
   if (!workspace) workspaceRedirect("/admin/access-denied");
   const params = await searchParams;
-  const period = getPeriod(normalizeParam(params.period));
+  const period = getPeriod(normalizeParam(params.period) || (workspace === "ASC" ? "all" : "30d"));
   const kitchenId = normalizeParam(params.kitchenId);
   const status = normalizeParam(params.status);
   const validStatus = ORDER_STATUSES.includes(status) ? status : "";
   const startDate = getPeriodStartDate(period);
 
   if (workspace === "ASC") {
-    const [claimRows, kitchens] = await Promise.all([loadClaimElementRowsCached({ startDate, kitchenId }), listKitchensForAdmin()]);
-    const { claimElementData, claimCityData } = summarizeDashboardClaims(claimRows);
+    const contractType = ["FRG", "ARC", "unknown"].includes(normalizeParam(params.contractType)) ? normalizeParam(params.contractType) : "";
+    const category = ASC_DASHBOARD_CATEGORIES.includes(normalizeParam(params.category)) ? normalizeParam(params.category) : "";
+    const kitchenKey = normalizeParam(params.claimKitchen);
+    const claimRows = await loadAscDashboardRows(prisma);
+    const summary = summarizeAscDashboard(claimRows, { startDate: getAscDashboardStartDate(period.days), contractType, category, kitchenKey, kitchenId });
     return <AdminShell adminEmail={admin.email}><AdminAscDashboard
-      claimElementData={claimElementData} claimCityData={claimCityData}
-      summary={summarizeAscDashboard(claimRows)} kitchens={kitchens.map(({ id, name }) => ({ id, name }))} selectedPeriod={period.value}
-      periodOptions={PERIOD_OPTIONS} selectedKitchenId={kitchenId}
+      summary={summary} selectedPeriod={period.value} periodOptions={PERIOD_OPTIONS}
+      filters={{ contractType, category, kitchenKey, kitchenId }}
     /></AdminShell>;
   }
 
