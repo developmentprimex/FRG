@@ -90,3 +90,15 @@ test('filters actual kitchen identity and returns honest empty states', () => {
   for (const key of ['daily', 'recent', 'items', 'cityRows', 'kitchenRows']) assert.deepEqual(empty[key], []);
   assert.deepEqual(empty.categories, { cabinets: 0, electrical: 0, other: 0, unknown: 0 });
 });
+
+test('kitchens are ordered by latest claim descending regardless of claim count, with missing dates last', () => {
+  const result = summarizeAscDashboard([
+    row('1', { kitchenId: 'older', kitchenName: 'A', createdAt: '2026-10-01T10:00:00Z' }),
+    row('2', { kitchenId: 'older', kitchenName: 'A', createdAt: '2026-10-03T10:00:00Z' }),
+    row('3', { kitchenId: 'newest', kitchenName: 'Z', createdAt: '2026-10-25T10:00:00Z' }),
+    row('4', { kitchenId: 'middle', kitchenName: 'B', createdAt: '2026-10-14T10:00:00Z' }),
+    row('5', { kitchenId: 'undated', kitchenName: '0', createdAt: null }),
+  ]);
+  assert.deepEqual(result.kitchenRows.map(row => row.key), ['FRG:newest', 'FRG:middle', 'FRG:older', 'FRG:undated']);
+  assert.equal(result.kitchenRows[2].totalClaims, 2);
+});

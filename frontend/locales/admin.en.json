@@ -1857,7 +1857,7 @@
     "categoriesNote": "Each case counts once in every affected category.",
     "multiCategory": "claims affect multiple categories. Category totals can exceed total claims.",
     "kitchensTitle": "Claims per kitchen",
-    "kitchensNote": "Compare selected claims with each kitchen’s full case history.",
+    "kitchensNote": "Kitchens ordered by their latest claim, newest first.",
     "onlyRepeats": "Only kitchens with repeat claims",
     "kitchen": "Kitchen / contracts",
     "selected": "Selected",

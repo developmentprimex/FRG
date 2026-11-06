@@ -114,7 +114,7 @@ export function summarizeAscDashboard(input, filters = {}) {
     kitchen.claims++; kitchen.latestClaimId = row.id;
     for (const category of row.categories) kitchen.categories[category]++;
   }
-  const kitchenRows = [...kitchens.values()].sort((a, b) => b.totalClaims - a.totalClaims || b.claims - a.claims || a.name.localeCompare(b.name));
+  const kitchenRows = [...kitchens.values()].sort((a, b) => (timestamp(b.lastAt) ?? -Infinity) - (timestamp(a.lastAt) ?? -Infinity) || a.name.localeCompare(b.name) || a.key.localeCompare(b.key));
   for (const source of sources) source.kitchens = kitchenRows.filter(row => row.contractType === source.key).length;
   return {
     comparison, productBreakdown: buildAscProductBreakdown(rows),

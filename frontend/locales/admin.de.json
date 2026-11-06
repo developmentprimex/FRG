@@ -1857,7 +1857,7 @@
     "categoriesNote": "Jeder Fall zählt einmal je betroffener Kategorie.",
     "multiCategory": "Reklamationen betreffen mehrere Kategorien. Die Summe der Kategorien kann die Fallzahl übersteigen.",
     "kitchensTitle": "Reklamationen je Küche",
-    "kitchensNote": "Ausgewählte Fälle mit dem gesamten Verlauf jeder Küche vergleichen.",
+    "kitchensNote": "Küchen nach der neuesten Reklamation sortiert, die aktuellste zuerst.",
     "onlyRepeats": "Nur Küchen mit mehreren Fällen",
     "kitchen": "Küche / Verträge",
     "selected": "Ausgewählt",
