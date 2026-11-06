@@ -3,6 +3,7 @@ import { AdminSection } from "./admin-ui";
 import { AdminText, AdminDateTime } from "./admin-i18n";
 import { loadJourneyReport } from "../lib/visit-journey-report";
 import styles from "./admin-visit-journeys.module.css";
+import AdminPaymentEventDetails from "./admin-payment-event-details";
 
 const label = (key) => <AdminText i18nKey={`visitJourney.${key}`} fallback={key} />;
 const stepLabel = (step) => step ? <AdminText i18nKey={`visitJourney.steps.${step}`} fallback={step} /> : "—";
@@ -48,6 +49,7 @@ export default async function AdminVisitJourneys({ flow = "FRG", filters, params
           <ol>{data.events.map(event => <li key={event.id}>
             <AdminDateTime value={event.occurredAt.toISOString()} /> · {stepLabel(event.step)}
             {event.contractNumber && <> · {event.contractNumber}</>}
+            <AdminPaymentEventDetails details={event.details} />
           </li>)}</ol>
         </div>}
       </AdminSection>

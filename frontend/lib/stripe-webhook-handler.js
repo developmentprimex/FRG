@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripeClient } from "./stripe";
 import { updateOrderFromCheckoutSession } from "./stripe-payments";
+import { recordStripePaymentEvent } from "./stripe-payment-event-store.js";
 
 function getWebhookSecret(mode = "live") {
   return mode === "test"
@@ -25,6 +26,9 @@ export async function handleStripeWebhook(request, { stripeMode = "live", orderK
   } catch (error) {
     return NextResponse.json({ error: `Webhook signature verification failed: ${error.message}` }, { status: 400 });
   }
+  if (typeof event.livemode === "boolean" && event.livemode !== (stripeMode === "live")) {
+    return NextResponse.json({ error: "Stripe event mode mismatch" }, { status: 400 });
+  }
 
   try {
     if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
@@ -36,9 +40,9 @@ export async function handleStripeWebhook(request, { stripeMode = "live", orderK
       await updateOrderFromCheckoutSession({
         ...session,
         payment_status: "unpaid",
-        status: "expired",
-      }, { orderKind });
+      }, { orderKind, failed: event.type === "checkout.session.async_payment_failed" });
     }
+    await recordStripePaymentEvent(event, { stripe, orderKind });
   } catch (error) {
     console.error("Stripe webhook processing failed:", error);
     return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 });

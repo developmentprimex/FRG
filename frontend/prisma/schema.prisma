@@ -732,11 +732,32 @@ model VisitJourneyEvent {
   step       String
   path       String?
   contractNumber String?
+  details    Json?
   sequence   Int @default(0)
   occurredAt DateTime
   createdAt  DateTime @default(now())
 
   @@index([sessionId, occurredAt])
+}
+
+model StripePaymentEvent {
+  id              String @id
+  orderId         String
+  orderNumber     String
+  orderKind       String
+  eventType       String
+  step            String
+  reason          String
+  errorCode       String?
+  declineCode     String?
+  stripeSessionId String?
+  paymentIntentId String?
+  journeySessionId String? @db.Uuid
+  occurredAt      DateTime
+  createdAt       DateTime @default(now())
+
+  @@index([orderId, orderKind, occurredAt])
+  @@index([journeySessionId, occurredAt])
 }
 
 model PublicVisitEvent {

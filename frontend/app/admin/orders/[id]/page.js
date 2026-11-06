@@ -25,6 +25,7 @@ import { CancellationRequestPanel } from "../../../../components/admin-order-can
 import { AdminOrderAs400Form } from "../../../../components/admin-order-as400-form";
 import { OrderEmailReviewModal } from "../../../../components/order-email-review-modal";
 import { AdminOrderEmailDelivery } from "../../../../components/admin-order-email-delivery";
+import AdminOrderPaymentHistory from "../../../../components/admin-order-payment-history";
 import { attachOrderEmailDelivery } from "../../../../lib/email/order-email-store";
 import { getFormMessage } from "../../../../lib/admin-forms";
 import { requireAdminPage } from "../../../../lib/auth";
@@ -283,6 +284,7 @@ export default async function AdminOrderDetailPage({ params, searchParams }) {
           <AdminOrderSummaryTable order={order} />
         </AdminSection>
 
+        <AdminOrderPaymentHistory orderId={order.id} />
         {cancellationRequests.length ? (
           <AdminSection
             title={<AdminText i18nKey="orderCancellationsAdmin.panelTitle" fallback="Withdrawal requests" />}

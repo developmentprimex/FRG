@@ -106,7 +106,7 @@ test('Stripe completion without confirmed payment cannot produce a paid journey 
   const end = stripe.indexOf('\nexport ', start + 1);
   const outcomes = [];
   const context = vm.createContext({
-    Date, prisma: {}, ORDER_KIND_LIVE: 'live', getOrderDelegate: () => ({ update: async () => ({}) }),
+    Date, prisma: {}, ORDER_KIND_LIVE: 'live', getOrderDelegate: () => ({ update: async () => ({}), updateMany: async () => ({}), findUnique: async () => ({}) }),
     maybeSendPaidOrderConfirmation: async () => {}, recordJourneyPayment: async (...args) => outcomes.push(args),
   });
   vm.runInContext(stripe.slice(start, end).replace('export ', ''), context);

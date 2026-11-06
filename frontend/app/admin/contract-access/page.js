@@ -1,5 +1,6 @@
 import AdminFilterForm from "../../../components/admin-filter-form";
 import AdminVisitHistoryDialog from "../../../components/admin-visit-history-dialog";
+import AdminPaymentEventDetails from "../../../components/admin-payment-event-details";
 import { loadFragmentoVisitors } from "../../../lib/fragmento-visitors-report";
 import journeyStyles from "../../../components/admin-visit-journeys.module.css";
 import visitorTableStyles from "../../../components/admin-visitor-table.module.css";
@@ -158,6 +159,7 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
             <ol>{history.map(event => <li key={event.id}>
               <AdminDateTime value={event.occurredAt} timeZone="Europe/Berlin" numeric /> · {stepLabel(event.step)}
               {event.contractNumber && <> · {event.contractNumber}</>}
+              <AdminPaymentEventDetails details={event.details} />
             </li>)}</ol>
           </AdminVisitHistoryDialog>}
         </AdminSection>

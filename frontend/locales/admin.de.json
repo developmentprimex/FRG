@@ -1,4 +1,28 @@
 {
+  "paymentDiagnostics": {
+    "title": "Zahlungsverlauf",
+    "empty": "Noch keine Stripe-Zahlungsereignisse erfasst.",
+    "order": "Bestellung",
+    "stripeCode": "Stripe-Code",
+    "reasons": {
+      "insufficient_funds": "Die kartenausgebende Bank meldete unzureichende Deckung.",
+      "expired_card": "Die Karte ist abgelaufen.",
+      "incorrect_cvc": "Die Kartenprüfnummer wurde abgelehnt.",
+      "incorrect_number": "Die Kartennummer war ungültig.",
+      "invalid_expiry": "Das Ablaufdatum der Karte war ungültig.",
+      "authentication_failed": "Eine zusätzliche Kartenbestätigung war erforderlich oder ist fehlgeschlagen.",
+      "bank_declined": "Die Zahlung wurde abgelehnt. Stripe hat keinen genaueren Grund angegeben.",
+      "processing_error": "Stripe oder das Zahlungsnetzwerk meldete einen Verarbeitungsfehler.",
+      "card_not_supported": "Die Karte oder Währung wird für diese Zahlung nicht unterstützt.",
+      "blocked": "Die Zahlung wurde durch eine Sicherheitsprüfung blockiert.",
+      "unknown_failure": "Der Zahlungsversuch ist fehlgeschlagen; Stripe hat keinen konkreten Grund angegeben.",
+      "session_expired": "Die Zahlungssitzung ist ohne Abschluss abgelaufen. Der Grund für das Verlassen ist damit nicht bekannt.",
+      "additional_action": "Stripe benötigt eine zusätzliche Bestätigung oder eine andere Kundenaktion. Dies ist kein bestätigter Zahlungsfehler.",
+      "canceled": "Stripe hat den Abbruch des Zahlungsvorgangs bestätigt.",
+      "pending": "Checkout wurde abgeschlossen, die Zahlung steht jedoch noch aus. Sie wurde noch nicht bestätigt.",
+      "paid": "Stripe hat die Zahlung bestätigt."
+    }
+  },
   "visitJourney": {
     "title": "Besucherverläufe",
     "description": "Bestätigte Aktivität seit Aktivierung der Erfassung. Anonyme Besuche werden nach der Prüfung mit einem Vertrag verknüpft. Inaktivität bestätigt keinen Abbruch. Ausstehende oder blockierte Erfassung kann Lücken hinterlassen.",
@@ -30,6 +54,11 @@
       "order_created": "Bestellung gespeichert",
       "checkout_created": "Zahlungssitzung erstellt",
       "checkout_return": "Rückkehr von der Zahlung",
+      "payment_failed": "Zahlungsversuch fehlgeschlagen",
+      "payment_requires_action": "Zusätzliche Zahlungsprüfung erforderlich",
+      "payment_canceled": "Zahlung abgebrochen",
+      "payment_pending": "Zahlung ausstehend",
+      "checkout_expired": "Zahlungssitzung abgelaufen",
       "payment_paid": "Zahlung bestätigt",
       "service_start": "Service-Start",
       "service_complaint": "Reklamationsformular",

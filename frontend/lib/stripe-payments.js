@@ -79,8 +79,8 @@ export async function updateOrderFromCheckoutSession(session, options = {}) {
   const paymentIntentId = typeof session.payment_intent === "string"
     ? session.payment_intent
     : session.payment_intent?.id || null;
-  const isPaid = session.payment_status === "paid" || session.status === "complete";
-  const isFailed = session.payment_status === "failed" || session.status === "expired";
+  const isPaid = ["paid", "no_payment_required"].includes(session.payment_status);
+  const isFailed = options.failed || session.payment_status === "failed" || session.status === "expired";
   const paidAt = session.created ? new Date(Number(session.created) * 1000) : new Date();
 
   const data = {
@@ -107,7 +107,17 @@ export async function updateOrderFromCheckoutSession(session, options = {}) {
   };
 
   let updatedOrder;
-  if (orderNumber) {
+  if (!isPaid) {
+    const where = orderNumber ? { orderNumber } : { stripeCheckoutSessionId: session.id };
+    // A delayed expiry/failure from an older Checkout must not undo a paid order
+    // or overwrite a newer payment session.
+    await orderDelegate.updateMany({
+      where: { ...where, paymentStatus: { notIn: ["PAID", "CANCELLED"] },
+        OR: [{ stripeCheckoutSessionId: session.id }, { stripeCheckoutSessionId: null }],
+      }, data,
+    });
+    updatedOrder = await orderDelegate.findUnique({ where, include });
+  } else if (orderNumber) {
     updatedOrder = await orderDelegate.update({
       where: { orderNumber },
       data,
@@ -155,6 +165,10 @@ export async function createCheckoutSessionForOrder({ order, origin, successPath
     payment_method_types: ["card"],
     customer_email: customerEmail || undefined,
     client_reference_id: orderNumber,
+    payment_intent_data: { metadata: {
+      orderId: order.id, orderNumber, orderKind,
+      ...(journeySessionId ? { journeySessionId } : {}),
+    } },
     line_items: [
       {
         quantity: 1,

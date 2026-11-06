@@ -1,4 +1,28 @@
 {
+  "paymentDiagnostics": {
+    "title": "Payment history",
+    "empty": "No Stripe payment events recorded yet.",
+    "order": "Order",
+    "stripeCode": "Stripe code",
+    "reasons": {
+      "insufficient_funds": "The card issuer reported insufficient funds.",
+      "expired_card": "The card has expired.",
+      "incorrect_cvc": "The card security code was rejected.",
+      "incorrect_number": "The card number was invalid.",
+      "invalid_expiry": "The card expiry date was invalid.",
+      "authentication_failed": "Additional card authentication was required or failed.",
+      "bank_declined": "The payment was declined. Stripe did not provide a more specific reason.",
+      "processing_error": "Stripe or the payment network reported a processing error.",
+      "card_not_supported": "The card or currency was not supported for this payment.",
+      "blocked": "The payment was blocked by a security check.",
+      "unknown_failure": "The payment attempt failed; Stripe did not provide a specific reason.",
+      "session_expired": "The payment session expired without completion. This does not reveal why the customer left.",
+      "additional_action": "Stripe requires additional authentication or another customer action. This is not a confirmed payment failure.",
+      "canceled": "Stripe confirmed that the payment intent was canceled.",
+      "pending": "Checkout was completed but payment is still pending. Payment has not been confirmed.",
+      "paid": "Stripe confirmed the payment."
+    }
+  },
   "visitJourney": {
     "title": "Visitor journeys",
     "description": "Confirmed activity since tracking was enabled. Anonymous visits are linked to a contract after verification. Inactivity does not confirm abandonment. Pending or blocked tracking can leave gaps.",
@@ -30,6 +54,11 @@
       "order_created": "Order saved",
       "checkout_created": "Payment session created",
       "checkout_return": "Payment return page",
+      "payment_failed": "Payment attempt failed",
+      "payment_requires_action": "Additional payment verification required",
+      "payment_canceled": "Payment canceled",
+      "payment_pending": "Payment pending",
+      "checkout_expired": "Payment session expired",
       "payment_paid": "Payment confirmed",
       "service_start": "Service start",
       "service_complaint": "Complaint form",
