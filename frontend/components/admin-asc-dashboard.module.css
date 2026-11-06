@@ -57,7 +57,7 @@ a.metric:hover { border-color: var(--app-accent); box-shadow: 0 3px 15px #71583e
 .textLink { color: var(--app-accent); font-size: 11px; text-underline-offset: 3px; }
 .tableScroll { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; border: 1px solid var(--app-border); direction: ltr; text-align: left; font-size: 12px; }
-.table th { color: var(--app-text-muted); font-size: 10px; font-weight: 550; background: var(--app-bg); white-space: nowrap; }
+.table th { color: var(--app-text); font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: .04em; line-height: 1.5; background: var(--app-bg); white-space: nowrap; }
 .table th, .table td { padding: 13px 12px; border: 1px solid var(--app-border); text-align: left; }
 .table td { line-height: 1.5; vertical-align: middle; }
 .table strong { font-weight: 600; }
