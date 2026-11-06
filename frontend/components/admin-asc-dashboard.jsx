@@ -7,6 +7,7 @@ import { AdminDateTime, useAdminI18n } from "./admin-i18n";
 import AdminFilterForm from "./admin-filter-form";
 import AdminSelect from "./admin-select";
 import { AdminAscComparison, AdminAscProductInsights } from "./admin-asc-insights";
+import { AdminAscPdfExport } from "./admin-asc-pdf-export";
 import s from "./admin-asc-dashboard.module.css";
 
 const categoryKeys = ["cabinets", "electrical", "other", "unknown"];
@@ -34,6 +35,12 @@ export function AdminAscDashboard({ summary, selectedPeriod, periodOptions, filt
   const percent = value => `${new Intl.NumberFormat(language === "de" ? "de-DE" : "en-GB", { maximumFractionDigits: 1 }).format(summary.total ? value / summary.total * 100 : 0)}%`;
   const sourceLabel = key => key === "unknown" ? t("unlinked", "Not linked") : key;
   const periodLabel = periodOptions.find(option => option.value === selectedPeriod);
+  const pdfFilters = [
+    [translate("dashboard.dateRange", "Date range"), periodLabel ? translate(periodLabel.labelKey, periodLabel.fallbackLabel) : selectedPeriod],
+    [t("source", "Kitchen source"), filters.contractType ? sourceLabel(filters.contractType) : t("allSources", "All sources")],
+    [t("category", "Claim category"), filters.category ? categoryLabel(filters.category) : t("allCategories", "All categories")],
+    [translate("dashboard.kitchen", "Kitchen"), summary.kitchenOptions.find(kitchen => kitchen.key === filters.kitchenKey)?.name || (filters.kitchenKey || filters.kitchenId ? t("unnamed", "Unidentified kitchen") : translate("dashboard.allKitchens", "All kitchens"))],
+  ];
   function href(overrides = {}) {
     const values = { period: selectedPeriod, contractType: filters.contractType, category: filters.category, claimKitchen: filters.kitchenKey, kitchenId: filters.kitchenId, ...overrides };
     const params = new URLSearchParams(Object.entries(values).filter(([, value]) => value));
@@ -61,7 +68,7 @@ export function AdminAscDashboard({ summary, selectedPeriod, periodOptions, filt
   return <div className={s.dashboard}>
     <section className={`${s.panel} ${s.header}`}>
       <div><span className={s.eyebrow}>ASC · {t("eyebrow", "Claims intelligence")}</span><h1>{t("title", "Claims overview")}</h1><p>{t("subtitle", "Every claim, affected product and repeat kitchen — in one place.")}</p></div>
-      <div className={s.actions}><Link className={s.button} href="/admin/reports/asc">{t("reports", "Reports")}</Link><Link className={`${s.button} ${s.primary}`} href="/admin/claims">{t("all", "Claims list")} <span aria-hidden="true">→</span></Link></div>
+      <div className={s.actions}><AdminAscPdfExport summary={summary} filters={pdfFilters} onlyRepeats={onlyRepeats} /><Link className={s.button} href="/admin/reports/asc">{t("reports", "Reports")}</Link><Link className={`${s.button} ${s.primary}`} href="/admin/claims">{t("all", "Claims list")} <span aria-hidden="true">→</span></Link></div>
       <AdminFilterForm action="/admin" className={s.filters}>
         <label className={s.field}>{translate("dashboard.dateRange", "Date range")}<AdminSelect name="period" defaultValue={selectedPeriod} style={selectStyle}>{periodOptions.map(option => <option key={option.value} value={option.value}>{translate(option.labelKey, option.fallbackLabel)}</option>)}</AdminSelect></label>
         <label className={s.field}>{t("source", "Kitchen source")}<AdminSelect name="contractType" defaultValue={filters.contractType} style={selectStyle}><option value="">{t("allSources", "All sources")}</option><option value="FRG">FRG</option><option value="ARC">ARC</option><option value="unknown">{sourceLabel("unknown")}</option></AdminSelect></label>

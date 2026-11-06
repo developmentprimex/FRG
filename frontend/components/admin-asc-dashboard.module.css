@@ -8,6 +8,9 @@
 .button { display: inline-flex; justify-content: center; align-items: center; gap: 14px; min-height: 37px; padding: 8px 12px; border: 1px solid var(--app-border); border-radius: 7px; color: var(--app-text); background: var(--app-surface); text-decoration: none; font: inherit; font-size: 12px; cursor: pointer; white-space: nowrap; }
 .primary { color: white; border-color: var(--app-accent); background: var(--app-accent); }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.pdfAction { display: grid; gap: 6px; }
+.pdfAction button:disabled { opacity: .65; cursor: wait; }
+.pdfError { color: #a63d2c; font-size: 11px; max-width: 260px; line-height: 1.5; }
 .filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; width: 100%; padding-top: 18px; margin-top: 2px; border-top: 1px solid var(--app-border); }
 .field { display: grid; gap: 7px; flex: 1; min-width: 155px; font-size: 11px; color: var(--app-text-muted); }
 .fieldWide { flex: 1.6; min-width: 200px; }

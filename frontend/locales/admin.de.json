@@ -1922,6 +1922,21 @@
     "modelArticle": "Modell / Artikel",
     "noModels": "Keine Modell- oder Artikelangaben für diese Filter erfasst.",
     "missingModel": "Reklamationen enthalten mindestens ein Produkt ohne erfasstes Modell / Artikelnummer.",
-    "inventoryTypeMatch": "Aktuelles Vertragsinventar · Gerätetyp"
+    "inventoryTypeMatch": "Aktuelles Vertragsinventar · Gerätetyp",
+    "exportPdf": "PDF exportieren",
+    "pdfCreating": "PDF wird erstellt...",
+    "pdfError": "Die PDF konnte nicht erstellt werden. Bitte erneut versuchen.",
+    "pdfReport": "REKLAMATIONSBERICHT",
+    "pdfPage": "Seite",
+    "pdfMissing": "Fehlende Angaben",
+    "pdfDaily": "Tagessummen",
+    "pdfWeekly": "Wochensummen",
+    "pdfMonthly": "Monatssummen",
+    "pdfOverlap": "Die Summe der Kategorien kann die Gesamtzahl der Fälle übersteigen.",
+    "pdfMissingManufacturer": "Fehlender Hersteller",
+    "pdfMissingModel": "Fehlendes Modell / Artikelnummer",
+    "pdfCases": "Fälle",
+    "pdfSource": "Herkunft",
+    "pdfSelected": "Zeitraum"
   }
 }

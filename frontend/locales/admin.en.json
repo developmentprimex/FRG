@@ -1922,6 +1922,21 @@
     "modelArticle": "Model / article",
     "noModels": "No model or article data recorded for these filters.",
     "missingModel": "claims have at least one product without a recorded model / article.",
-    "inventoryTypeMatch": "Current contract inventory · appliance type"
+    "inventoryTypeMatch": "Current contract inventory · appliance type",
+    "exportPdf": "Export PDF",
+    "pdfCreating": "Creating PDF...",
+    "pdfError": "The PDF could not be created. Please try again.",
+    "pdfReport": "CLAIMS REPORT",
+    "pdfPage": "Page",
+    "pdfMissing": "Missing information",
+    "pdfDaily": "Daily totals",
+    "pdfWeekly": "Weekly totals",
+    "pdfMonthly": "Monthly totals",
+    "pdfOverlap": "Category totals can exceed the total number of claims.",
+    "pdfMissingManufacturer": "Missing manufacturer",
+    "pdfMissingModel": "Missing model / article",
+    "pdfCases": "Cases",
+    "pdfSource": "Source",
+    "pdfSelected": "Period"
   }
 }
