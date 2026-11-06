@@ -32,5 +32,15 @@ export async function loadAscDashboardRows(db) {
     if (!byCase.has(submission.claimId)) byCase.set(submission.claimId, []);
     byCase.get(submission.claimId).push(submission);
   }
-  return rows.map(row => ({ ...row, submissions: byCase.get(row.id) || [] }));
+  const contractIds = [...new Set(rows.map(row => row.contractId).filter(Boolean))];
+  const contracts = contractIds.length ? await db.kitchenContract.findMany({
+    where: { id: { in: contractIds } },
+    select: { id: true, contractType: true,
+      appliances: { select: { applianceType: true, brand: true, articleNumber: true, isPresent: true } },
+      kitchen: { select: { items: { select: { code: true, name: true, articleNumber: true,
+        catalogArticle: { select: { articleNumber: true, name: true, nameDe: true } } } } } },
+    },
+  }) : [];
+  const byContract = new Map(contracts.map(contract => [contract.id, contract]));
+  return rows.map(row => ({ ...row, contract: byContract.get(row.contractId) || null, submissions: byCase.get(row.id) || [] }));
 }

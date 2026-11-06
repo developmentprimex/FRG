@@ -1,5 +1,5 @@
 import { AdminAscDashboard } from "../../components/admin-asc-dashboard";
-import { summarizeAscDashboard, getAscDashboardStartDate, ASC_DASHBOARD_CATEGORIES } from "../../lib/asc-dashboard-summary";
+import { summarizeAscDashboard, ASC_DASHBOARD_CATEGORIES } from "../../lib/asc-dashboard-summary";
 import { loadAscDashboardRows } from "../../lib/asc-dashboard-query";
 import { cookies as workspaceCookies } from "next/headers";
 import { redirect as workspaceRedirect } from "next/navigation";
@@ -26,6 +26,10 @@ const PERIOD_OPTIONS = [
   { value: "30d", labelKey: "dashboard.last30Days", fallbackLabel: "Last 30 days", days: 30 },
   { value: "90d", labelKey: "dashboard.last90Days", fallbackLabel: "Last 90 days", days: 90 },
   { value: "all", labelKey: "dashboard.allTime", fallbackLabel: "All time", days: null },
+];
+const ASC_PERIOD_OPTIONS = [
+  { value: "month", labelKey: "ascDashboard.thisMonth", fallbackLabel: "This month", days: null },
+  ...PERIOD_OPTIONS,
 ];
 const ARTICLE_NUMBER_BY_CODE = {
   "WM-B-EWA34660W": "EWA34660W",
@@ -1027,7 +1031,8 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
   const workspace = resolveWorkspace(admin, (await workspaceCookies()).get("adminWorkspace")?.value);
   if (!workspace) workspaceRedirect("/admin/access-denied");
   const params = await searchParams;
-  const period = getPeriod(normalizeParam(params.period) || (workspace === "ASC" ? "all" : "30d"));
+  const requestedPeriod = normalizeParam(params.period) || (workspace === "ASC" ? "all" : "30d");
+  const period = workspace === "ASC" ? ASC_PERIOD_OPTIONS.find(option => option.value === requestedPeriod) || ASC_PERIOD_OPTIONS.find(option => option.value === "all") : getPeriod(requestedPeriod);
   const kitchenId = normalizeParam(params.kitchenId);
   const status = normalizeParam(params.status);
   const validStatus = ORDER_STATUSES.includes(status) ? status : "";
@@ -1038,9 +1043,9 @@ export default async function AdminDashboardPage({ searchParams = {} }) {
     const category = ASC_DASHBOARD_CATEGORIES.includes(normalizeParam(params.category)) ? normalizeParam(params.category) : "";
     const kitchenKey = normalizeParam(params.claimKitchen);
     const claimRows = await loadAscDashboardRows(prisma);
-    const summary = summarizeAscDashboard(claimRows, { startDate: getAscDashboardStartDate(period.days), contractType, category, kitchenKey, kitchenId });
+    const summary = summarizeAscDashboard(claimRows, { period: period.value, contractType, category, kitchenKey, kitchenId });
     return <AdminShell adminEmail={admin.email}><AdminAscDashboard
-      summary={summary} selectedPeriod={period.value} periodOptions={PERIOD_OPTIONS}
+      summary={summary} selectedPeriod={period.value} periodOptions={ASC_PERIOD_OPTIONS}
       filters={{ contractType, category, kitchenKey, kitchenId }}
     /></AdminShell>;
   }

@@ -1,6 +1,7 @@
 import { classifyClaimArea, extractClaimAnalyticsAreas } from "./asc-claim-analytics.js";
 import { getAscClaimItem } from "./asc-claim-item-labels.js";
 import { reportDateKey, reportDayStart } from "./business-report-dates.js";
+import { getAscComparisonWindow, resolveAscProduct, buildAscProductBreakdown, buildAscRecurrence } from "./asc-dashboard-insights.js";
 
 export const ASC_DASHBOARD_CATEGORIES = ["cabinets", "electrical", "other", "unknown"];
 const clean = value => String(value || "").trim();
@@ -49,7 +50,7 @@ function enrichClaim(row) {
   const hasFiles = [row, ...submissions.map(submission => submission.payload || {})]
     .some(submission => array(submission.attachmentsJson).some(file => file && typeof file === "object" && (file.name || file.filename || file.fileName || file.url || file.path || file.storageKey)));
   return { ...row, contractNumber: contractKey(row.contractNumber), kitchen: getAscClaimKitchen(row),
-    categories: [...categories], items: [...items.values()], hasFiles, createdAt: iso(row.createdAt) };
+    categories: [...categories], items: [...items.values()], products: areas.map(area => resolveAscProduct(area, row.contract)), hasFiles, createdAt: iso(row.createdAt) };
 }
 
 export function summarizeAscDashboard(input, filters = {}) {
@@ -70,12 +71,19 @@ export function summarizeAscDashboard(input, filters = {}) {
     if (row.contractNumber) group.contracts.add(row.contractNumber);
     ordinals.set(row.id, group.totalClaims);
   }
-  const start = timestamp(filters.startDate);
-  const rows = all.filter(row => (start === null || (timestamp(row.createdAt) !== null && timestamp(row.createdAt) >= start))
-    && (!filters.contractType || row.kitchen.contractType === filters.contractType)
+  const window = getAscComparisonWindow(filters.period, filters.now ? new Date(filters.now) : new Date());
+  const start = timestamp(window.start || filters.startDate);
+  const end = timestamp(window.end);
+  const inScope = row => (!filters.contractType || row.kitchen.contractType === filters.contractType)
     && (!filters.kitchenKey || row.kitchen.key === filters.kitchenKey)
     && (!filters.kitchenId || row.kitchenId === filters.kitchenId)
-    && (!filters.category || row.categories.includes(filters.category)));
+    && (!filters.category || row.categories.includes(filters.category));
+  const rows = all.filter(row => inScope(row) && (start === null || (timestamp(row.createdAt) !== null && timestamp(row.createdAt) >= start))
+    && (end === null || (timestamp(row.createdAt) !== null && timestamp(row.createdAt) < end)));
+  const previous = window.previousStart ? all.filter(row => inScope(row) && timestamp(row.createdAt) !== null
+    && timestamp(row.createdAt) >= timestamp(window.previousStart) && timestamp(row.createdAt) < timestamp(window.previousEnd)).length : null;
+  const comparison = previous === null ? null : { ...window, current: rows.length, previous, delta: rows.length - previous,
+    changePercent: previous ? (rows.length - previous) / previous * 100 : rows.length ? null : 0 };
   const categories = emptyCategories();
   const contracts = new Set(), cities = new Map(), items = new Map(), days = new Map(), kitchens = new Map();
   const sources = ["FRG", "ARC", "unknown"].map(key => ({ key, claims: 0, kitchens: 0, categories: emptyCategories() }));
@@ -109,6 +117,8 @@ export function summarizeAscDashboard(input, filters = {}) {
   const kitchenRows = [...kitchens.values()].sort((a, b) => b.totalClaims - a.totalClaims || b.claims - a.claims || a.name.localeCompare(b.name));
   for (const source of sources) source.kitchens = kitchenRows.filter(row => row.contractType === source.key).length;
   return {
+    comparison, productBreakdown: buildAscProductBreakdown(rows),
+    productRecurrence: buildAscRecurrence(all.filter(row => end === null || (timestamp(row.createdAt) !== null && timestamp(row.createdAt) < end)), rows),
     total: rows.length, contracts: contracts.size, kitchens: kitchens.size, cities: cities.size,
     withAttachments, missingCity: rows.length - [...cities.values()].reduce((sum, row) => sum + row.claims, 0),
     repeatKitchens: kitchenRows.filter(row => row.totalClaims > 1).length, repeatClaims, multiCategory,

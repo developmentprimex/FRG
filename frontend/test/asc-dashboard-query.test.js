@@ -34,3 +34,15 @@ test('attaches existing follow-ups to their retained case without needing a Pris
   assert.equal(rows[0].submissions.length, 1);
   assert.equal(rows[0].submissions[0].id, 'submission');
 });
+
+test('loads saved contract product metadata in one read without borrowing another contract inventory', async () => {
+  const contract = { id: 'c1', contractType: 'ARC', appliances: [{ brand: 'bosch', articleNumber: 'EXACT', isPresent: true }] };
+  let reads = 0, contractReads = 0;
+  const rows = await loadAscDashboardRows({
+    $queryRaw: async () => ++reads === 1 ? [{ id: 'a', contractId: 'c1' }, { id: 'b', contractId: null }] : [{ relation: null }],
+    kitchenContract: { findMany: async query => { contractReads++; assert.deepEqual(query.where.id.in, ['c1']); return [contract]; } },
+  });
+  assert.equal(contractReads, 1);
+  assert.equal(rows[0].contract.appliances[0].articleNumber, 'EXACT');
+  assert.equal(rows[1].contract, null);
+});

@@ -77,9 +77,13 @@ a.metric:hover { border-color: var(--app-accent); box-shadow: 0 3px 15px #71583e
 .qualityStat { padding: 15px; background: var(--app-bg); border-radius: 9px; }
 .qualityStat strong { display: block; font-size: 22px; margin-bottom: 7px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .qualityStat span { font-size: 11px; color: var(--app-text-muted); line-height: 1.5; }
-.definitions { border-top: 1px solid var(--app-border); padding-top: 16px; margin-top: 20px; }
-.definitions summary { font-size: 11px; color: var(--app-text-muted); cursor: pointer; }
-.definitions p { margin-top: 10px; font-size: 11px; }
+.insightMetrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+.insightStat { display: grid; align-content: start; gap: 9px; padding: 16px; border: 1px solid var(--app-border); border-radius: 10px; min-width: 0; }
+.insightStat strong { font-size: 28px; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.insightStat span, .insightStat small { font-size: 11px; color: var(--app-text-muted); line-height: 1.5; }
+.recurrenceMetrics { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media(max-width: 1100px) { .insightMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media(max-width: 500px) { .insightMetrics { gap: 8px; } .insightStat { padding: 12px; } .insightStat strong { font-size: 24px; } }
 .button:focus-visible, .metric:focus-visible, .source:focus-visible, .textLink:focus-visible { outline: 2px solid var(--app-accent); outline-offset: 3px; }
 @media (max-width: 1200px) { .panel { padding: 20px; } .metrics { gap: 12px; } .secondaryStat { padding: 0 12px; gap: 10px; } }
 @media (max-width: 1000px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } .split { grid-template-columns: 1fr; } .quality { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
