@@ -1815,7 +1815,7 @@
     "cities": "Städte",
     "locations": "Unterschiedliche angegebene Städte",
     "items": "Am häufigsten reklamierte Artikel",
-    "itemNote": "Einzelne Fälle je Produkt; Mehrfachauswahl zählt einmal.",
+    "itemNote": "Produktnamen folgen der Admin-Sprache. Jeder Fall zählt einmal je Artikel.",
     "cityTitle": "Reklamationen nach Stadt",
     "cityNote": "Basierend auf der vom Kunden angegebenen Adresse.",
     "emptyItems": "Keine reklamierten Artikel für diese Filter.",
@@ -1879,6 +1879,7 @@
     "definitions": "So werden die Zahlen ermittelt",
     "caseDefinition": "Eine Reklamation entspricht einem gespeicherten Fall. Nachmeldungen ergänzen den ursprünglichen Fall und erhöhen die Gesamtzahl nicht. Testverträge mit der Vorsilbe 111 und Testticketserien sind ausgeschlossen.",
     "kitchenDefinition": "FRG-Verträge mit demselben Küchendatensatz werden zusammengefasst. Jeder ARC-Vertrag entspricht einer eigenen Küche; gemeinsame technische Upload-Datensätze werden nicht zusammengefasst. Reklamationen ohne Zuordnung verwenden ihre Vertragsnummer.",
-    "repeatDefinition": "Küchen mit mehreren Fällen haben mindestens zwei Fälle in ihrem gesamten Verlauf und mindestens einen Fall für die gewählten Filter. Fälle nach der ersten Reklamation zählen ausgewählte Fälle ab der chronologischen Fallnummer 2 je Küche."
+    "repeatDefinition": "Küchen mit mehreren Fällen haben mindestens zwei Fälle in ihrem gesamten Verlauf und mindestens einen Fall für die gewählten Filter. Fälle nach der ersten Reklamation zählen ausgewählte Fälle ab der chronologischen Fallnummer 2 je Küche.",
+    "rowNumber": "Nr."
   }
 }

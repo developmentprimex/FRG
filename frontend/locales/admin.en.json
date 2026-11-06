@@ -1815,7 +1815,7 @@
     "cities": "Cities",
     "locations": "Distinct submitted cities",
     "items": "Most reported items",
-    "itemNote": "Distinct cases per product; repeated selections count once.",
+    "itemNote": "Product names follow the admin language. Each case counts once per item.",
     "cityTitle": "Claims by city",
     "cityNote": "Based on the customer’s submitted address.",
     "emptyItems": "No reported items for these filters.",
@@ -1879,6 +1879,7 @@
     "definitions": "How these figures are counted",
     "caseDefinition": "One claim is one retained case. Follow-ups enrich the original case and do not increase the total. Test contracts starting with 111 and test ticket series are excluded.",
     "kitchenDefinition": "FRG contracts sharing one Kitchen record are grouped together. Each ARC contract is a separate kitchen; shared upload records are never merged. Unlinked claims use their contract number.",
-    "repeatDefinition": "Repeat kitchens have at least two cases in their full history and at least one matching the current filters. Cases after the first claim count selected cases whose chronological kitchen case number is 2 or higher."
+    "repeatDefinition": "Repeat kitchens have at least two cases in their full history and at least one matching the current filters. Cases after the first claim count selected cases whose chronological kitchen case number is 2 or higher.",
+    "rowNumber": "No."
   }
 }

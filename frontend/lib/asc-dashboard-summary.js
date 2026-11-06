@@ -1,5 +1,5 @@
 import { classifyClaimArea, extractClaimAnalyticsAreas } from "./asc-claim-analytics.js";
-import { stripProductDimensionsFromLabel } from "./product-label-format.js";
+import { getAscClaimItem } from "./asc-claim-item-labels.js";
 import { reportDateKey, reportDayStart } from "./business-report-dates.js";
 
 export const ASC_DASHBOARD_CATEGORIES = ["cabinets", "electrical", "other", "unknown"];
@@ -40,12 +40,11 @@ function enrichClaim(row) {
   if (!categories.size) categories.add("unknown");
   const items = new Map();
   for (const area of areas) {
-    const name = stripProductDimensionsFromLabel(area.name || area.nameDe || area.code || area.componentId).trim();
-    if (!name) continue;
-    // Labels group uploaded-plan items whose placeholder code is shared by unrelated products.
     const category = classifyClaimArea(area);
-    const key = `${category}:${name.toLocaleLowerCase("de").replace(/\s+/g, " ")}`;
-    items.set(key, { key, name, category });
+    const item = getAscClaimItem(area, category);
+    const originalName = clean(area.name || area.nameDe || area.code || area.componentId);
+    const originals = new Set([...(items.get(item.key)?.originalNames || []), originalName].filter(Boolean));
+    items.set(item.key, { ...item, category, originalNames: [...originals] });
   }
   const hasFiles = [row, ...submissions.map(submission => submission.payload || {})]
     .some(submission => array(submission.attachmentsJson).some(file => file && typeof file === "object" && (file.name || file.filename || file.fileName || file.url || file.path || file.storageKey)));
@@ -96,7 +95,11 @@ export function summarizeAscDashboard(input, filters = {}) {
       cityRow.claims++; cities.set(key, cityRow);
     }
     if (row.createdAt) { const day = dateFormat.format(new Date(row.createdAt)); days.set(day, (days.get(day) || 0) + 1); }
-    for (const item of row.items) { const current = items.get(item.key) || { ...item, claims: 0 }; current.claims++; items.set(item.key, current); }
+    for (const item of row.items) {
+      const current = items.get(item.key) || { ...item, claims: 0 };
+      current.originalNames = [...new Set([...current.originalNames, ...item.originalNames])];
+      current.claims++; items.set(item.key, current);
+    }
     const key = row.kitchen.key;
     if (!kitchens.has(key)) kitchens.set(key, { ...history.get(key), contracts: [...history.get(key).contracts].sort(), claims: 0, categories: emptyCategories(), latestClaimId: row.id });
     const kitchen = kitchens.get(key);

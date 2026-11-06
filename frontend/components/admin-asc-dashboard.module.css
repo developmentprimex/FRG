@@ -63,6 +63,7 @@ a.metric:hover { border-color: var(--app-accent); box-shadow: 0 3px 15px #71583e
 .table tr:last-child td { border-bottom: none; }
 .table strong { font-weight: 600; }
 .number { text-align: right; font-variant-numeric: tabular-nums; }
+.rowNumber { width: 42px; text-align: center; color: var(--app-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .muted { color: var(--app-text-muted); }
 .meta { display: block; color: var(--app-text-muted); font-size: 10px; max-width: 260px; overflow-wrap: anywhere; margin-top: 3px; }
 .badge { display: inline-flex; align-items: center; border: 1px solid var(--app-border); background: var(--app-bg); border-radius: 5px; padding: 3px 7px; font-size: 10px; line-height: 1.3; white-space: nowrap; }

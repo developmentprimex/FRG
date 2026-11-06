@@ -22,7 +22,13 @@
 - Desktop layout inspected in Chrome. Browser interaction checks were limited by concurrent user input; mobile rules were checked in source and responsive layout began correctly in a narrow browser window.
 - Independent review found no Critical/Important issues. Its city-link scope finding was resolved by keeping city and product rankings informational; supported category and kitchen drilldowns remain.
 - Next.js production build uses the existing generated Prisma client. `npm run build` regeneration hit a Windows lock on the existing query-engine DLL; no schema or generated-client changes were needed.
-- Changes remain local on `feat/claims-overview`; no publication or database writes.
+- Initial overview was pushed to `main` as `7f7c2de`; no database writes.
+
+## Follow-up: numbering and item language
+
+- Added sequential row numbers to both overview tables, including correct empty-state column spans.
+- Standard product aliases now share stable identities and EN/DE labels. Rankings deduplicate translated labels within each case; custom bilingual names and real article codes remain identifiable. Unrecognized text uses localized generic labels, with the original wording available on hover.
+- 36 focused tests passed, including the independent review's custom bilingual article identity regression. The Next.js production build and authenticated production HTTP rendering verified EN/DE labels, sequential numbers in both tables and empty states.
 
 ## Review focus
 
