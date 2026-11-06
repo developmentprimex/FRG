@@ -7,11 +7,11 @@ export function formatAdminMonth(value, language = "en") {
   }).format(new Date(`${value}-01T12:00:00Z`));
 }
 
-export function formatAdminDate(value, language = "en", timeZone = "UTC", numeric = false) {
+export function formatAdminDate(value, language = "en", timeZone = "UTC", numeric = false, padDay = false) {
   if (!value) return "-";
 
   const formatter = new Intl.DateTimeFormat(language === "de" ? "de-DE" : "en-GB", {
-    day: numeric ? "2-digit" : "numeric",
+    day: numeric || padDay ? "2-digit" : "numeric",
     month: numeric ? "2-digit" : "long",
     year: "numeric",
     hour: "2-digit",

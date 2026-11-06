@@ -114,8 +114,7 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
                     <tr key={event.id}>
                       <td className={visitorTableStyles.numberCell}>{total - (page - 1) * 100 - index}</td>
                       <td>
-                        <AdminDateTime value={event.activityAt || event.createdAt} timeZone="Europe/Berlin" numeric />
-                        {event.visitorId && <span style={mutedLineStyle} title={event.visitorId}>{event.visitorId.slice(0, 8)}</span>}
+                        <AdminDateTime value={event.activityAt || event.createdAt} timeZone="Europe/Berlin" padDay />
                       </td>
                       <td><AdminCountryName code={event.countryCode} /></td>
                       <td>
@@ -157,7 +156,7 @@ export default async function AdminContractAccessPage({ searchParams = {} }) {
           </nav>
           {selected && <AdminVisitHistoryDialog key={selected.id} closeHref={visitHref(null)} visitor={selected.contractNumber || selected.visitorId.slice(0, 8)}>
             <ol>{history.map(event => <li key={event.id}>
-              <AdminDateTime value={event.occurredAt} timeZone="Europe/Berlin" numeric /> · {stepLabel(event.step)}
+              <AdminDateTime value={event.occurredAt} timeZone="Europe/Berlin" padDay /> · {stepLabel(event.step)}
               {event.contractNumber && <> · {event.contractNumber}</>}
               <AdminPaymentEventDetails details={event.details} />
             </li>)}</ol>
