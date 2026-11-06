@@ -1909,7 +1909,7 @@
     "noProductRepeats": "Keine wiederholt reklamierten Produkte für diese Filter erkannt.",
     "recurrenceCounts": "Jeder ausgewählte Folgefall zählt einmal nach der eindeutigsten Zuordnung. Die Tabelle enthält frühere Fälle zum Vergleich.",
     "manufacturersTitle": "Reklamationen nach Hersteller",
-    "manufacturersNote": "Einzelne Fälle je Hersteller aus erfassten Daten oder einem exakten Artikelabgleich.",
+    "manufacturersNote": "Einzelne Fälle je Hersteller. Zuordnungen aus dem aktuellen Vertragsinventar sind nach Gerätetyp gekennzeichnet.",
     "manufacturer": "Hersteller",
     "dataSource": "Datenquelle",
     "recordedClaim": "In Reklamation erfasst",
@@ -1921,6 +1921,7 @@
     "modelsNote": "Modellnamen und Artikelnummern werden wie erfasst angezeigt. Seriennummern sind keine Modellnamen.",
     "modelArticle": "Modell / Artikel",
     "noModels": "Keine Modell- oder Artikelangaben für diese Filter erfasst.",
-    "missingModel": "Reklamationen enthalten mindestens ein Produkt ohne erfasstes Modell / Artikelnummer."
+    "missingModel": "Reklamationen enthalten mindestens ein Produkt ohne erfasstes Modell / Artikelnummer.",
+    "inventoryTypeMatch": "Aktuelles Vertragsinventar · Gerätetyp"
   }
 }

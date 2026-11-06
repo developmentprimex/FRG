@@ -33,7 +33,7 @@ export function AdminAscProductInsights({ recurrence, breakdown }) {
   const [allModels, setAllModels] = useState(false);
   const [allManufacturers, setAllManufacturers] = useState(false);
   const label = row => language === "de" ? row.nameDe : row.name;
-  const sourceLabel = source => ({ claim: t("recordedClaim", "Recorded in claim"), inventory: t("savedInventory", "Saved contract inventory"), catalog: t("matchingCatalog", "Matching kitchen article") })[source] || t("category_unknown", "Not recorded");
+  const sourceLabel = source => ({ claim: t("recordedClaim", "Recorded in claim"), inventory: t("savedInventory", "Saved contract inventory"), inventoryType: t("inventoryTypeMatch", "Current contract inventory · appliance type"), catalog: t("matchingCatalog", "Matching kitchen article") })[source] || t("category_unknown", "Not recorded");
   const evidenceLabel = evidence => ({ serial: t("matchSerial", "Same serial number"), article: t("matchArticle", "Same article / model"), type: t("matchType", "Same product type") })[evidence];
   const toggle = (count, open, setOpen) => count > 8 && <button className={s.button} onClick={() => setOpen(!open)}>{open ? t("showLess", "Show less") : `${t("showAll", "Show all")} (${number(count)})`}</button>;
   const repeats = allRepeats ? recurrence.rows : recurrence.rows.slice(0, 8);

@@ -1909,7 +1909,7 @@
     "noProductRepeats": "No repeated products identified for these filters.",
     "recurrenceCounts": "Each selected follow-on case counts once in the strongest available match group. The table includes earlier cases for context.",
     "manufacturersTitle": "Claims by manufacturer",
-    "manufacturersNote": "Distinct cases per manufacturer from recorded data or an exact article match.",
+    "manufacturersNote": "Distinct cases per manufacturer. Matches from current contract inventory are labeled by appliance type.",
     "manufacturer": "Manufacturer",
     "dataSource": "Data source",
     "recordedClaim": "Recorded in claim",
@@ -1921,6 +1921,7 @@
     "modelsNote": "Model names and article codes are shown as recorded. Serial numbers are not model names.",
     "modelArticle": "Model / article",
     "noModels": "No model or article data recorded for these filters.",
-    "missingModel": "claims have at least one product without a recorded model / article."
+    "missingModel": "claims have at least one product without a recorded model / article.",
+    "inventoryTypeMatch": "Current contract inventory · appliance type"
   }
 }

@@ -84,7 +84,9 @@ test('manufacturer/model rankings count distinct cases and explicitly track miss
 
 test('metadata matching never assumes a default or borrows ARC shared kitchen metadata', () => {
   const contract = { contractType: 'ARC', appliances: [{ applianceType: 'oven', brand: 'bosch', articleNumber: 'CURRENT', isPresent: true }], kitchen: { items: [{ articleNumber: 'OTHER', catalogArticle: { articleNumber: 'OTHER', manufacturer: 'Amica' } }] } };
-  assert.equal(resolveAscProduct(oven(), contract).manufacturer, '');
+  assert.equal(resolveAscProduct(oven(), contract).manufacturer, 'BOSCH');
+  assert.equal(resolveAscProduct(oven(), contract).manufacturerSource, 'inventoryType');
+  assert.equal(resolveAscProduct(oven(), contract).model, '');
   assert.equal(resolveAscProduct(oven({ articleCode: 'CURRENT' }), contract).manufacturer, 'BOSCH');
   assert.equal(resolveAscProduct(oven({ articleCode: 'OTHER' }), contract).manufacturer, '');
   assert.equal(resolveAscProduct(oven({ model: 'OLD-MODEL' }), contract).model, 'OLD-MODEL');

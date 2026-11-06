@@ -1,7 +1,8 @@
 import { reportDateKey, reportDayStart } from "./business-report-dates.js";
 import { classifyClaimArea } from "./asc-claim-analytics.js";
 import { getAscClaimItem } from "./asc-claim-item-labels.js";
-import { getContractApplianceBrandLabel, inferApplianceBrand } from "./contract-appliances.js";
+import { getContractApplianceBrandLabel, inferApplianceBrand, normalizeContractApplianceType } from "./contract-appliances.js";
+import { claimApplianceTypes } from "./asc-claim-appliance-type.js";
 
 const text = value => String(value || "").trim();
 const key = value => text(value).toUpperCase().replace(/\s+/g, "");
@@ -31,12 +32,13 @@ export function resolveAscProduct(area, contract = null) {
   const item = getAscClaimItem(area, category);
   const article = realCode(area.articleCode);
   const explicitModel = text(area.model || area.modelNumber);
-  let manufacturer = text(area.manufacturer || area.brand);
+  let manufacturer = text(area.manufacturer || area.brand) || (category === "electrical" ? getContractApplianceBrandLabel(inferApplianceBrand(area)) : "");
   let model = explicitModel || article;
   let manufacturerSource = manufacturer ? "claim" : "";
   let modelSource = model ? "claim" : "";
-  // Only exact recorded article matches may enrich a claim. Never assume an
-  // installed brand/model by appliance type or from a shared ARC upload shell.
+  // Exact article matches take priority. Legacy submissions without an article
+  // may use an unambiguous saved appliance type, explicitly labeled as current
+  // contract inventory. Such a match supplies a brand, not a historical model.
   const inventory = (contract?.appliances || []).filter(entry => entry.isPresent !== false && article && key(entry.articleNumber) === key(article));
   const products = contract?.contractType === "FRG" ? (contract.kitchen?.items || []).filter(entry =>
     article ? key(entry.articleNumber) === key(article) : text(area.code) && key(entry.code) === key(area.code)) : [];
@@ -47,6 +49,17 @@ export function resolveAscProduct(area, contract = null) {
   const source = inventory.length ? "inventory" : "catalog";
   if (!manufacturer && brands.length === 1) { manufacturer = brands[0]; manufacturerSource = source; }
   if (!model && !explicitModel && articles.length === 1) { model = articles[0]; modelSource = source; }
+  const hasRecordedCode = article || explicitModel || (text(area.code) && !/^REFERENCE(?:-|$)/i.test(text(area.code)));
+  if (!manufacturer && category === "electrical" && !hasRecordedCode) {
+    const types = claimApplianceTypes(area);
+    if (types.length === 1) {
+      const matches = (contract?.appliances || []).filter(entry => entry.isPresent !== false && normalizeContractApplianceType(entry.applianceType) === types[0]);
+      const brands = [...new Map(matches.filter(entry => text(entry.brand)).map(entry => [key(entry.brand), text(entry.brand)])).values()];
+      if (matches.length && brands.length === 1 && matches.every(entry => text(entry.brand))) {
+        manufacturer = brands[0]; manufacturerSource = "inventoryType";
+      }
+    }
+  }
   manufacturer = getContractApplianceBrandLabel(manufacturer) || manufacturer;
   return { ...item, category, manufacturer, model, manufacturerSource, modelSource,
     article: article || (modelSource === "catalog" ? model : ""), serial: recordedSerial(area.serialNumber),

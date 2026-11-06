@@ -1,9 +1,10 @@
+import { claimApplianceTypes } from "./asc-claim-appliance-type.js";
 import { Prisma } from "@prisma/client";
 import { prisma } from "./prisma.js";
 import { normalizeAscKitchenFilters } from "./asc-kitchen-report.js";
 import { frgReportPeriodLabel, reportDisplayDate } from "./frg-monthly-report.js";
 import { getKitchenSpecification } from "./frg-monthly-report.js";
-import { inferApplianceBrand, getContractApplianceBrandLabel, getInventoryApplianceTypes, normalizeContractApplianceType } from "./contract-appliances.js";
+import { inferApplianceBrand, getContractApplianceBrandLabel, normalizeContractApplianceType } from "./contract-appliances.js";
 import { formatBusinessClaimReference as formatServiceClaimReference } from "./business-report-reference.js";
 
 import { classifyClaimArea, extractClaimAnalyticsAreas } from "./asc-claim-analytics.js";
@@ -132,22 +133,6 @@ const clean = value => String(value || "").trim();
 const articleKey = value => clean(value).replace(/\s+/g, "").toUpperCase();
 const categoryLabels = { cabinets: "Cabinets", electrical: "Electrical appliances", other: "Other components", unknown: "Not recorded" };
 const unique = values => [...new Set(values.filter(Boolean))];
-
-// Older uploaded-plan claims have generic REFERENCE codes and may identify the
-// appliance only by its label. Match known appliance labels, never problem text
-// or the shared upload kitchen's inventory.
-function claimApplianceTypes(area) {
-  if (clean(area.applianceType)) {
-    const type = normalizeContractApplianceType(area.applianceType);
-    return type ? [type] : [];
-  }
-  const types = getInventoryApplianceTypes(area);
-  if (types.length) return types;
-  const label = clean(area.name || area.nameDe).toLowerCase().normalize("NFKD").replace(/\p{M}/gu, "");
-  const legacyTypes = { geschirrspuler: "dishwasher", geschirrspueler: "dishwasher", dunstabzugshaube: "extractor_hood",
-    kuhlschrank: "fridge", kuehlschrank: "fridge", "kuhl-/gefrierkombination": "fridge", "kuhl-gefrierkombination": "fridge" };
-  return legacyTypes[label] ? [legacyTypes[label]] : [];
-}
 
 export function claimProductDetails(area, contract = null) {
   const category = classifyClaimArea(area);
